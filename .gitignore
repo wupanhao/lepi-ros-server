@@ -1,0 +1,8 @@
+build_isolated
+devel_isolated
+build
+devel
+*.whl
+*.png
+*.jpg
+*.pyc

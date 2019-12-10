@@ -1,0 +1,16 @@
+<launch>
+	<arg name="veh" default="ubiquityrobot"/>
+	<arg name="usb_cam" default="false" />
+	<arg name="lane_detect" default="false" />
+	<include if="$(arg usb_cam)" file="$(find pi_cam)/launch/usb_camera_node.launch"/>
+	<group ns="$(arg veh)">
+		<remap from="apriltag_detector_node/image_raw/compressed" to="camera_node/image_raw/compressed" />
+		<node unless="$(arg usb_cam)" pkg="pi_cam" type="camera_node4.py" output="screen" name="camera_node" />
+		<node pkg="pi_driver" type="pi_driver_node.py" output="screen" name="pi_driver_node" />
+	</group>
+	<include if="$(arg lane_detect)" file="$(find lane_detector)/launch/lane_detector_node.launch" >
+		<arg name="lane_detector" value="false" />
+	</include>	
+	<include file="$(find pi_cam)/launch/web_video.launch" />
+	<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
+</launch>
