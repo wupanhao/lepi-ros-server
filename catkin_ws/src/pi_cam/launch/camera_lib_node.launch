@@ -1,0 +1,5 @@
+<launch>
+  <include file="$(find pi_cam)/launch/camera_node.launch" />
+  <include file="$(find pi_cam)/launch/apriltag_detector_node.launch" />
+  <include file="$(find pi_cam)/launch/transfer_learning_node.launch" />
+</launch>

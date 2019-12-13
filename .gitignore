@@ -6,3 +6,8 @@ devel
 *.png
 *.jpg
 *.pyc
+*.so
+*.a
+*.log
+*.out
+*.wav

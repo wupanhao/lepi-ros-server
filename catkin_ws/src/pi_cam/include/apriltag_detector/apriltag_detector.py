@@ -4,11 +4,14 @@ from apriltags3 import Detector
 from camera_utils import load_camera_info_2
 import cv2
 import numpy as np
+import os
 class ApriltagDetector:
 	def __init__(self):
-		self.cali_file = rospkg.RosPack().get_path('pi_cam') + "/camera_info/calibrations/default.yaml"
+		self.cali_file = os.path.dirname(os.path.abspath(__file__)) + "/default.yaml"
+		#self.cali_file = rospkg.RosPack().get_path('pi_cam') + "/camera_info/calibrations/default.yaml"
 		self.camera_info_msg = load_camera_info_2(self.cali_file)
-		self.detector = Detector(searchpath=['/home/pi/workspace/apriltags3-py/apriltags/lib'],
+		# self.detector = Detector(searchpath=['/home/pi/workspace/apriltags3-py/apriltags/lib'],
+		self.detector = Detector(
 			families='tag36h11',
 			nthreads=1,
 			quad_decimate=3.0,

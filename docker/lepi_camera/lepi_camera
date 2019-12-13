@@ -1,27 +1,23 @@
 # Note: this container will have the name wupanhao/lepi_camera
-# docker build . -f lepi_camera -t wupanhao/lepi_camera:v0.1
-FROM wupanhao/lepi_driver:v0.1
-
-RUN pip install --upgrade pip 
+# docker build . -f lepi_camera -t wupanhao/lepi_camera:melodic
+FROM wupanhao/lepi_driver:melodic
 
 WORKDIR /root/deps
 
-COPY ./build ./build
+RUN apt install -y  --no-install-recommends libgfortran5 libhdf5-dev 
 
-RUN mv ./build/pip /usr/bin/pip && \
-	mv ./build/pip.conf /etc && \
+COPY ./build/$ROS_DISTRO ./build
+	
 #	mv ./build/vc /opt/vc && \
 #	mv ./build/00-vmcs.conf /etc/ld.so.conf.d/ && \
 #	ldconfig && \
-	mv ./build/publishers.py /opt/ros/kinetic/lib/python2.7/dist-packages/rosbridge_library/internal/publishers.py
 
-RUN  rm -rf /usr/lib/python2.7/dist-packages/enum34-1.1.2.egg-info /usr/lib/python2.7/dist-packages/enum && \
-	pip install ./build/h5py-2.10.0-cp27-cp27mu-linux_armv7l.whl \
-	./build/numpy-1.16.2-cp27-cp27mu-linux_armv7l.whl \
+# RUN  rm -rf /usr/lib/python2.7/dist-packages/enum34-1.1.2.egg-info /usr/lib/python2.7/dist-packages/enum && \
+RUN  pip install ./build/h5py-2.10.0-cp27-cp27mu-linux_armv7l.whl \
+	./build/numpy-1.16.5-cp27-cp27mu-linux_armv7l.whl \
 	./build/scikit_learn-0.20.4-cp27-cp27mu-linux_armv7l.whl \
-	./build/scipy-1.2.0-cp27-cp27mu-linux_armv7l.whl \
-	./build/tensorflow-1.14.0-cp27-none-linux_armv7l.whl \
-	keras && \
+	./build/scipy-1.2.2-cp27-cp27mu-linux_armv7l.whl \
+	./build/tensorflow-1.14.0-cp27-none-linux_armv7l.whl && \
 	rm -rf /root/.cache/
 
 CMD /bin/bash

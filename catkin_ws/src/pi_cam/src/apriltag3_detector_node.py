@@ -4,17 +4,18 @@
 import time
 import cv2
 from cv_bridge import CvBridge
-import rospkg
 import rospy
 from sensor_msgs.msg import Image,CompressedImage,CameraInfo
 # from sensor_msgs.srv import SetCameraInfo, SetCameraInfoResponse
 import numpy as np
-from camera_utils import load_camera_info_2
 from pi_cam.msg import ApriltagPose
 from pi_cam.srv import GetApriltagDetections,GetApriltagDetectionsResponse
-from apriltag_detector import ApriltagDetector
-from image_rector import ImageRector
 from scipy.spatial.transform import Rotation as R
+import os
+
+from camera_utils import load_camera_info_2
+from apriltag_detector import ApriltagDetector
+
 def bgr_from_jpg(data):
 	""" Returns an OpenCV BGR image from a string """
 	s = np.fromstring(data, np.uint8)
@@ -29,30 +30,19 @@ class ApriltagDetectorNode(object):
 		self.node_name = rospy.get_name()
 		rospy.loginfo("[%s] Initializing......" % (self.node_name))
 
-		self.is_shutdown = False
-		self.DIM = (640, 480)
 		self.bridge = CvBridge()
 		self.cv_image = None
-		# allow the camera to warmup
-		time.sleep(0.1)
-		self.rector = ImageRector()
 		self.detector = ApriltagDetector()
 		self.visualization = True
 
-		self.tag_detect_rate = 4
-
-		self.cali_file = rospkg.RosPack().get_path('pi_cam') + "/camera_info/calibrations/default.yaml"
+		self.cali_file = os.path.dirname(os.path.abspath(__file__)) + "/default.yaml"
 		self.camera_info_msg = load_camera_info_2(self.cali_file)
 		self.image_msg = None
-		self.pub_raw = rospy.Publisher("~image_raw", Image, queue_size=1)
-		self.pub_rect = rospy.Publisher("~image_rect", Image, queue_size=1)
-
 		self.pub_detections = rospy.Publisher("~image_detections", Image, queue_size=1)
 
-		# self.sub_compressed = rospy.Subscriber("~image_raw", Image, self.cbImg ,  queue_size=1)
-		self.sub_compressed = rospy.Subscriber("~image_raw/compressed", CompressedImage, self.cbImg ,  queue_size=1)
-
 		self.tag_srv = rospy.Service('~detect_apriltag', GetApriltagDetections, self.cbGetApriltagDetections)
+		self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,  queue_size=1)
+		# self.sub_image = rospy.Subscriber("~image_rect/compressed", CompressedImage, self.cbImg ,  queue_size=1)
 
 	def cbImg(self,image_msg):
 		self.image_msg = image_msg
@@ -65,20 +55,16 @@ class ApriltagDetectorNode(object):
 			try:
 				cv_image = bgr_from_jpg(self.image_msg.data)
 			except ValueError as e:
-				rospy.loginfo('Anti_instagram cannot decode image: %s' % e)
+				rospy.loginfo('apriltag_detector cannot decode image: %s' % e)
 				return
 		else: # Image
 			cv_image = self.bridge.imgmsg_to_cv2(self.image_msg, desired_encoding="bgr8")
-		self.pub_raw.publish(self.bridge.cv2_to_imgmsg(cv_image, "bgr8"))
-		# rect_image = cv_image
-		rect_image = self.rector.rect(cv_image)
-		self.pub_rect.publish(self.bridge.cv2_to_imgmsg(rect_image,"bgr8"))
+		rect_image = cv_image
 		tags = self.detector.detect(rect_image)
 		if self.visualization:
 			for tag in tags:
 				for idx in range(len(tag.corners)):
 					cv2.line(rect_image, tuple(tag.corners[idx-1, :].astype(int)), tuple(tag.corners[idx, :].astype(int)), (0, 255, 0))
-				# cv2.putText(rect_image, "中文测试", # not work
 				cv2.putText(rect_image, str(tag.tag_id),
 							org=(tag.corners[0, 0].astype(int)+10,tag.corners[0, 1].astype(int)+10),
 							fontFace=cv2.FONT_HERSHEY_SIMPLEX,
@@ -96,9 +82,8 @@ class ApriltagDetectorNode(object):
 			detection = ApriltagPose(id=tag.tag_id,pose_r=euler,pose_t=offset)
 			msg.detections.append(detection)
 		return msg
+
 	def onShutdown(self):
-		rospy.loginfo("[%s] Closing camera." % (self.node_name))
-		self.is_shutdown = True
 		rospy.loginfo("[%s] Shutdown." % (self.node_name))
 
 if __name__ == '__main__':

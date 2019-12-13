@@ -1,46 +1,36 @@
 # Note: this container will have the name wupanhao/lepi_driver
-# docker build . -f lepi_driver -t wupanhao/lepi_driver:v0.1
-FROM ros:kinetic
+# docker build . -f lepi_driver -t wupanhao/lepi_driver:melodic
+FROM ros:melodic
 
 #RUN export http_proxy=http://192.168.50.162:1080 && export https_proxy=http://192.168.50.162:1080
 
-ENV http_proxy http://192.168.50.162:10809
-ENV https_proxy http://192.168.50.162:10809
+ENV http_proxy http://192.168.50.162:1080
+ENV https_proxy http://192.168.50.162:1080
+ENV ROS_DISTRO=melodic
 
-RUN apt update && apt install -y ros-kinetic-rosbridge-server \
-	ros-kinetic-web-video-server \
-	ros-kinetic-cv-bridge \
+#	ros-$ROS_DISTRO-cv-bridge \
 # dep for apritag_ros
-#	ros-kinetic-tf \
-#	ros-kinetic-image-geometry \
+#	ros-$ROS_DISTRO-tf \
+#	ros-$ROS_DISTRO-image-geometry \
 # common dep
+# size of deps for ros-$ROS_DISTRO-web-video-server : ~355M
+RUN apt update && apt install -y --no-install-recommends ros-$ROS_DISTRO-rosbridge-server \
+	ros-$ROS_DISTRO-web-video-server \
 	libatlas-base-dev \
 	nano \
+	python-cv-bridge \
 	python-pip \
-	python-smbus && \
+	python-smbus 
+
+RUN pip install --upgrade pip 
+
+WORKDIR /root/deps
+
+COPY ./build ./
+
+RUN mv ./pip /usr/bin/pip && \
+	mv ./pip.conf /etc && \
+	mv ./publishers.py /opt/ros/$ROS_DISTRO/lib/python2.7/dist-packages/rosbridge_library/internal/publishers.py && \
 	pip install spidev RPi.GPIO
-
-#RUN pip install --upgrade pip 
-
-#WORKDIR /root/deps
-
-#COPY ./build ./build
-
-#RUN mv ./build/pip /usr/bin/pip && \
-#	mv ./build/pip.conf /etc && \
-#	mv ./build/vc /opt/vc && \
-#	mv ./build/00-vmcs.conf /etc/ld.so.conf.d/ && \
-#	ldconfig && \
-#	mv ./build/publishers.py /opt/ros/kinetic/lib/python2.7/dist-packages/rosbridge_library/internal/publishers.py
-
-#RUN  rm -rf /usr/lib/python2.7/dist-packages/enum34-1.1.2.egg-info /usr/lib/python2.7/dist-packages/enum && \
-#	pip install RPi.GPIO \
-#	spidev \
-#	./build/h5py-2.10.0-cp27-cp27mu-linux_armv7l.whl \
-#	./build/numpy-1.16.2-cp27-cp27mu-linux_armv7l.whl \
-#	./build/scikit_learn-0.20.4-cp27-cp27mu-linux_armv7l.whl \
-#	./build/scipy-1.2.0-cp27-cp27mu-linux_armv7l.whl \
-#	./build/tensorflow-1.14.0-cp27-none-linux_armv7l.whl \
-#	keras
 
 CMD /bin/bash

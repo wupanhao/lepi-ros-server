@@ -1,0 +1,7 @@
+<launch>
+ <group>
+ 	<remap from="transfer_learning_node/image_raw" to="camera_node/image_raw" />
+  <node name="transfer_learning_node" pkg="pi_cam" type="transfer_learning_node.py" output="screen" >
+  </node>
+ </group>
+</launch>

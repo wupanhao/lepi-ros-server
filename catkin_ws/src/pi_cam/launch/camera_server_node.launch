@@ -1,0 +1,9 @@
+<launch>
+ <group ns="ubiquityrobot">
+  <include file="$(find pi_cam)/launch/camera_node.launch" />
+  <include file="$(find pi_cam)/launch/apriltag_detector_node.launch" />
+  <include file="$(find pi_cam)/launch/transfer_learning_node.launch" />
+  <include file="$(find pi_cam)/launch/web_video.launch" />
+  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
+ </group>
+</launch>

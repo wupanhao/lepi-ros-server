@@ -26,10 +26,13 @@ add_service_files(
   GetPredictions.srv
 )
 
+catkin_python_setup()
+
 generate_messages(
   DEPENDENCIES
   geometry_msgs
 )
+
 
 catkin_package(
   CATKIN_DEPENDS 

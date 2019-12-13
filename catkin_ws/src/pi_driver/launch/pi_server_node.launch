@@ -1,10 +1,13 @@
 <launch>
- <group ns="ubiquityrobot">
-  <node name="camera_node" pkg="pi_cam" type="camera_node4.py" output="screen" >
-    <param name="image_width" value="640" />
-    <param name="image_height" value="480" />
-    <param name="camera_frame_id" value="pi_cam" />
-  </node>
+  <arg name="launch_prefix" default="" /> <!-- set to value="gdbserver localhost:10000" for remote debugging -->
+  <arg name="node_namespace" default="ubiquityrobot" />
+
+  <group ns="$(arg node_namespace)">
+      <node pkg="pi_driver" type="pi_driver_node.py" output="screen" name="pi_driver_node" />
+  </group>
+
+  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
+
   <node pkg="web_video_server" type="web_video_server" name="web_video_server_1" output="screen">
     <param name="port" type="int" value="8080" />
     <param name="address" type="string" value="0.0.0.0" />
@@ -16,6 +19,5 @@
     <param name="quality" type="int" value="90" />
 
   </node>
-  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
- </group>
+
 </launch>

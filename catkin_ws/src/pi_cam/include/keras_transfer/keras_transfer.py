@@ -2,20 +2,20 @@
 import os
 import h5py
 from data_utils import get_labels,prepress_labels,load_img_from_dir
-from keras.models import load_model
-from keras.preprocessing.image import load_img, img_to_array
-import keras.backend as K
+from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
+import tensorflow.keras.backend as K
 from sklearn.model_selection import train_test_split
-from keras.models import Model
-from keras.layers import GlobalAveragePooling2D, Dense
-from keras.optimizers import SGD
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import GlobalAveragePooling2D, Dense
+from tensorflow.keras.optimizers import SGD
 import cv2
 import pickle
 import sys   #引用sys模块进来，并不是进行sys的第一次加载  
 reload(sys)  #重新加载sys  
 sys.setdefaultencoding('utf8')  ##调用setdefaultencoding函数
 
-import keras
+from tensorflow import keras
 import tensorflow as tf
 
 class AccuracyLogger(keras.callbacks.Callback):
@@ -38,7 +38,7 @@ class AccuracyLogger(keras.callbacks.Callback):
             self.callback(self.epoch,self.batch,logs)
 
 class ImageClassifier:
-    def __init__(self,model_path=None,data_root = '/root/keras'):
+    def __init__(self,model_path=None,data_root = '/home/pi/Data/transfer_learning'):
         self.data_root = data_root
         self.FC_NUMS = 64
         self.FREEZE_LAYERS = 17
@@ -63,7 +63,7 @@ class ImageClassifier:
         finally:
             self.busy = False
     def download_model(self):
-        from keras.applications.vgg16 import VGG16,preprocess_input
+        from tensorflow.keras.applications.vgg16 import VGG16,preprocess_input
         base_model = VGG16(input_shape=(self.IMAGE_SIZE, self.IMAGE_SIZE, 3), include_top=False, weights='imagenet')
     def train(self,data_dir,epochs = 3,callback = None):
         if self.busy:
@@ -71,7 +71,7 @@ class ImageClassifier:
         self.busy = True
         label_names = get_labels(data_dir)
         self.NUM_CLASSES = len(label_names)
-        from keras.applications.vgg16 import VGG16,preprocess_input
+        from tensorflow.keras.applications.vgg16 import VGG16,preprocess_input
         # 采用VGG16为基本模型，include_top为False，表示FC层是可自定义的，抛弃模型中的FC层；该模型会在~/.keras/models下载基本模型
         base_model = VGG16(input_shape=(self.IMAGE_SIZE, self.IMAGE_SIZE, 3), include_top=False, weights='imagenet')
         x_data,y_label = load_img_from_dir(data_dir,target_size=(self.IMAGE_SIZE, self.IMAGE_SIZE),max_num=30)
@@ -182,6 +182,17 @@ def test_thread():
 # arecord : pulseaudio
 # pocketsphinx-python : apt install libpulse-dev pulseaudio #装完重启
 
+def test_train():
+    IC = ImageClassifier()
+    IC.ns = '分类测试'
+    def pub_training_logs(epoch,batch,logs):
+        # logs {'loss': 0.33773628, 'accuracy': 0.71428573, 'batch': 6, 'size': 4}
+        print(logs)
+        msg = '第%d/%d轮, 批次: %d, 损失: %.2f, 准确率: %.2f' % (epoch+1,2,batch,logs['loss'],logs['acc'])
+        print(msg)
+    IC.train(os.path.join(IC.data_root,'分类测试'),2,callback = pub_training_logs)
+
 if __name__ == '__main__':
     IC = ImageClassifier()
     IC.download_model()
+    test_train()

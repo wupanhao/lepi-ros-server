@@ -1,0 +1,11 @@
+# Note: this container will have the name wupanhao/lepi_speech
+# docker build . -f lepi_speech -t wupanhao/lepi_speech:v0.1
+FROM wupanhao/lepi_driver:v0.1
+
+RUN apt install -y mpg123 espeak
+
+WORKDIR /root/deps
+
+COPY ./build ./
+
+RUN pip install ./pocketsphinx-0.1.15-cp27-cp27mu-linux_armv7l.whl

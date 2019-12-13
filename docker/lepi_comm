@@ -1,0 +1,11 @@
+# Note: this container will have the name wupanhao/lepi_xxx
+# docker build . -f lepi_xxx -t wupanhao/lepi_xxx:v0.1
+FROM wupanhao/lepi_driver:v0.1
+
+#RUN apt install -y xxx
+
+WORKDIR /root/deps
+
+#COPY ./build ./
+
+#RUN pip install ./
