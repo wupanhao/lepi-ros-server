@@ -13,18 +13,10 @@ from pi_cam.srv import GetApriltagDetections,GetApriltagDetectionsResponse
 from scipy.spatial.transform import Rotation as R
 import os
 
-from camera_utils import load_camera_info_2
+from camera_utils import load_camera_info_2,bgr_from_jpg
 from apriltag_detector import ApriltagDetector
 
-def bgr_from_jpg(data):
-	""" Returns an OpenCV BGR image from a string """
-	s = np.fromstring(data, np.uint8)
-	bgr = cv2.imdecode(s, cv2.IMREAD_COLOR)
-	if bgr is None:
-		msg = 'Could not decode image (cv2.imdecode returned None). '
-		msg += 'This is usual a sign of data corruption.'
-		raise ValueError(msg)
-	return bgr
+
 class ApriltagDetectorNode(object):
 	def __init__(self):
 		self.node_name = rospy.get_name()

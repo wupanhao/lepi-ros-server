@@ -39,6 +39,7 @@ class FaceRecognizer(object):
         small_frame = cv2.resize(frame, (0, 0), fx=1.0/scale, fy=1.0/scale)
         rgb_small_frame = small_frame[:, :, ::-1]
         face_locations = face_recognition.face_locations(rgb_small_frame)
+        start = time.time()
         face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
         face_names = []
         known_face_encodings = self.known_faces.values()
@@ -53,14 +54,15 @@ class FaceRecognizer(object):
                 print(face_distances)
                 if face_distances[best_match_index] < self.threshold:
                     name = known_face_names[best_match_index]
-            face_names.append(name)            
+            face_names.append(name)
+        end = time.time()
+        print("recognized %d faces in %.2f ms" % (len(face_locations),(end - start)*1000))            
         return face_locations,face_names
-        
-    def label_faces(self,frame,face_locations,face_names,scale = None):
+    def rect_faces(self,frame,face_locations,scale = None):
         if scale is None:
-            scale = self.scale            
+            scale = self.scale              
         # Display the results
-        for (top, right, bottom, left), name in zip(face_locations, face_names):
+        for (top, right, bottom, left) in face_locations:
             # Scale back up face locations since the frame we detected in was scaled to 1/4 size
             top *= scale
             right *= scale
@@ -69,8 +71,22 @@ class FaceRecognizer(object):
             # Draw a box around the face
             cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
             # Draw a label with a name below the face
-            # cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
-            color = (255, 255, 255)
+        return frame
+    def label_faces(self,frame,face_locations,face_names,scale = None):
+        if scale is None:
+            scale = self.scale  
+        frame = self.rect_faces(frame,face_locations,scale)          
+        # Display the results
+        for (top, right, bottom, left), name in zip(face_locations, face_names):
+            # Scale back up face locations since the frame we detected in was scaled to 1/4 size
+            top *= scale
+            right *= scale
+            bottom *= scale
+            left *= scale
+            # Draw a box around the face
+            # cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
+            # Draw a label with a name below the face
+            color = (0, 0, 255)
             frame = self.putText(frame, name, (left + 6, bottom - 24), color )
         return frame
     def load_faces(self):
@@ -81,11 +97,11 @@ class FaceRecognizer(object):
             try:
                 name = file.split('.')[0]
                 file_path = os.path.join(self.data_dir,file)
-                print(self.register_face(cv2.imread(file_path),name,scale = 1))
+                print(self.add_face_label(cv2.imread(file_path),name,scale = 1))
             except Exception as e:
                 print(e)
 
-    def register_face(self,frame,name,scale = None,save = False):
+    def add_face_label(self,frame,name,scale = None,save = False):
         if scale is None:
             scale = self.scale
         frame = cv2.resize(frame, (0, 0), fx=1.0/scale, fy=1.0/scale)
@@ -107,14 +123,23 @@ class FaceRecognizer(object):
             return '标记"%s"失败，检测到多余人脸' % (name)
         else:
             return '标记"%s"失败，未检测到人脸' % (name)
+    def remove_face_label(self,name):
+        if self.known_faces.has_key(name):
+            self.known_faces.pop(name)
+        try:
+            os.system('rm '+os.path.join(self.data_dir,name+".*"))
+            return "已删除"
+        except Exception as e:
+            print(e)
+            return "删除出错"
 
 def add_faces():
     fr = FaceRecognizer()
     frame = cv2.imread('./吴畔昊.png')
     print(fr.detect(frame))
-    print(fr.register_face(frame,'畔昊',save = True))
-    print(fr.register_face(cv2.imread('./ny.png'),'宁远',save = True))
-    print(fr.register_face(cv2.imread('./obama.jpg'),'obama',save = True))
+    print(fr.add_face_label(frame,'畔昊',save = True))
+    print(fr.add_face_label(cv2.imread('./ny.png'),'宁远',save = True))
+    print(fr.add_face_label(cv2.imread('./obama.jpg'),'obama',save = True))
     face_locations,face_names = fr.recognize(frame)
     nframe = fr.label_faces(frame,face_locations,face_names)
     cv2.imshow('frame', nframe)
@@ -138,7 +163,7 @@ def test_detect():
     cv2.destroyAllWindows()
 def test_recognize():
     fr = FaceRecognizer(scale = 5)
-    print(fr.register_face(cv2.imread('./hq.png'),'海群',save = True))
+    print(fr.add_face_label(cv2.imread('./hq.png'),'海群',save = True))
     cap = cv2.VideoCapture(0)
     while True:
         # Grab a single frame of video

@@ -15,8 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   ApriltagPose.msg
-  AprilTagDetection.msg
-  AprilTagDetectionArray.msg
+  FaceDetection.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -24,6 +23,7 @@ add_service_files(
   FILES
   GetApriltagDetections.srv
   GetPredictions.srv
+  GetFaceDetections.srv
 )
 
 catkin_python_setup()

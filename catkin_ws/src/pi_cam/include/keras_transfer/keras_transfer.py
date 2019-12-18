@@ -195,4 +195,4 @@ def test_train():
 if __name__ == '__main__':
     IC = ImageClassifier()
     IC.download_model()
-    test_train()
+    # test_train()

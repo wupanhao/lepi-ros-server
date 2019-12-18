@@ -1,6 +1,6 @@
 # Note: this container will have the name wupanhao/lepi_xxx
-# docker build . -f lepi_xxx -t wupanhao/lepi_xxx:v0.1
-FROM wupanhao/lepi_driver:v0.1
+# docker build . -f lepi_xxx -t wupanhao/lepi_xxx:melodic
+FROM wupanhao/lepi_driver:melodic
 
 #RUN apt install -y xxx
 
