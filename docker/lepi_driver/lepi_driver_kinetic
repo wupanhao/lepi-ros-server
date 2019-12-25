@@ -1,0 +1,36 @@
+# Note: this container will have the name wupanhao/lepi_driver
+# docker build . -f lepi_driver_kinetic -t wupanhao/lepi_driver:kinetic
+FROM ros:kinetic
+
+#RUN export http_proxy=http://192.168.50.162:1080 && export https_proxy=http://192.168.50.162:1080
+
+ENV http_proxy http://192.168.50.162:1080
+ENV https_proxy http://192.168.50.162:1080
+ENV ROS_DISTRO=kinetic
+
+#	ros-$ROS_DISTRO-cv-bridge \
+# dep for apritag_ros
+#	ros-$ROS_DISTRO-tf \
+#	ros-$ROS_DISTRO-image-geometry \
+# common dep
+# size of deps for ros-$ROS_DISTRO-web-video-server : ~355M
+RUN apt update && apt install -y --no-install-recommends ros-$ROS_DISTRO-rosbridge-server \
+	ros-$ROS_DISTRO-web-video-server \
+	libatlas-base-dev \
+	nano \
+	python-cv-bridge \
+	python-pip \
+	python-smbus 
+
+RUN pip install --upgrade pip 
+
+WORKDIR /root/deps
+
+COPY ./build ./
+
+RUN mv ./pip /usr/bin/pip && \
+	mv ./pip.conf /etc && \
+	mv ./publishers.py /opt/ros/$ROS_DISTRO/lib/python2.7/dist-packages/rosbridge_library/internal/publishers.py && \
+	pip install spidev RPi.GPIO
+
+CMD /bin/bash

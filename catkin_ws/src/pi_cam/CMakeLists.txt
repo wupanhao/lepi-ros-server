@@ -24,6 +24,7 @@ add_service_files(
   GetApriltagDetections.srv
   GetPredictions.srv
   GetFaceDetections.srv
+  GetLineDetection.srv
 )
 
 catkin_python_setup()

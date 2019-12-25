@@ -1,0 +1,8 @@
+<launch>
+ <group>
+ 	<remap from="line_detector_node/image_raw/compressed" to="camera_node/image_raw/compressed" />
+ 	<remap from="line_detector_node/image_raw" to="camera_node/image_raw" />
+  <node name="line_detector_node" pkg="pi_cam" type="line_detector_node.py" output="screen" >
+  </node>
+ </group>
+</launch>

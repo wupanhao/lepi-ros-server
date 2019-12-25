@@ -1,6 +1,5 @@
 #!/usr/bin/python
 #!coding:utf-8
-# import the necessary packages
 import time
 import cv2
 from cv_bridge import CvBridge

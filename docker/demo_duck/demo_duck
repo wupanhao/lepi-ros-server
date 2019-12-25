@@ -1,0 +1,16 @@
+# Note: this container will have the name wupanhao/demo_duck
+# docker build . -f demo_duck -t wupanhao/demo_duck:kinetic
+FROM wupanhao/lepi_driver:kinetic
+
+RUN apt install -y ros-$ROS_DISTRO-image-geometry ros-$ROS_DISTRO-tf-conversions ros-$ROS_DISTRO-joy libyaml-cpp-dev
+
+WORKDIR /root/deps
+
+COPY ./ ./
+
+RUN pip install ./kinetic/numpy-1.16.2-cp27-cp27mu-linux_armv7l.whl \
+	./kinetic/scipy-1.2.0-cp27-cp27mu-linux_armv7l.whl \
+	./kinetic/scikit_learn-0.20.4-cp27-cp27mu-linux_armv7l.whl \
+	reprep ruamel.yaml==0.15.34 picamera
+
+RUN mv ./kinetic/vc /opt/vc && mv ./kinetic/00-vmcs.conf /etc/ld.so.conf.d/ && ldconfig

@@ -5,7 +5,7 @@ from catkin_pkg.python_setup import generate_distutils_setup
 
 # fetch values from package.xml
 setup_args = generate_distutils_setup(
-    packages=['apriltag_detector','camera_utils','face_recognizer','keras_transfer'],
+    packages=['apriltag_detector','camera_utils','face_recognizer','keras_transfer','line_detector'],
     package_dir={'': 'include'},
 )
 

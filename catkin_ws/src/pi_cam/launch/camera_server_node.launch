@@ -1,10 +1,12 @@
 <launch>
- <group ns="/">
+ <group ns="/ubiquityrobot">
   <include file="$(find pi_cam)/launch/camera_node.launch" />
-  <include file="$(find pi_cam)/launch/face_recognizer_node.launch" />
+  <!-- <include file="$(find pi_cam)/launch/face_recognizer_node.launch" /> -->
+  <include file="$(find pi_cam)/launch/line_detector_node.launch" />
   <!-- <include file="$(find pi_cam)/launch/apriltag_detector_node.launch" /> -->
   <!-- <include file="$(find pi_cam)/launch/transfer_learning_node.launch" /> -->
   <include file="$(find pi_cam)/launch/web_video.launch" />
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
+  <node pkg="pi_driver" type="pi_driver_node.py" output="screen" name="pi_driver_node" />
  </group>
 </launch>
