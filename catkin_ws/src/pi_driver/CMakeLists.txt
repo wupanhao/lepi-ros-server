@@ -23,6 +23,7 @@ add_message_files(
   #ApriltagPose.msg
   #AprilTagDetection.msg
   #AprilTagDetectionArray.msg
+  U8Int32.msg
 )
 
 ## Generate services in the 'srv' folder

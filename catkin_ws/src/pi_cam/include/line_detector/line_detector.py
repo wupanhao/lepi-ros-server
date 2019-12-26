@@ -21,9 +21,9 @@ class LineDetector:
 	def detect_color(self,image,color_hsv):
 		# image = self.cv_image
 		x1,x2,y1,y2 = self.roi[0],self.roi[1],self.roi[2],self.roi[3]
-		image = image[y1:y2,x1:x2]		
+		# image = image[y1:y2,x1:x2]
 		# image = self.rector.rect(image)
-		image = cv2.resize(image,(self.size[0],self.size[1]))
+		# image = cv2.resize(image,(self.size[0],self.size[1]))
 		# image = cv2.flip(image,-1)
 		# cnt_r = detect_cnt(image,[])
 		cnt = self.detect_cnt(image,color_hsv)

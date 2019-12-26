@@ -5,10 +5,10 @@ import time
 
 class UsbCamera(object):
 	"""docstring for UsbCamera"""
-	def __init__(self, rate=20,callback=None):
+	def __init__(self, rate=30,callback=None):
 		super(UsbCamera, self).__init__()
 		self.cap = None
-		self.rate = 20
+		self.rate = rate
 		self._reader = None #threading.Thread(target=self.continuous_capture)
 		self.last_image = None
 		self.callback = callback

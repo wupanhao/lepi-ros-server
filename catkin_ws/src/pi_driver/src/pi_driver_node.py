@@ -1,6 +1,6 @@
 #!/usr/bin/python
 from pi_driver import Lepi,I2cDriver,ButtonMap,D51Driver
-from pi_driver.msg import ButtonEvent,Sensor3Axes,MotorInfo,SensorStatusChange
+from pi_driver.msg import ButtonEvent,Sensor3Axes,MotorInfo,SensorStatusChange,U8Int32
 from pi_driver.srv import SetInt32,GetInt32,SetInt32Response,GetInt32Response,\
 		GetMotorsInfo,GetMotorsInfoResponse,SensorGet3Axes,SensorGet3AxesResponse,\
 		GetPowerState,GetPowerStateResponse,GetSensorInfo,GetSensorInfoResponse
@@ -29,6 +29,7 @@ class PiDriverNode:
 		self.srv_get_power_state = rospy.Service('~get_power_state', GetPowerState, self.srvGetPowerState)
 		self.i2c_driver = I2cDriver(self.pubButton)
 		self.d51_driver = D51Driver(self.pubSensorChange)
+		self.sub_motor_set_speed =rospy.Subscriber("~motor_set_speed", U8Int32 , self.cbMotorSetSpeed, queue_size=1)
 		rospy.loginfo("[%s] Initialized......" % (self.node_name))
 	def pubButton(self,btn):
 		if ButtonMap.has_key(btn):
@@ -47,6 +48,10 @@ class PiDriverNode:
 	def pubSensorChange(self,port,sensor_id,status):
 		print(port,sensor_id,status)
 		self.pub_sensor_status_change.publish(SensorStatusChange(port,sensor_id,status))
+
+	def cbMotorSetSpeed(self,msg):
+		Lepi.motor_set_speed(msg.port,msg.value)
+
 	def srvMotorSetEnable(self,msg):
 		print(msg)
 		Lepi.motor_set_enable(msg.port,msg.value)

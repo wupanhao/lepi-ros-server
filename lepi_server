@@ -1,0 +1,12 @@
+# Note: this container will have the name wupanhao/lepi_server
+# docker build . -f lepi_server -t wupanhao/lepi_server:melodic
+FROM wupanhao/lepi_facerec:melodic
+
+#RUN apt install -y xxx
+
+WORKDIR /home/pi/workspace/lepi-ros-server
+
+COPY ./ ./
+
+#RUN pip install ./
+

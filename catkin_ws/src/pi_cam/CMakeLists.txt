@@ -5,7 +5,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
-  geometry_msgs
+  sensor_msgs
   message_generation 
 )
 
@@ -16,6 +16,7 @@ add_message_files(
   FILES
   ApriltagPose.msg
   FaceDetection.msg
+  LineDetection.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -25,13 +26,14 @@ add_service_files(
   GetPredictions.srv
   GetFaceDetections.srv
   GetLineDetection.srv
+  GetFrame.srv
 )
 
 catkin_python_setup()
 
 generate_messages(
   DEPENDENCIES
-  geometry_msgs
+  sensor_msgs
 )
 
 
