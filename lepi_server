@@ -8,5 +8,6 @@ WORKDIR /home/pi/workspace/lepi-ros-server
 
 COPY ./ ./
 
+RUN cd ./catkin_ws/src/pi_cam/include/keras_transfer && python keras_transfer.py
 #RUN pip install ./
 

@@ -15,6 +15,8 @@ import os
 from camera_utils import bgr_from_jpg
 from face_recognizer import FaceRecognizer  
 
+from pi_cam.srv import GetFrame,GetFrameRequest
+
 # (0,10) => (-320,230)
 # (320,240) => (0,0)
 def toScratchAxes(cv_x,cv_y):
@@ -39,15 +41,21 @@ class FaceRecognizerNode(object):
 		rospy.Service('~list_face_labels', GetStrings, self.cbListFaceLabels)
 		rospy.Service('~add_face_label', SetString, self.cbAddFaceLabel)
 		rospy.Service('~remove_face_label', SetString, self.cbRemoveFaceLabel)
-		self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg , queue_size=1)
+		# self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg , queue_size=1)
 		# self.sub_image = rospy.Subscriber("~image_rect/compressed", CompressedImage, self.cbImg ,  queue_size=1)
-		rospy.loginfo("[%s] Initialized......" % (self.node_name))
+
+		rospy.loginfo("[%s] wait_for_service : camera_get_frame..." % (self.node_name))
+		rospy.wait_for_service('~camera_get_frame')
+		self.get_frame = rospy.ServiceProxy('~camera_get_frame', GetFrame)
+		rospy.loginfo("[%s] Initialized." % (self.node_name))
 
 	def cbImg(self,image_msg):
 		self.image_msg = image_msg
 
 	def cbDetectFaceLocations(self,params):
 		# print(params)
+		res = self.get_frame(GetFrameRequest())
+		self.image_msg = res.image			
 		if self.image_msg == None:
 			return GetFaceDetectionsResponse()
 		if hasattr(self.image_msg,'format'): # CompressedImage
@@ -66,6 +74,8 @@ class FaceRecognizerNode(object):
 		return self.toFaceDetectionMsg(face_locations)
 	def cbDetectFaceLabels(self,params):
 		# print(params)
+		res = self.get_frame(GetFrameRequest())
+		self.image_msg = res.image			
 		if self.image_msg == None:
 			return GetFaceDetectionsResponse()
 		if hasattr(self.image_msg,'format'): # CompressedImage

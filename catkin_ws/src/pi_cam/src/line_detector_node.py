@@ -33,12 +33,12 @@ class LineDetectorNode(object):
 
 		self.detect_line_srv = rospy.Service('~detect_line', GetLineDetection, self.cbGetLineDetection)
 		self.pid_set_enable_srv = rospy.Service('~pid_set_enable', SetInt32, self.cbPidSetEnable)
-		self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,queue_size=1)
+		# self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,queue_size=1)
 		# self.sub_image = rospy.Subscriber("~image_rect/compressed", CompressedImage, self.cbImg ,queue_size=1)
 
-		# rospy.loginfo("[%s] wait_for_service : camera_get_frame..." % (self.node_name))
-		# rospy.wait_for_service('~camera_get_frame')
-		# self.get_frame = rospy.ServiceProxy('~camera_get_frame', GetFrame)
+		rospy.loginfo("[%s] wait_for_service : camera_get_frame..." % (self.node_name))
+		rospy.wait_for_service('~camera_get_frame')
+		self.get_frame = rospy.ServiceProxy('~camera_get_frame', GetFrame)
 		rospy.loginfo("[%s] Initialized." % (self.node_name))
 
 	def cbImg(self,image_msg):
@@ -69,9 +69,9 @@ class LineDetectorNode(object):
 	def detectLine(self,params=None):
 		try:
 			start = time.time()
-			# res = self.get_frame(GetFrameRequest())
+			res = self.get_frame(GetFrameRequest())
 			# res = self.get_frame(GetFrameRequest([320,240]))
-			# self.image_msg = res.image
+			self.image_msg = res.image
 			# end = time.time()
 			# print('time cost in get image frame from service : %.2f ms' % ((end - start)*1000))
 		except rospy.ServiceException as exc:
@@ -95,10 +95,13 @@ class LineDetectorNode(object):
 				return GetLineDetectionResponse()
 		if cv_image.shape[0]!=self.size[1] or cv_image.shape[1]!=self.size[0]:
 			cv_image = cv2.resize(cv_image,self.size)
-		rect_image = cv_image[120:140,:]
+		rect_image = cv_image[100:120,:]
 		cnt,image = self.detector.detect_color(rect_image,self.detector.colors[u'黄线'])
 		if self.visualization:
-			imgmsg = self.bridge.cv2_to_imgmsg(image,"bgr8")
+			cv_image[100:120,:] = image
+			cv2.rectangle(cv_image, (0,100), (320,120), (0,0,0), 1)
+			cv_image = cv2.resize(cv_image,(640,480))			
+			imgmsg = self.bridge.cv2_to_imgmsg(cv_image,"bgr8")
 			self.pub_image_detection.publish(imgmsg)
 		end = time.time()
 		# print('time cost in detect line: %.2f ms' %  ((end - start)*1000))
@@ -109,7 +112,8 @@ class LineDetectorNode(object):
 			return GetLineDetectionResponse(center,wh,angle)
 		return GetLineDetectionResponse()
 	def cbGetLineDetection(self,params):
-		return self.line_msg
+		return self.detectLine()
+		# return self.line_msg
 	def cbPidSetEnable(self,params):
 		if params.port == 1:
 			self.pid_enabled = True

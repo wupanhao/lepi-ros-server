@@ -15,6 +15,7 @@ import os
 from camera_utils import load_camera_info_2,bgr_from_jpg
 from apriltag_detector import ApriltagDetector
 
+from pi_cam.srv import GetFrame,GetFrameRequest
 
 class ApriltagDetectorNode(object):
 	def __init__(self):
@@ -32,13 +33,19 @@ class ApriltagDetectorNode(object):
 		self.pub_detections = rospy.Publisher("~image_detections", Image, queue_size=1)
 
 		self.tag_srv = rospy.Service('~detect_apriltag', GetApriltagDetections, self.cbGetApriltagDetections)
-		self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,  queue_size=1)
+		# self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,  queue_size=1)
 		# self.sub_image = rospy.Subscriber("~image_rect/compressed", CompressedImage, self.cbImg ,  queue_size=1)
-
+		rospy.loginfo("[%s] wait_for_service : camera_get_frame..." % (self.node_name))
+		rospy.wait_for_service('~camera_get_frame')
+		self.get_frame = rospy.ServiceProxy('~camera_get_frame', GetFrame)
+		rospy.loginfo("[%s] Initialized." % (self.node_name))
 	def cbImg(self,image_msg):
 		self.image_msg = image_msg
 
 	def cbGetApriltagDetections(self,params):
+		res = self.get_frame(GetFrameRequest())
+		# res = self.get_frame(GetFrameRequest([320,240]))
+		self.image_msg = res.image
 		# print(params)
 		if self.image_msg == None:
 			return GetApriltagDetectionsResponse()

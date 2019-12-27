@@ -18,6 +18,7 @@ from keras_transfer import ImageClassifier,AccuracyLogger
 import os
 from std_msgs.msg import String
 from data_utils import get_labels
+from pi_cam.srv import GetFrame,GetFrameRequest
 
 class CameraNode(object):
 	def __init__(self):
@@ -44,8 +45,10 @@ class CameraNode(object):
 		rospy.Service('~train_classifier', SetString, self.srv_train_classifier)
 		rospy.Service('~predict', GetPredictions, self.srv_predict)
 		rospy.Service('~get_training_data', GetPredictions, self.srv_get_training_data)
-		self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,  queue_size=1)
-
+		# self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,  queue_size=1)
+		rospy.loginfo("[%s] wait_for_service : camera_get_frame..." % (self.node_name))
+		rospy.wait_for_service('~camera_get_frame')
+		self.get_frame = rospy.ServiceProxy('~camera_get_frame', GetFrame)
 		rospy.loginfo("[%s] Initialized......" % (self.node_name))
 	def srvCameraSetEnable(self,params):
 		if params.value == 1 and self.camera.active == False:
@@ -62,6 +65,8 @@ class CameraNode(object):
 		if self.ns is None:
 			return SetStringResponse("训练没有定义，创建或者选择一次训练")
 		try:
+			res = self.get_frame(GetFrameRequest())
+			self.image_msg = res.image		
 			cat_name = params.data
 			directory = os.path.join(self.data_root, self.ns,cat_name)
 			file_name = '%d.jpg' % (len(os.listdir(directory))+1)
@@ -147,6 +152,8 @@ class CameraNode(object):
 			print(e)
 			return SetStringResponse('训练失败')
 	def srv_predict(self,params):
+		res = self.get_frame(GetFrameRequest())
+		self.image_msg = res.image
 		if self.ic.model is None or self.image_msg is None:
 			return GetPredictionsResponse()
 		try:

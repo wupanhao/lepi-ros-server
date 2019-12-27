@@ -82,7 +82,6 @@ class LineDetector:
 				max_cnt = cnt
 		return max_cnt
 
-
 if __name__ == '__main__':
 	detector = LineDetector()
 	capture = cv2.VideoCapture(0)

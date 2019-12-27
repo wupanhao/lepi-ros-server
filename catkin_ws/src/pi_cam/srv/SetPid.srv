@@ -1,0 +1,6 @@
+uint8 enabled
+int32 speed
+int32 offset
+float32 factor
+----
+string res

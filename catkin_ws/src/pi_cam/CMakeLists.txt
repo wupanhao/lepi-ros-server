@@ -27,6 +27,7 @@ add_service_files(
   GetFaceDetections.srv
   GetLineDetection.srv
   GetFrame.srv
+  SetPid.srv
 )
 
 catkin_python_setup()
