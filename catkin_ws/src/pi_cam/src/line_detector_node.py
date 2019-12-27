@@ -8,6 +8,9 @@ from line_detector import LineDetector
 from pi_cam.srv import GetLineDetection,GetLineDetectionResponse,GetFrame,GetFrameRequest
 from pi_cam.msg import LineDetection
 import time
+from pi_driver.srv import SetInt32,SetInt32Response
+from pi_driver import CarDriver
+# from std_msgs.msg import UInt8,Int32
 class LineDetectorNode(object):
 	def __init__(self):
 		self.node_name = rospy.get_name()
@@ -18,26 +21,51 @@ class LineDetectorNode(object):
 		self.detector = LineDetector()
 		self.visualization = True
 		self.size = (320,240)
-
+		self.pid_enabled = False
+		self.base_speed = 50
+		self.car = CarDriver()
 		# self.config_file = os.path.dirname(os.path.abspath(__file__)) + "/default.yaml"
 		self.image_msg = None
+		self.lost_count = 0
 		self.line_msg = GetLineDetectionResponse()
 		self.pub_image_detection = rospy.Publisher("~image_detections", Image, queue_size=1)
 		self.pub_line_detection = rospy.Publisher("~line_detection", LineDetection, queue_size=1)
 
-		self.tag_srv = rospy.Service('~detect_line', GetLineDetection, self.cbGetLineDetection)
+		self.detect_line_srv = rospy.Service('~detect_line', GetLineDetection, self.cbGetLineDetection)
+		self.pid_set_enable_srv = rospy.Service('~pid_set_enable', SetInt32, self.cbPidSetEnable)
 		self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,queue_size=1)
 		# self.sub_image = rospy.Subscriber("~image_rect/compressed", CompressedImage, self.cbImg ,queue_size=1)
 
-		rospy.loginfo("[%s] wait_for_service : camera_get_frame..." % (self.node_name))
-		rospy.wait_for_service('~camera_get_frame')
-		self.get_frame = rospy.ServiceProxy('~camera_get_frame', GetFrame)
+		# rospy.loginfo("[%s] wait_for_service : camera_get_frame..." % (self.node_name))
+		# rospy.wait_for_service('~camera_get_frame')
+		# self.get_frame = rospy.ServiceProxy('~camera_get_frame', GetFrame)
 		rospy.loginfo("[%s] Initialized." % (self.node_name))
 
 	def cbImg(self,image_msg):
 		self.image_msg = image_msg
 		self.line_msg = self.detectLine()
+		if self.pid_enabled:
+			self.cbPid(self.line_msg)
 		self.pub_line_detection.publish(self.line_msg)
+	def cbPid(self,line_msg):
+		center = line_msg.center
+		if center[0] == 0:
+			self.lost_count = self.lost_count + 1
+			print('lost count %d' % (self.lost_count))
+			if self.lost_count > 25:
+				self.pid_enabled = False
+				print('yellow line lost,stop')
+			self.car.setWheelsSpeed(0,0)
+			return
+		self.lost_count = 0
+		offset = 70 - center[0]
+		bias = offset/160.0
+		speed = self.base_speed/100.0*(1-bias)
+		if speed < 0.4:
+			speed = 0.4
+		left = speed*(1-bias)
+		right = speed*(1+bias)
+		self.car.setWheelsSpeed(left,right)
 	def detectLine(self,params=None):
 		try:
 			start = time.time()
@@ -82,6 +110,15 @@ class LineDetectorNode(object):
 		return GetLineDetectionResponse()
 	def cbGetLineDetection(self,params):
 		return self.line_msg
+	def cbPidSetEnable(self,params):
+		if params.port == 1:
+			self.pid_enabled = True
+			self.base_speed = params.value
+		else:
+			self.pid_enabled = True
+			self.base_speed = 0
+			self.car.setWheelsSpeed(0,0)
+		return SetInt32Response(params.port,params.value)
 	def onShutdown(self):
 		rospy.loginfo("[%s] Shutdown." % (self.node_name))
 

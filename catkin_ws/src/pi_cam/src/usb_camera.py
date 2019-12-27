@@ -27,6 +27,7 @@ class UsbCamera(object):
 			self.cap = cv2.VideoCapture(camera_id)
 			if self.cap.isOpened():
 				self.active = True
+				self.cap.set(cv2.CAP_PROP_FPS,30)
 				self._reader.start()
 				print('open camera with index %d successfully' % (camera_id) )
 				return 0
@@ -68,17 +69,18 @@ class UsbCamera(object):
 				ret,frame = self.cap.read()
 				if ret == True:
 					self.last_image = frame
-					if (frame is not None) and (self.callback is not None) :
+					if self.callback is not None :
 						self.callback(frame)
 				else:
 					self.last_image = None
 					pass
 			except Exception as e:
-				# raise e
+				raise e
 				print('camera capture error',e)
 				time.sleep(1)
 			finally:
-				time.sleep(1.0/self.rate)
+				#time.sleep(1.0/self.rate)
+				time.sleep(0.005)
 		self.close_camera()
 	def save_a_frame(self,full_path):
 		if self.last_image is not None:

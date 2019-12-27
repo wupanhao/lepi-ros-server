@@ -11,11 +11,15 @@ from sensor_msgs.msg import Image,CompressedImage,CameraInfo
 from camera_utils import load_camera_info_2
 from image_rector import ImageRector
 
-from pi_driver.srv import SetInt32,SetInt32Response
+from pi_driver.srv import SetInt32,SetInt32Response,GetStrings,GetStringsResponse
 from pi_cam.srv import GetFrame,GetFrameResponse
+
 from usb_camera import UsbCamera
 import os
 import cv2
+from pi_driver import CarDriver
+
+from line_detector import LineDetector
 
 class CameraNode(object):
 	def __init__(self):
@@ -24,14 +28,20 @@ class CameraNode(object):
 
 		self.is_shutdown = False
 		self.rectify = True
+		self.visualization = True
 		self.flip_code = -1
 		self.rate = 60
-		self.size = (640,480)
+		self.size = (320,240)
 		self.compress_size = (320,240)
 		self.bridge = CvBridge()
+		self.detector = LineDetector()
 		self.frame_id = rospy.get_namespace().strip('/') + "/camera_optical_frame"
 		self.camera = UsbCamera(rate=self.rate,callback = self.cbImg)
 		self.cv_image = None
+		self.pid_enabled = False
+		self.base_speed = 50
+		self.car = CarDriver()
+		self.lost_count = 0
 
 		# self.r = rospy.Rate(self.rate)
 		self.rector = ImageRector()
@@ -50,7 +60,11 @@ class CameraNode(object):
 		rospy.Service('~camera_set_flip', SetInt32, self.srvCameraSetFlip)
 		rospy.Service('~camera_set_rectify', SetInt32, self.srvCameraSetRectify)
 		rospy.Service('~camera_get_frame', GetFrame, self.srvCameraGetFrame)
-		# rospy.Timer(rospy.Duration.from_sec(1.0/15), self.publishRaw)
+		rospy.Service('~get_image_topics', GetStrings, self.srvGetImageTopics)
+		self.pid_set_enable_srv = rospy.Service('~pid_set_enable', SetInt32, self.cbPidSetEnable)
+		self.pub_image_detection = rospy.Publisher("~image_detections", Image, queue_size=1)
+
+		rospy.Timer(rospy.Duration.from_sec(1.0/15), self.publishRaw)
 		rospy.loginfo("[%s] Initialized......" % (self.node_name))
 	def srvCameraSetEnable(self,params):
 		if params.value == 1 and self.camera.active == False:
@@ -78,10 +92,6 @@ class CameraNode(object):
 		if self.cv_image is None:
 			return GetFrameResponse()
 		cv_image = self.cv_image
-		if self.rectify:
-			cv_image = self.rector.rect(cv_image)
-		if self.flip_code is not None:
-			cv_image = cv2.flip(cv_image,self.flip_code)		
 		if len(params.size)==2 and params.size[0]>0 and params.size[1]>0:
 			size = (params.size[0],params.size[1])
 			print(size)
@@ -90,24 +100,74 @@ class CameraNode(object):
 		image_msg.header.stamp = rospy.Time.now()
 		image_msg.header.frame_id = self.frame_id
 		return GetFrameResponse(image_msg)
+	def cbPid(self,cnt):
+		if cnt is not None:
+			center,wh,angle = cv2.minAreaRect(cnt)
+		else:
+			self.lost_count = self.lost_count + 1
+			print('lost count %d' % (self.lost_count))
+			if self.lost_count > 25:
+				self.pid_enabled = False
+				print('yellow line lost,stop')
+			self.car.setWheelsSpeed(0,0)
+			return
+		self.lost_count = 0
+		offset = 70 - center[0]
+		bias = offset/200.0
+		speed = self.base_speed/100.0*(1-bias)
+		if speed < 0.3:
+			speed = 0.3
+		left = speed*(1-bias)
+		right = speed*(1+bias)
+		self.car.setWheelsSpeed(left,right)
+	def detectLine(self,cv_image):
+		#cv_image = self.cv_image
+		start = time.time()
+		if cv_image.shape[0]!=self.size[1] or cv_image.shape[1]!=self.size[0]:
+			cv_image = cv2.resize(cv_image,self.size)
+		rect_image = cv_image[120:140,:]
+		cnt,image = self.detector.detect_color(rect_image,self.detector.colors[u'黄线'])
+		self.cbPid(cnt)
+		if self.visualization:
+			imgmsg = self.bridge.cv2_to_imgmsg(image,"bgr8")
+			self.pub_image_detection.publish(imgmsg)
+		end = time.time()
+		print('time cost in detect line: %.2f ms' %  ((end - start)*1000))
 	def cbImg(self,cv_image):
 		self.cv_image = cv_image
-		self.publishRaw()
 	def publishRaw(self,event=None):
 		if self.cv_image is None:
 			return
 		cv_image = self.cv_image
 		if self.rectify:
-			cv_image = self.rector.rect(cv_image)
-		if self.flip_code is not None:
-			cv_image = cv2.flip(cv_image,self.flip_code)
+                        cv_image = self.rector.rect(cv_image)
+                if self.flip_code is not None:
+                        cv_image = cv2.flip(cv_image,self.flip_code)
+		if self.pid_enabled:
+			self.detectLine(cv_image)
 		# Publish raw image
-		cv_image = cv2.resize(cv_image,self.compress_size)
+		# cv_image = cv2.resize(cv_image,self.compress_size)
 		image_msg = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
 		image_msg.header.stamp = rospy.Time.now()
 		image_msg.header.frame_id = self.frame_id
 		self.pub_raw.publish(image_msg)
-
+		# end = time.time()
+	def srvGetImageTopics(self,params):
+		topics = rospy.get_published_topics()
+		res = GetStringsResponse()
+		for topic in topics:
+			if topic[1] == 'sensor_msgs/Image':
+				res.data.append(topic[0])
+		return res
+	def cbPidSetEnable(self,params):
+		if params.port == 1:
+			self.pid_enabled = True
+			self.base_speed = params.value
+		else:
+			self.pid_enabled = True
+			self.base_speed = 0
+			self.car.setWheelsSpeed(0,0)
+		return SetInt32Response(params.port,params.value)
 	def onShutdown(self):
 		rospy.loginfo("[%s] Closing camera." % (self.node_name))
 		self.is_shutdown = True

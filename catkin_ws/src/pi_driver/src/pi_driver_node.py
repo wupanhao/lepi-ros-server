@@ -7,7 +7,6 @@ from pi_driver.srv import SetInt32,GetInt32,SetInt32Response,GetInt32Response,\
 
 import rospkg
 import rospy
-from std_msgs.msg import UInt8,Int32
 
 class PiDriverNode:
 	def __init__(self):
