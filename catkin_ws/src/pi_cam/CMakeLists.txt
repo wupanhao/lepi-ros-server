@@ -28,6 +28,8 @@ add_service_files(
   GetLineDetection.srv
   GetFrame.srv
   SetPid.srv
+  SetColorThreshold.srv
+  GetColorThreshold.srv
 )
 
 catkin_python_setup()

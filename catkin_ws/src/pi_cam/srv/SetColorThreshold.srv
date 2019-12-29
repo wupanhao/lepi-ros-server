@@ -1,0 +1,9 @@
+string color
+uint8 low_h
+uint8 low_s
+uint8 low_v
+uint8 high_h
+uint8 high_s
+uint8 high_v
+----
+string res

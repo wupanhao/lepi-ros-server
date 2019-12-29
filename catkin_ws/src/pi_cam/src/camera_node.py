@@ -27,9 +27,9 @@ class CameraNode(object):
 		rospy.loginfo("[%s] Initializing......" % (self.node_name))
 
 		self.is_shutdown = False
-		self.rectify = True
+		self.rectify = False
 		self.visualization = True
-		self.flip_code = -1
+		self.flip_code = 2
 		self.rate = 60
 		self.size = (320,240)
 		self.compress_size = (320,240)
@@ -75,11 +75,8 @@ class CameraNode(object):
 			return SetInt32Response(1,0)
 		return SetInt32Response()
 	def srvCameraSetFlip(self,params):
-		if -1 <= params.value and params.value<=1:
-			self.flip_code = params.value
-			return SetInt32Response(0,self.flip_code)
-		else:
-			return SetInt32Response(1,1)
+		self.flip_code = params.value
+		return SetInt32Response(0,self.flip_code)
 	def srvCameraSetRectify(self,params):
 		if params.value == 1:
 			self.rectify = True
@@ -137,7 +134,8 @@ class CameraNode(object):
 	def cbImg(self,cv_image):
 		if self.rectify:
 			cv_image = self.rector.rect(cv_image)
-		if self.flip_code is not None:
+		cv_image = cv2.resize(cv_image,(480,360))
+		if abs(self.flip_code) <= 1:
 			cv_image = cv2.flip(cv_image,self.flip_code)		
 		self.cv_image = cv_image
 		if self.pid_enabled:
