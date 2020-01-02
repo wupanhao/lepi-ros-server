@@ -224,7 +224,7 @@ class Lepi(object):
 	def servo_set_angle(self,port,angle):
 		# [0,180] => [-1550,-7450] 
 		if self.Motors.has_key(port) and abs(angle)<=90:
-			self.spi_write_32(Message.SetMortorSpeed(self.Motors[port]),int(-4500+angle*32))
+			self.spi_write_32(Message.SetMortorSpeed(self.Motors[port]),int(4500+angle*32))
 		return ERROR_PORT
 
 # print(Command.WRITE | Lepi.MOTOR_3 | Motor.SPEED)

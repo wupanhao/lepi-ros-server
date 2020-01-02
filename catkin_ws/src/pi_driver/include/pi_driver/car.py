@@ -27,6 +27,18 @@ class CarDriver2:
 		steer = int((left-right)*90.0)
 		Lepi.motor_set_speed(self.speed,speed)
 		Lepi.servo_set_angle(self.steer,steer)
+class CarDriver3:
+	def __init__(self,speed=Lepi.MOTOR_1,steer=Lepi.MOTOR_5):
+		self.speed = speed
+		self.steer = steer
+		Lepi.motor_set_enable(self.steer,1)
+		time.sleep(0.02)
+		Lepi.motor_set_enable(self.speed,1)
+
+	def setWheelsSpeed(self,speed=0,steer=0):
+		Lepi.motor_set_speed(self.speed,speed)
+		Lepi.servo_set_angle(self.steer,steer)
+
 if __name__ == '__main__':
 	car = CarDriver2()
 	car.setWheelsSpeed(0.2,0.2)

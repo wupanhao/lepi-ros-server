@@ -1,0 +1,10 @@
+<launch>
+  <arg name="launch_prefix" default="" /> <!-- set to value="gdbserver localhost:10000" for remote debugging -->
+  <arg name="node_namespace" default="ubiquityrobot" />
+
+  <group ns="$(arg node_namespace)">
+    <include file="$(find pi_driver)/launch/pi_driver_node.launch" />
+    <include file="$(find pi_driver)/launch/joystick_node.launch" />
+  </group>
+
+</launch>

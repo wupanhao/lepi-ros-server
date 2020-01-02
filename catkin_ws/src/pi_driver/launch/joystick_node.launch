@@ -1,5 +1,4 @@
 <launch>
-	<arg name="launch_prefix" default="" /> <!-- set to value="gdbserver localhost:10000" for remote debugging -->
 	<arg name="node_name" default="joystick_node"/>
 	<group>
 		<node name="$(arg node_name)" pkg="pi_driver" type="joystick_node.py" output="screen" ></node>
