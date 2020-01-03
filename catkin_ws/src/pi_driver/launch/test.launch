@@ -4,6 +4,7 @@
 
   <group ns="$(arg node_namespace)">
     <include file="$(find pi_driver)/launch/joystick_node.launch" />
+    <include file="$(find pi_driver)/launch/pi_driver_node.launch" />
   </group>
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
   <!-- <include file="$(find pi_cam)/launch/web_video.launch" /> -->
