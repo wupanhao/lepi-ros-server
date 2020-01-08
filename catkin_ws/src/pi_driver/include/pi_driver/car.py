@@ -6,19 +6,16 @@ class CarDriver:
 		self.left = left
 		self.right = right
 		Lepi.motor_set_enable(self.left,1)
-		time.sleep(0.02)
 		Lepi.motor_set_enable(self.right,1)
 
 	def setWheelsSpeed(self,left=0,right=0):
 		Lepi.motor_set_speed(self.left,int(left*100))
-		time.sleep(0.02)
 		Lepi.motor_set_speed(self.right,int(right*100))
 class CarDriver2:
 	def __init__(self,speed=Lepi.MOTOR_1,steer=Lepi.MOTOR_5):
 		self.speed = speed
 		self.steer = steer
 		Lepi.motor_set_enable(self.steer,1)
-		time.sleep(0.02)
 		Lepi.motor_set_enable(self.speed,1)
 
 	def setWheelsSpeed(self,left=0,right=0):
@@ -32,7 +29,6 @@ class CarDriver3:
 		self.speed = speed
 		self.steer = steer
 		Lepi.motor_set_enable(self.steer,1)
-		time.sleep(0.02)
 		Lepi.motor_set_enable(self.speed,1)
 
 	def setWheelsSpeed(self,speed=0,steer=0):

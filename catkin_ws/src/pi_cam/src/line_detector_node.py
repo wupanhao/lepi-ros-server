@@ -37,7 +37,7 @@ class LineDetectorNode(object):
 		self.get_color_srv = rospy.Service('~get_color_threshold', GetColorThreshold, self.cbGetColorThreshold)
 		self.set_color_list_srv = rospy.Service('~get_color_list', GetStrings, self.cbGetColorList)
 		self.pid_set_enable_srv = rospy.Service('~pid_set_enable', SetInt32, self.cbPidSetEnable)
-		# self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,queue_size=1)
+		self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,queue_size=1)
 		# self.sub_image = rospy.Subscriber("~image_rect/compressed", CompressedImage, self.cbImg ,queue_size=1)
 
 		rospy.loginfo("[%s] wait_for_service : camera_get_frame..." % (self.node_name))
@@ -47,10 +47,10 @@ class LineDetectorNode(object):
 
 	def cbImg(self,image_msg):
 		self.image_msg = image_msg
-		self.line_msg = self.detectLine()
+		# self.line_msg = self.detectLine()
 		if self.pid_enabled:
 			self.cbPid(self.line_msg)
-		self.pub_line_detection.publish(self.line_msg)
+		# self.pub_line_detection.publish(self.line_msg)
 	def cbPid(self,line_msg):
 		center = line_msg.center
 		if center[0] == 0:
@@ -73,9 +73,9 @@ class LineDetectorNode(object):
 	def detectLine(self,params):
 		try:
 			start = time.time()
-			res = self.get_frame(GetFrameRequest())
+			# res = self.get_frame(GetFrameRequest())
 			# res = self.get_frame(GetFrameRequest([320,240]))
-			self.image_msg = res.image
+			# self.image_msg = res.image
 			# end = time.time()
 			# print('time cost in get image frame from service : %.2f ms' % ((end - start)*1000))
 		except rospy.ServiceException as exc:

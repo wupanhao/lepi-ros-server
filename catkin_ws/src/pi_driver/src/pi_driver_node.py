@@ -27,6 +27,10 @@ class PiDriverNode:
 		self.srv_sensor_get_3axes = rospy.Service('~sensor_get_3axes', SensorGet3Axes, self.srvSensorGet3Axes)
 		self.srv_get_power_state = rospy.Service('~get_power_state', GetPowerState, self.srvGetPowerState)
 		self.i2c_driver = I2cDriver(self.pubButton)
+		try:
+			self.i2c_driver.enable_sensor()
+		except Exception as e:
+			print(e)
 		self.d51_driver = D51Driver(self.pubSensorChange)
 		self.sub_motor_set_speed =rospy.Subscriber("~motor_set_speed", U8Int32 , self.cbMotorSetSpeed, queue_size=1)
 		rospy.loginfo("[%s] Initialized......" % (self.node_name))

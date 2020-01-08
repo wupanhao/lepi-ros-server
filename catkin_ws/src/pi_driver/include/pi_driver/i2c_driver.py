@@ -56,6 +56,7 @@ Button = {
 }
 
 ButtonMap = {
+    # type==1
     # button down
     0x81:72, # Home 'H' 72
     0x82:38, #  'ArrowUp': 38
@@ -67,6 +68,7 @@ ButtonMap = {
     0x88:40, # 'ArrowDown': 40
     0x89:69, # Exit 'E' 69
 
+    # type==3
     # button up
     0x01:72,
     0x02:38,
@@ -78,6 +80,7 @@ ButtonMap = {
     0x08:40,
     0x09:69,
 
+    # type==2
     # short press
     0x11:72, # Home 'H' 72
     0x12:38, #  'ArrowUp': 38
@@ -89,6 +92,7 @@ ButtonMap = {
     0x18:40, # 'ArrowDown': 40
     0x19:69, # Exit 'E' 69
 
+    # type==4
     # long press
     0x91:72,
     0x92:38,
@@ -131,7 +135,7 @@ class I2cDriver:
         GPIO.setup(self.int_pin,GPIO.IN)
         GPIO.add_event_detect(self.int_pin,GPIO.BOTH,callback=self.int_handler,bouncetime=20)
         self.btn_handler = btn_handler
-    def enable_sensor(self,sensor,speed):
+    def enable_sensor(self,sensor=0x46,speed=0x47):
         self.bus.write_byte_data(self.m031_addr,0x46,0x47)
     def int_handler(self,channel):
         btn=self.bus.read_byte_data(self.m031_addr,ReadButtonState)
