@@ -11,6 +11,7 @@ from pi_cam.msg import LineDetection
 import time
 from pi_driver.srv import SetInt32,SetInt32Response,GetStrings,GetStringsResponse
 from pi_driver import CarDriver
+from std_msgs.msg import Empty
 # from std_msgs.msg import UInt8,Int32
 class LineDetectorNode(object):
 	def __init__(self):
@@ -39,6 +40,7 @@ class LineDetectorNode(object):
 		self.pid_set_enable_srv = rospy.Service('~pid_set_enable', SetInt32, self.cbPidSetEnable)
 		self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,queue_size=1)
 		# self.sub_image = rospy.Subscriber("~image_rect/compressed", CompressedImage, self.cbImg ,queue_size=1)
+		rospy.Subscriber('~shutdown', Empty, self.cbShutdown)
 
 		rospy.loginfo("[%s] wait_for_service : camera_get_frame..." % (self.node_name))
 		rospy.wait_for_service('~camera_get_frame')
@@ -157,6 +159,9 @@ class LineDetectorNode(object):
 			self.base_speed = 0
 			self.car.setWheelsSpeed(0,0)
 		return SetInt32Response(params.port,params.value)
+	def cbShutdown(self,msg):
+		rospy.loginfo("[%s] receiving shutdown msg." % (self.node_name))
+		rospy.signal_shutdown("shutdown receiving msg")		
 	def onShutdown(self):
 		rospy.loginfo("[%s] Shutdown." % (self.node_name))
 

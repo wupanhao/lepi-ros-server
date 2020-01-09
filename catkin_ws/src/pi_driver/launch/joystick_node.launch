@@ -1,6 +1,6 @@
 <launch>
 	<arg name="node_name" default="joystick_node"/>
-	<group>
+	<group ns="/ubiquityrobot">
 		<node name="$(arg node_name)" pkg="pi_driver" type="joystick_node.py" output="screen" ></node>
 	</group>
 </launch>

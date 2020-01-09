@@ -1,4 +1,9 @@
 #!/usr/bin/python
+#!coding:utf-8
+
+# 去除Windows行号,^M 用ctrl+V ctrl+M键入
+# sed -i -e 's/^M//g' camera_info_node.py
+
 from pi_driver import Lepi,I2cDriver,ButtonMap,D51Driver
 from pi_driver.msg import ButtonEvent,Sensor3Axes,MotorInfo,SensorStatusChange,U8Int32
 from pi_driver.srv import SetInt32,GetInt32,SetInt32Response,GetInt32Response,\

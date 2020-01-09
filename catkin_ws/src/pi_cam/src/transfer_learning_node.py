@@ -19,6 +19,7 @@ import os
 from std_msgs.msg import String
 from data_utils import get_labels
 from pi_cam.srv import GetFrame,GetFrameRequest
+from std_msgs.msg import Empty
 
 class CameraNode(object):
 	def __init__(self):
@@ -46,6 +47,7 @@ class CameraNode(object):
 		rospy.Service('~predict', GetPredictions, self.srv_predict)
 		rospy.Service('~get_training_data', GetPredictions, self.srv_get_training_data)
 		# self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,  queue_size=1)
+		rospy.Subscriber('~shutdown', Empty, self.cbShutdown)
 		rospy.loginfo("[%s] wait_for_service : camera_get_frame..." % (self.node_name))
 		rospy.wait_for_service('~camera_get_frame')
 		self.get_frame = rospy.ServiceProxy('~camera_get_frame', GetFrame)
@@ -174,7 +176,9 @@ class CameraNode(object):
 		labels = get_labels(data_dir)
 		counts = [len(os.listdir(os.path.join(data_dir,label))) for label in labels]
 		return GetPredictionsResponse(labels,counts)
-
+	def cbShutdown(self,msg):
+		rospy.loginfo("[%s] receiving shutdown msg." % (self.node_name))
+		rospy.signal_shutdown("shutdown receiving msg")
 	def onShutdown(self):
 		rospy.loginfo("[%s] Shutdown." % (self.node_name))
 

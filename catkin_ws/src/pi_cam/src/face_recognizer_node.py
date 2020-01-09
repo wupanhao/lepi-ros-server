@@ -16,6 +16,7 @@ from camera_utils import bgr_from_jpg
 from face_recognizer import FaceRecognizer  
 
 from pi_cam.srv import GetFrame,GetFrameRequest
+from std_msgs.msg import Empty
 
 # (0,10) => (-320,230)
 # (320,240) => (0,0)
@@ -23,8 +24,6 @@ def toScratchAxes(cv_x,cv_y):
 	return (cv_x-320,cv_y*-1+240)
 
 class FaceRecognizerNode(object):
-	def onShutdown(self):
-		rospy.loginfo("[%s] Shutdown." % (self.node_name))	
 	def __init__(self):
 		self.node_name = rospy.get_name()
 		rospy.loginfo("[%s] Initializing......" % (self.node_name))
@@ -43,6 +42,7 @@ class FaceRecognizerNode(object):
 		rospy.Service('~remove_face_label', SetString, self.cbRemoveFaceLabel)
 		# self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg , queue_size=1)
 		# self.sub_image = rospy.Subscriber("~image_rect/compressed", CompressedImage, self.cbImg ,  queue_size=1)
+		rospy.Subscriber('~shutdown', Empty, self.cbShutdown)
 
 		rospy.loginfo("[%s] wait_for_service : camera_get_frame..." % (self.node_name))
 		rospy.wait_for_service('~camera_get_frame')
@@ -133,7 +133,12 @@ class FaceRecognizerNode(object):
 			return SetStringResponse(res)
 		except Exception as e:
 			print(e)
-			return SetStringResponse("删除失败")		
+			return SetStringResponse("删除失败")
+	def cbShutdown(self,msg):
+		rospy.loginfo("[%s] receiving shutdown msg." % (self.node_name))
+		rospy.signal_shutdown("shutdown receiving msg")
+	def onShutdown(self):
+		rospy.loginfo("[%s] Shutdown." % (self.node_name))
 if __name__ == '__main__':
 	rospy.init_node('face_recognizer_node', anonymous=False)
 	node = FaceRecognizerNode()

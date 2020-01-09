@@ -3,4 +3,5 @@
   <arg name="node_namespace" default="ubiquityrobot" />
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
   <include file="$(find pi_cam)/launch/web_video.launch" />
+  <include file="$(find pi_driver)/launch/pi_driver_node.launch" />
 </launch>

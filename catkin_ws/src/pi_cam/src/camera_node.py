@@ -11,8 +11,10 @@ from sensor_msgs.msg import Image,CompressedImage,CameraInfo
 from camera_utils import load_camera_info_2
 from image_rector import ImageRector
 
-from pi_driver.srv import SetInt32,SetInt32Response,GetStrings,GetStringsResponse
+from pi_driver.srv import SetInt32,SetInt32Response
+from pi_driver.srv import GetStrings,GetStringsResponse
 from pi_cam.srv import GetFrame,GetFrameResponse
+# from std_msgs.msg import Empty
 
 from usb_camera import UsbCamera
 import os
@@ -54,6 +56,7 @@ class CameraNode(object):
 		rospy.Service('~camera_set_rectify', SetInt32, self.srvCameraSetRectify)
 		rospy.Service('~camera_get_frame', GetFrame, self.srvCameraGetFrame)
 		rospy.Service('~get_image_topics', GetStrings, self.srvGetImageTopics)
+		# rospy.Subscriber('~shutdown', Empty, self.cbShutdown)
 		# self.pid_set_enable_srv = rospy.Service('~pid_set_enable', SetPid, self.cbPidSetEnable)
 		# self.pub_image_detection = rospy.Publisher("~image_detections", Image, queue_size=1)
 
@@ -108,7 +111,9 @@ class CameraNode(object):
 			if topic[1] == 'sensor_msgs/Image':
 				res.data.append(topic[0])
 		return res
-
+	def cbShutdown(self,msg):
+		rospy.loginfo("[%s] receiving shutdown msg." % (self.node_name))
+		rospy.signal_shutdown("shutdown receiving msg")
 	def onShutdown(self):
 		rospy.loginfo("[%s] Closing camera." % (self.node_name))
 		self.is_shutdown = True
@@ -118,6 +123,5 @@ if __name__ == '__main__':
 	rospy.init_node('camera_node', anonymous=False)
 	camera_node = CameraNode()
 	rospy.on_shutdown(camera_node.onShutdown)
-	#thread.start_new_thread(camera_node.startCaptureRawCV, ())
 	# thread.start_new_thread(camera_node.startCaptureCompressed, ())
 	rospy.spin()
