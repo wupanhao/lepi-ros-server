@@ -30,6 +30,7 @@ class PiDriverNode:
 		self.srv_sensor_get_value = rospy.Service('~sensor_get_value', GetInt32, self.srvSensorGetValue)
 		self.srv_sensor_get_info = rospy.Service('~sensor_get_info', GetSensorInfo, self.srvSensorGetInfo)
 		self.srv_sensor_get_3axes = rospy.Service('~sensor_get_3axes', SensorGet3Axes, self.srvSensorGet3Axes)
+		self.srv_sensor_9axes_set_enable = rospy.Service('~9axes_set_enable', SetInt32, self.srvSensor9AxesSetEnable)
 		self.srv_get_power_state = rospy.Service('~get_power_state', GetPowerState, self.srvGetPowerState)
 		self.i2c_driver = I2cDriver(self.pubButton)
 		try:
@@ -49,7 +50,7 @@ class PiDriverNode:
 				e.type = 3 # up
 			elif 0x11 <= btn and btn <= 0x19:
 				e.type = 2 # short
-			elif 0x91 <= btn and btn <= 0x99:
+			elif 0x91 <= btn and btn <= 0xa9:
 				e.type = 4 # long
 			self.pub_button_event.publish(e)
 			return True
@@ -104,14 +105,20 @@ class PiDriverNode:
 		sensor_id = Lepi.sensor_get_type(msg.port)
 		value = Lepi.sensor_get_value(msg.port)
 		return GetSensorInfoResponse(msg.port,sensor_id,value)
+	def srvSensor9AxesSetEnable(self,msg):
+		print(msg)
+		if msg.port == 0x46:
+			self.i2c_driver.nineAxisSetEnable(msg.value)
+			return SetInt32Response(msg.port,msg.value)
+		return SetInt32Response(msg.port,msg.value)
 	def srvSensorGet3Axes(self,msg):
 		print(msg)
 		if msg.id == 1:
-			data = self.i2c_driver.readAccSensor()
+			data = self.i2c_driver.readAccData()
 		elif msg.id == 2:
-			data = self.i2c_driver.readGyroSensor()
+			data = self.i2c_driver.readGyroData()
 		elif msg.id == 3:
-			data = self.i2c_driver.readMagnSensor()
+			data = self.i2c_driver.readMagnData()
 		else:
 			return SensorGet3AxesResponse()
 		return SensorGet3AxesResponse(Sensor3Axes(data[0],data[1],data[2]))

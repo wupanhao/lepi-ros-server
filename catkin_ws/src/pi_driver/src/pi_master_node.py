@@ -5,15 +5,14 @@ import rospy
 import rosnode
 import os
 import time
-from pi_driver import MyJoy
 from pi_driver.srv import GetString,GetStringResponse
 from pi_driver.srv import GetStrings,GetStringsResponse
 from pi_driver.srv import SetString,SetStringResponse
 from pi_driver.srv import GetInt32,GetInt32Response
 from std_msgs.msg import String
 
-ignores = ['/rosout','/ubiquityrobot/rosapi','/ubiquityrobot/web_video_server_1','/ubiquityrobot/pi_driver_node',
-	'/ubiquityrobot/rosbridge_websocket','/ubiquityrobot/pi_master_node']
+ignores = ['/rosout','/rosapi','/web_video_server_1','/ubiquityrobot/pi_driver_node',
+	'/rosbridge_websocket','/ubiquityrobot/pi_master_node']
 
 available_nodes = [
 	'/ubiquityrobot/camera_node',
@@ -23,7 +22,7 @@ available_nodes = [
 	'/ubiquityrobot/face_recognizer_node',
 	'/ubiquityrobot/joystick_node',
 		]
-	
+
 launch_cmds = [
 	'roslaunch pi_cam camera_node.launch > /tmp/camera_node.log &',
 	'roslaunch pi_cam apriltag_detector_node.launch > /tmp/apriltag_detector_node.log &',
@@ -62,7 +61,8 @@ class PiMasterNode:
 		nodes = rosnode.get_node_names()
 		if params.data in nodes:
 			rosnode.kill_nodes([params.data])
-			return SetStringResponse(u'关闭成功')
+			time.sleep(0.5)
+			return SetStringResponse(u'关闭中')
 		else:
 			return SetStringResponse(u'节点未启动')
 	def cbLaunchNode(self,params):
@@ -79,8 +79,8 @@ class PiMasterNode:
 		index = available_nodes.index(node_name)
 		try:
 			os.system(launch_cmds2[index])
-			time.sleep(2)
-			return SetStringResponse(u'正在启动')
+			time.sleep(0.5)
+			return SetStringResponse(u'启动中,请稍等')
 		except Exception as e:
 			print(e)
 			return SetStringResponse(u'启动出错')

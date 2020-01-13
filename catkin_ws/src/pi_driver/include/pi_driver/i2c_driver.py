@@ -10,6 +10,13 @@ ReadGyroSensor  =0x84
 ReadMagnetometer = 0x85
 ReadBatOcv = 0x8A
 
+WriteNineAxis  =0x46
+
+OpenAccSensor  =0x44
+OpenGyroSensor  =0x42
+OpenMagnetometer = 0x41
+OpenNineAxis = 0x47
+
 Button = {
     0x81:'btn1down',
     0x82:'btn2down',
@@ -49,9 +56,9 @@ Button = {
     0x96:'btn6long',
     0x97:'btn7long',
     0x98:'btn8long',
-    # 0x99:'btn9up',
+    0x99:'btn9long',
 
-    0x99:'shutDownRequest',
+    0xa9:'shutDownRequest',
     0x55:'PowerInfoChanged'
 }
 
@@ -102,9 +109,9 @@ ButtonMap = {
     0x96:39,
     0x97:82,
     0x98:40,
-    # 0x99:69,
+    0x99:69,
 
-    0x99:0x99,
+    0xa9:0x99,
     0x55:0x98,
 }
 
@@ -124,6 +131,25 @@ PowerMap = {
 #3.65以下，低电压告警。
 
 
+'''
+写地址0x46 设置打开的传感器及数据更新速率
+0x10    1hz
+0x20    10hz
+0x30    50hz
+0x40    100hz
+0x50    1000hz
+
+bit0,bit1,bit2分别是加速度、陀螺仪、地磁的开关，写入1打开，0关闭   
+0x00    关7闭三者        
+0x07    打开三者            
+0x04    打开加速度           
+0x02    打开陀螺仪           
+0x01    打开地磁            
+0x06    打开加速度和陀螺仪           
+0x05    打开加速度和地磁            
+0x03    打开陀螺仪和地磁            
+'''
+
 
 
 class I2cDriver:
@@ -135,8 +161,8 @@ class I2cDriver:
         GPIO.setup(self.int_pin,GPIO.IN)
         GPIO.add_event_detect(self.int_pin,GPIO.BOTH,callback=self.int_handler,bouncetime=20)
         self.btn_handler = btn_handler
-    def enable_sensor(self,sensor=0x46,speed=0x47):
-        self.bus.write_byte_data(self.m031_addr,0x46,0x47)
+    def nineAxisSetEnable(self,value=0x47):
+        self.bus.write_byte_data(self.m031_addr,0x46,value)
     def int_handler(self,channel):
         btn=self.bus.read_byte_data(self.m031_addr,ReadButtonState)
         if self.btn_handler!=None:
@@ -145,21 +171,21 @@ class I2cDriver:
         print(btn)
         if Button.has_key(btn):
             print(Button[btn])
-    def readAccSensor(self):
+    def readAccData(self):
         data=self.bus.read_i2c_block_data(self.m031_addr,ReadAccSensor,6)
         acc_x=data[1]<<8|data[0]
         acc_y=data[3]<<8|data[2]
         acc_z=data[5]<<8|data[4]
         # print("Acc_X=: "+str(acc_x)+"    Acc_Y=: "+str(acc_y)+"   Acc_Z: "+str(acc_z))
         return (acc_x,acc_y,acc_z)
-    def readGyroSensor(self):
+    def readGyroData(self):
         data=self.bus.read_i2c_block_data(self.m031_addr,ReadGyroSensor,6)
         gyro_x=data[1]<<8|data[0]
         gyro_y=data[3]<<8|data[2]
         gyro_z=data[5]<<8|data[4]
         # print("Gyro_X=: "+str(gyro_x)+"    Gyro_Y=: "+str(gyro_y)+"   Gyro_Z: "+str(gyro_z))
         return (gyro_x,gyro_y,gyro_z)
-    def readMagnSensor(self):
+    def readMagnData(self):
         data=self.bus.read_i2c_block_data(self.m031_addr,ReadMagnetometer,6)
         magn_x=data[1]<<8|data[0]
         magn_y=data[3]<<8|data[2]
