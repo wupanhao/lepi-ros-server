@@ -89,5 +89,7 @@ class PiMasterNode:
 if __name__ == '__main__':
 	rospy.init_node('pi_master_node', anonymous=False)
 	node = PiMasterNode()
+	os.system('docker run -t -v /home/pi:/home/pi --net host --privileged --rm --name lepi_server wupanhao/lepi_server:melodic bash -c "source env.sh && roslaunch pi_driver lepi_server.launch" > /tmp/lepi_server.log &')
+	print('start lepi_server')
 	rospy.on_shutdown(node.onShutdown)
 	rospy.spin()
