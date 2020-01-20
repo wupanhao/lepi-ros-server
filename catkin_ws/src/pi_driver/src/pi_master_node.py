@@ -9,7 +9,10 @@ from pi_driver.srv import GetString,GetStringResponse
 from pi_driver.srv import GetStrings,GetStringsResponse
 from pi_driver.srv import SetString,SetStringResponse
 from pi_driver.srv import GetInt32,GetInt32Response
+from pi_driver.srv import SetInt32,SetInt32Response
 from std_msgs.msg import String
+import pexpect
+import sys
 
 ignores = ['/rosout','/rosapi','/web_video_server_1','/ubiquityrobot/pi_driver_node',
 	'/rosbridge_websocket','/ubiquityrobot/pi_master_node']
@@ -44,10 +47,16 @@ launch_cmds2 = [
 class PiMasterNode:
 	def __init__(self):
 		self.node_name = rospy.get_name()
+		self.process = None
+		self.terminal = None
+		self.subprocesses = []
 		rospy.loginfo("[%s] Initializing......" % (self.node_name))
-		self.srv_get_alive_nodes = rospy.Service('~get_alive_nodes', GetStrings, self.cbGetAliveNodes)
-		self.srv_shutdown_node = rospy.Service('~shutdown_node', SetString, self.cbShutdownNode)
-		self.srv_launch_node = rospy.Service('~launch_node', SetString, self.cbLaunchNode)
+		rospy.Service('~get_alive_nodes', GetStrings, self.cbGetAliveNodes)
+		rospy.Service('~shutdown_node', SetString, self.cbShutdownNode)
+		rospy.Service('~launch_node', SetString, self.cbLaunchNode)
+		# rospy.Service('~run_process_wait', SetString, self.cbRunProcessWait)
+		# rospy.Service('~run_process_background', SetString, self.cbRunProcessBackground)
+		rospy.Service('~launch_terminal', SetInt32, self.cbLaunchTerminal)
 		# self.pub_joy_state =rospy.Publisher("~joy_state", String, queue_size=1)
 		rospy.loginfo("[%s] Initialized......" % (self.node_name))
 	def cbGetAliveNodes(self,params):
@@ -57,7 +66,7 @@ class PiMasterNode:
 				nodes.remove(i)
 		return GetStringsResponse(nodes)
 	def cbShutdownNode(self,params):
-		print(params)
+		rospy.loginfo(params)
 		nodes = rosnode.get_node_names()
 		if params.data in nodes:
 			rosnode.kill_nodes([params.data])
@@ -66,7 +75,7 @@ class PiMasterNode:
 		else:
 			return SetStringResponse(u'节点未启动')
 	def cbLaunchNode(self,params):
-		print(params)
+		rospy.loginfo(params)
 		nodes = rosnode.get_node_names()
 		if params.data in nodes:
 			return SetStringResponse(u'节点已启动')
@@ -82,14 +91,75 @@ class PiMasterNode:
 			time.sleep(0.5)
 			return SetStringResponse(u'启动中,请稍等')
 		except Exception as e:
-			print(e)
+			rospy.loginfo(e)
 			return SetStringResponse(u'启动出错')
+
+	def cbRunProcessWait(self,params):
+		cmd = params.data
+		try:
+			process = pexpect.spawn(cmd)
+			process.logfile = sys.stdout
+			# self.subprocesses.append(process)
+			self.process = process
+			process.expect(pexpect.EOF)
+			# while process.isalive() :
+			# 	time.sleep(1)
+			return SetStringResponse(process.before)
+		except Exception as e:
+			rospy.loginfo(e)
+			return SetStringResponse(e.message)
+	def cbRunProcessBackground(self,params):
+		cmd = params.data
+		try:
+			process = pexpect.spawn(cmd)
+			process.logfile = sys.stdout
+			# self.subprocesses.append(process)
+			self.process = process
+			# while process.isalive() :
+			# 	time.sleep(1)
+			return SetStringResponse('执行中')
+		except Exception as e:
+			rospy.loginfo(e)
+			return SetStringResponse(e.message)
+	def cbInputString(self,params):
+		data = params.data
+		if self.process and self.process.isalive():
+			self.process.sendline(data)
+			# self.process.send(data)
+			return SetStringResponse('输入完成')
+		else:
+			return SetStringResponse('程序未运行')
+	def cbInputChar(self,params):
+		data = params.data
+		if self.process and self.process.isalive():
+			self.process.sendline(data)
+			# self.process.send(data)
+			return SetStringResponse('输入完成')
+		else:
+			return SetStringResponse('程序未运行')
+	def cbLaunchTerminal(self,params):
+		print(params)
+		if params.value == 1:
+			if self.terminal and self.terminal.isalive():
+				terminated=self.terminal.terminate(force=True)
+				rospy.loginfo(terminated)
+			self.terminal = pexpect.spawn("konsole")
+		else:
+			if self.terminal and self.terminal.isalive():
+				terminated=self.terminal.terminate(force=True)
+				rospy.loginfo(terminated)
+		return SetInt32Response()
 	def onShutdown(self):
 		rospy.loginfo("[%s] shutdown......" % (self.node_name))
+
 if __name__ == '__main__':
 	rospy.init_node('pi_master_node', anonymous=False)
 	node = PiMasterNode()
-	os.system('docker run -t -v /home/pi:/home/pi --net host --privileged --rm --name lepi_server wupanhao/lepi_server:melodic bash -c "source env.sh && roslaunch pi_driver lepi_server.launch" > /tmp/lepi_server.log &')
-	print('start lepi_server')
+	nodes = rosnode.get_node_names()
+	if '/rosbridge_websocket' not in nodes:
+		rospy.loginfo('start lepi_server')
+		os.system('docker run -t -v /home/pi:/home/pi --net host --privileged --rm --name lepi_server wupanhao/lepi_server:melodic bash -c "source env.sh && roslaunch pi_driver lepi_server.launch" > /tmp/lepi_server.log &')
+	else:
+		rospy.loginfo('lepi_server started, ignore')
 	rospy.on_shutdown(node.onShutdown)
 	rospy.spin()

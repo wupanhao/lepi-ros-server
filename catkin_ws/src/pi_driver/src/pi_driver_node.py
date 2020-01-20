@@ -4,19 +4,25 @@
 # 去除Windows行号,^M 用ctrl+V ctrl+M键入
 # sed -i -e 's/^M//g' camera_info_node.py
 
+import rospkg
+import rospy
+
 from pi_driver import Lepi,I2cDriver,ButtonMap,D51Driver
 from pi_driver.msg import ButtonEvent,Sensor3Axes,MotorInfo,SensorStatusChange,U8Int32
 from pi_driver.srv import SetInt32,GetInt32,SetInt32Response,GetInt32Response,\
 		GetMotorsInfo,GetMotorsInfoResponse,SensorGet3Axes,SensorGet3AxesResponse,\
 		GetPowerState,GetPowerStateResponse,GetSensorInfo,GetSensorInfoResponse
+from pi_driver.srv import SetString,SetStringResponse
 
-import rospkg
-import rospy
+from pymouse import PyMouse
+from pykeyboard import PyKeyboard
 
 class PiDriverNode:
 	def __init__(self):
 		self.node_name = rospy.get_name()
 		rospy.loginfo("[%s] Initializing......" % (self.node_name))
+		self.mouse = PyMouse()
+		self.keyboard = PyKeyboard()
 		self.pub_button_event =rospy.Publisher("~button_event", ButtonEvent, queue_size=1)
 		self.pub_sensor_status_change =rospy.Publisher("~sensor_status_change", SensorStatusChange, queue_size=1)
 		rospy.Service("~motor_set_type", SetInt32 , self.srvMotorSetType)
@@ -37,6 +43,9 @@ class PiDriverNode:
 		rospy.Service('~sensor_get_3axes', SensorGet3Axes, self.srvSensorGet3Axes)
 		rospy.Service('~9axes_set_enable', SetInt32, self.srvSensor9AxesSetEnable)
 		rospy.Service('~get_power_state', GetPowerState, self.srvGetPowerState)
+		rospy.Service('~input_string', SetString, self.srvInputString)
+		rospy.Service('~input_char', SetInt32, self.srvInputChar)
+		# rospy.Service('~mouse_click', SetString, self.cbMouseClick)
 		self.i2c_driver = I2cDriver(self.pubButton)
 		self.d51_driver = D51Driver(self.pubSensorChange)
 		self.sub_motor_set_pulse = rospy.Subscriber("~motor_set_pulse", U8Int32 , self.cbMotorSetPulse, queue_size=1)
@@ -66,52 +75,52 @@ class PiDriverNode:
 		Lepi.motor_set_speed(msg.port,msg.value)
 	def cbMotorSetAngle(self,msg):
 		Lepi.motor_set_angle(msg.port,msg.value)		
-	def srvMotorSetType(self,msg):
-		# print(msg)
-		Lepi.motor_set_type(msg.port,msg.value)
-		return SetInt32Response(msg.port,msg.value)
-	def srvMotorGetType(self,msg):
-		# print(msg)
-		value = Lepi.motor_get_type(msg.port)
+	def srvMotorSetType(self,params):
+		# print(params)
+		Lepi.motor_set_type(params.port,params.value)
+		return SetInt32Response(params.port,params.value)
+	def srvMotorGetType(self,params):
+		# print(params)
+		value = Lepi.motor_get_type(params.port)
 		return GetInt32Response(value)
-	def srvMotorSetState(self,msg):
-		# print(msg)
-		Lepi.motor_set_state(msg.port,msg.value)
-		return SetInt32Response(msg.port,msg.value)
-	def srvMotorGetState(self,msg):
-		# print(msg)
-		value = Lepi.motor_get_state(msg.port)
+	def srvMotorSetState(self,params):
+		# print(params)
+		Lepi.motor_set_state(params.port,params.value)
+		return SetInt32Response(params.port,params.value)
+	def srvMotorGetState(self,params):
+		# print(params)
+		value = Lepi.motor_get_state(params.port)
 		return GetInt32Response(value)		
-	def srvMotorSetEnable(self,msg):
-		# print(msg)
-		Lepi.motor_set_enable(msg.port,msg.value)
-		return SetInt32Response(msg.port,msg.value)
-	def srvMotorGetEnable(self,msg):
-		# print(msg)
-		enabled = Lepi.motor_get_enable(msg.port)
+	def srvMotorSetEnable(self,params):
+		# print(params)
+		Lepi.motor_set_enable(params.port,params.value)
+		return SetInt32Response(params.port,params.value)
+	def srvMotorGetEnable(self,params):
+		# print(params)
+		enabled = Lepi.motor_get_enable(params.port)
 		return GetInt32Response(enabled)
-	def srvMotorSetSpeed(self,msg):
-		# print(msg)
-		Lepi.motor_set_speed(msg.port,msg.value)
-		return SetInt32Response(msg.port,msg.value)
-	def srvMotorGetSpeed(self,msg):
-		# print(msg)
-		speed = Lepi.motor_get_speed(msg.port)
+	def srvMotorSetSpeed(self,params):
+		# print(params)
+		Lepi.motor_set_speed(params.port,params.value)
+		return SetInt32Response(params.port,params.value)
+	def srvMotorGetSpeed(self,params):
+		# print(params)
+		speed = Lepi.motor_get_speed(params.port)
 		return GetInt32Response(speed)
-	def srvMotorGetPulse(self,msg):
-		value = Lepi.motor_get_pulse(msg.port)
+	def srvMotorGetPulse(self,params):
+		value = Lepi.motor_get_pulse(params.port)
 		return GetInt32Response(value)		
-	def srvMotorSetPosition(self,msg):
-		# print(msg)
-		Lepi.motor_set_target_position(msg.port,msg.value)
-		return SetInt32Response(msg.port,msg.value)
-	def srvMotorGetPosition(self,msg):
-		# print(msg)
-		position = Lepi.motor_get_current_position(msg.port)
+	def srvMotorSetPosition(self,params):
+		# print(params)
+		Lepi.motor_set_target_position(params.port,params.value)
+		return SetInt32Response(params.port,params.value)
+	def srvMotorGetPosition(self,params):
+		# print(params)
+		position = Lepi.motor_get_current_position(params.port)
 		return GetInt32Response(position)
-	def srvMotorsGetInfo(self,msg):
+	def srvMotorsGetInfo(self,params):
 		# return GetMotorsInfoResponse()
-		print(msg)
+		print(params)
 		infos = GetMotorsInfoResponse()
 		# print(MotorInfo())
 		for i in [1,2,3,4,5]:
@@ -119,37 +128,53 @@ class PiDriverNode:
 			# print(info)
 			infos.motors.append(MotorInfo(info[0],info[1],info[2],info[3]))
 		return infos
-	def srvSensorGetType(self,msg):
-		data = Lepi.sensor_get_type(msg.port)
+	def srvSensorGetType(self,params):
+		data = Lepi.sensor_get_type(params.port)
 		return GetInt32Response(data)
-	def srvSensorGetValue(self,msg):
-		data = Lepi.sensor_get_value(msg.port)
+	def srvSensorGetValue(self,params):
+		data = Lepi.sensor_get_value(params.port)
 		return GetInt32Response(data)
-	def srvSensorGetInfo(self,msg):
-		sensor_id = Lepi.sensor_get_type(msg.port)
-		value = Lepi.sensor_get_value(msg.port)
-		return GetSensorInfoResponse(msg.port,sensor_id,value)
-	def srvSensor9AxesSetEnable(self,msg):
-		# print(msg)
-		if msg.port == 0x46:
-			self.i2c_driver.nineAxisSetEnable(msg.value)
-			return SetInt32Response(msg.port,msg.value)
-		return SetInt32Response(msg.port,msg.value)
-	def srvSensorGet3Axes(self,msg):
-		# print(msg)
-		if msg.id == 1:
+	def srvSensorGetInfo(self,params):
+		sensor_id = Lepi.sensor_get_type(params.port)
+		value = Lepi.sensor_get_value(params.port)
+		return GetSensorInfoResponse(params.port,sensor_id,value)
+	def srvSensor9AxesSetEnable(self,params):
+		# print(params)
+		if params.port == 0x46:
+			self.i2c_driver.nineAxisSetEnable(params.value)
+			return SetInt32Response(params.port,params.value)
+		return SetInt32Response(params.port,params.value)
+	def srvSensorGet3Axes(self,params):
+		# print(params)
+		if params.id == 1:
 			data = self.i2c_driver.readAccData()
-		elif msg.id == 2:
+		elif params.id == 2:
 			data = self.i2c_driver.readGyroData()
-		elif msg.id == 3:
+		elif params.id == 3:
 			data = self.i2c_driver.readMagnData()
 		else:
 			return SensorGet3AxesResponse()
 		return SensorGet3AxesResponse(Sensor3Axes(data[0],data[1],data[2]))
-	def srvGetPowerState(self,msg):
+	def srvGetPowerState(self,params):
 		data = self.i2c_driver.readBatOcv()
 		return GetPowerStateResponse(data[0],data[1],data[3])
-
+	def srvInputString(self,params):
+		try:
+			self.mouse.click(2,2, 1)
+			self.keyboard.type_string(params.data)
+			self.keyboard.tap_key(self.keyboard.enter_key)
+			return SetStringResponse('输入完成')
+		except Exception as e:
+			rospy.loginfo(e)
+			return SetStringResponse('输入出错:'+e.message)
+	def srvInputChar(self,params):
+		if params.port == 1:
+			self.keyboard.press_key(params.value)
+		elif params.port == 2:
+			self.keyboard.tap_key(params.value)
+		elif params.port == 3:
+			self.keyboard.release_key(params.value)
+		return SetInt32Response()
 if __name__ == '__main__':
 	rospy.init_node('pi_driver_node', anonymous=False)
 	node = PiDriverNode()
