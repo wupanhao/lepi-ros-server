@@ -65,7 +65,7 @@ Button = {
 ButtonMap = {
     # type==1
     # button down
-    0x81:72, # Home 'H' 72
+    0x81:77, # Menu 'M' 77
     0x82:38, #  'ArrowUp': 38
     0x83:66, # Back 'B' 66
     0x84:37, # 'ArrowLeft': 37
@@ -73,11 +73,11 @@ ButtonMap = {
     0x86:39, # 'ArrowRight': 39
     0x87:82, # Run 'R' 82
     0x88:40, # 'ArrowDown': 40
-    0x89:69, # Exit 'E' 69
+    0x89:83, # Stop 'S' 83
 
     # type==3
     # button up
-    0x01:72,
+    0x01:77,
     0x02:38,
     0x03:66,
     0x04:37,
@@ -85,11 +85,11 @@ ButtonMap = {
     0x06:39,
     0x07:82,
     0x08:40,
-    0x09:69,
+    0x09:83,
 
     # type==2
     # short press
-    0x11:72, # Home 'H' 72
+    0x11:77, # Home 'H' 72
     0x12:38, #  'ArrowUp': 38
     0x13:66, # Back 'B' 66
     0x14:37, # 'ArrowLeft': 37
@@ -97,11 +97,11 @@ ButtonMap = {
     0x16:39, # 'ArrowRight': 39
     0x17:82, # Run 'R' 82
     0x18:40, # 'ArrowDown': 40
-    0x19:69, # Exit 'E' 69
+    0x19:83, # Exit 'E' 69
 
     # type==4
     # long press
-    0x91:72,
+    0x91:77,
     0x92:38,
     0x93:66,
     0x94:37,
@@ -109,7 +109,7 @@ ButtonMap = {
     0x96:39,
     0x97:82,
     0x98:40,
-    0x99:69,
+    0x99:83,
 
     0xa9:0x99,
     0x55:0x98,
