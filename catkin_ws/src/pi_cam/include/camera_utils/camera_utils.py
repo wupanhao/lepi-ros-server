@@ -3,7 +3,12 @@ import cv2
 import numpy as np
 
 # from cam_info_reader_node
-from sensor_msgs.msg import CameraInfo
+# from sensor_msgs.msg import CameraInfo
+
+
+class CameraInfo:
+    pass
+
 
 def bgr_from_jpg(data):
     """ Returns an OpenCV BGR image from a string """
@@ -14,6 +19,7 @@ def bgr_from_jpg(data):
         msg += 'This is usual a sign of data corruption.'
         raise ValueError(msg)
     return bgr
+
 
 def load_camera_info_2(filename):
     stream = file(filename, 'r')
