@@ -264,7 +264,7 @@ class Lepi(object):
         """
         if self.Motors.has_key(port):
             self.spi_write_32(Message.SetMortorSpeed(
-                self.Motors[port]), int(speed*655.35))
+                self.Motors[port]), speed)
         return ERROR_PORT
 
     @classmethod
@@ -296,13 +296,13 @@ class Lepi(object):
     @classmethod
     def motor_get_speed(self, port):
         if self.Motors.has_key(port):
-            return int(self.spi_read_32(Message.GetMotorSpeed(self.Motors[port]))/655.35)
+            return self.spi_read_32(Message.GetMotorSpeed(self.Motors[port]))
         return ERROR_PORT
 
     @classmethod
     def motor_get_info(self, port):
         if self.Motors.has_key(port):
-            return (port, self.motor_get_enable(port), self.motor_get_speed(port), self.motor_get_current_position(port))
+            return (port, self.motor_get_type(port), self.motor_get_speed(port), self.motor_get_current_position(port))
         return ERROR_PORT
 
     @classmethod
@@ -348,7 +348,7 @@ class Lepi(object):
         # [0,180] => [-1550,-7450]
         if self.Motors.has_key(port) and abs(angle) <= 90:
             self.spi_write_32(Message.SetMortorSpeed(
-                self.Motors[port]), int(-4500+angle*32))
+                self.Motors[port]), int(4500+angle*32))
         return ERROR_PORT
 # print(Command.WRITE | Lepi.MOTOR_3 | Motor.SPEED)
 
