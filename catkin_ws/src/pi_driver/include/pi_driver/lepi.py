@@ -7,7 +7,7 @@ import numpy as np
 
 LP_SPI = spidev.SpiDev()
 LP_SPI.open(0, 1)
-LP_SPI.max_speed_hz = 500000
+LP_SPI.max_speed_hz = 50000
 LP_SPI.mode = 0b00
 LP_SPI.bits_per_word = 8
 
@@ -340,9 +340,15 @@ class Lepi(object):
         return ERROR_PORT
 
     @classmethod
+    def motor_get_pulse(self, port):
+        if self.Motors.has_key(port):
+            return int(self.spi_read_32(Message.GetMotorSpeed(self.Motors[port])))
+        return ERROR_PORT
+
+    @classmethod
     def motor_get_info(self, port):
         if self.Motors.has_key(port):
-            return (port, self.motor_get_enable(port), self.motor_get_speed(port), self.motor_get_current_position(port))
+            return (port, self.motor_get_enable(port), self.motor_get_pulse(port), self.motor_get_current_position(port))
         return ERROR_PORT
 
     @classmethod
@@ -369,7 +375,11 @@ class Lepi(object):
         if self.Sensors.has_key(port):
             return self.spi_read_32(Message.GetSensorValue(self.Sensors[port]))
         return ERROR_PORT
-
+    @classmethod
+    def sensor_get_info(self, port):
+        if self.Sensors.has_key(port):
+            return (port, self.sensor_get_type(port), self.sensor_get_mode(port), self.sensor_get_value(port))
+        return ERROR_PORT
     @classmethod
     def system_get_sensor_status(self):
         status = self.spi_read_32(Message.GetSensorStatus())

@@ -47,6 +47,7 @@ class PiDriverNode:
         rospy.Service('~sensor_get_type', GetInt32, self.srvSensorGetType)
         rospy.Service('~sensor_get_value', GetInt32, self.srvSensorGetValue)
         rospy.Service('~sensor_get_info', GetSensorInfo, self.srvSensorGetInfo)
+        rospy.Service('~sensors_get_info', GetMotorsInfo, self.srvSensorsGetInfo)
         rospy.Service('~sensor_get_3axes', SensorGet3Axes,
                       self.srvSensorGet3Axes)
         rospy.Service('~9axes_set_enable', SetInt32,
@@ -88,9 +89,9 @@ class PiDriverNode:
             return True
 
     def pubSensorChange(self, port, sensor_id, status):
-        print(port, sensor_id, status)
+        print(6-port, sensor_id, status)
         self.pub_sensor_status_change.publish(
-            SensorStatusChange(port, sensor_id, status))
+            SensorStatusChange(6-port, sensor_id, status))
 
     def cbMotorSetPulse(self, msg):
         Lepi.motor_set_pulse(msg.port, msg.value)
@@ -102,7 +103,7 @@ class PiDriverNode:
         Lepi.motor_set_angle(msg.port, msg.value)
 
     def srvMotorSetType(self, params):
-        # print(params)
+        print(params)
         Lepi.motor_set_type(params.port, params.value)
         return SetInt32Response(params.port, params.value)
 
@@ -157,7 +158,7 @@ class PiDriverNode:
 
     def srvMotorsGetInfo(self, params):
         # return GetMotorsInfoResponse()
-        print(params)
+        # print(params)
         infos = GetMotorsInfoResponse()
         # print(MotorInfo())
         for i in [1, 2, 3, 4, 5]:
@@ -165,13 +166,22 @@ class PiDriverNode:
             # print(info)
             infos.motors.append(MotorInfo(info[0], info[1], info[2], info[3]))
         return infos
-
+    def srvSensorsGetInfo(self, params):
+        # return GetMotorsInfoResponse()
+        # print(params)
+        infos = GetMotorsInfoResponse()
+        # print(MotorInfo())
+        for i in [1, 2, 3, 4, 5]:
+            info = Lepi.sensor_get_info(6 - i)
+            # print(info)
+            infos.motors.append(MotorInfo(info[0], info[1], info[2], info[3]))
+        return infos
     def srvSensorGetType(self, params):
-        data = Lepi.sensor_get_type(params.port)
+        data = Lepi.sensor_get_type(6-params.port)
         return GetInt32Response(data)
 
     def srvSensorGetValue(self, params):
-        data = Lepi.sensor_get_value(params.port)
+        data = Lepi.sensor_get_value(6-params.port)
         return GetInt32Response(data)
 
     def srvSensorGetInfo(self, params):
