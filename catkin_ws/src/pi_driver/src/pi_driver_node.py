@@ -103,8 +103,9 @@ class PiDriverNode:
         Lepi.motor_set_angle(msg.port, msg.value)
 
     def srvMotorSetType(self, params):
-        print(params)
-        Lepi.motor_set_type(params.port, params.value)
+        # print(params)
+        res = Lepi.motor_set_type(params.port, params.value)
+        # print(res)
         return SetInt32Response(params.port, params.value)
 
     def srvMotorGetType(self, params):

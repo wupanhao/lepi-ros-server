@@ -259,6 +259,7 @@ class Lepi(object):
         value -- 0代表电机 1代表舵机
         """
         if self.Motors.has_key(port):
+            # print(port,value)
             return self.spi_write_32(Message.SetMotorType(self.Motors[port]), value)
         return ERROR_PORT
 
@@ -348,13 +349,13 @@ class Lepi(object):
     @classmethod
     def motor_get_info(self, port):
         if self.Motors.has_key(port):
-            return (port, self.motor_get_enable(port), self.motor_get_pulse(port), self.motor_get_current_position(port))
+            return (port, self.motor_get_type(port), self.motor_get_pulse(port), self.motor_get_current_position(port))
         return ERROR_PORT
 
     @classmethod
     def motor_set_info(self, port, enable, speed):
         if self.Motors.has_key(port):
-            self.motor_set_enable(port, enable)
+            self.motor_set_type(port, enable)
             self.motor_set_speed(port, speed)
         return ERROR_PORT
 
