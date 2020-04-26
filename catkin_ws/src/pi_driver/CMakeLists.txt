@@ -18,6 +18,7 @@ add_message_files(
   MotorSetPosition.msg
   ButtonEvent.msg
   MotorInfo.msg
+  ServoInfo.msg
   Sensor3Axes.msg
   SensorStatusChange.msg
   #ApriltagPose.msg
@@ -33,6 +34,9 @@ add_service_files(
   GetInt32.srv
   SetInt32.srv
   GetMotorsInfo.srv
+  GetServosInfo.srv
+  SetServoPosition.srv
+  SetServoParam.srv
   SensorGet3Axes.srv
   GetPowerState.srv
   GetSensorInfo.srv

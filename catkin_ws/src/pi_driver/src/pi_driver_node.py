@@ -8,12 +8,13 @@ import rospkg
 import rospy
 import json
 
-from pi_driver import Lepi, I2cDriver, ButtonMap, D51Driver
-from pi_driver.msg import ButtonEvent, Sensor3Axes, MotorInfo, SensorStatusChange, U8Int32
+from pi_driver import Lepi, I2cDriver, ButtonMap, D51Driver, EEPROM
+from pi_driver.msg import ButtonEvent, Sensor3Axes, MotorInfo, SensorStatusChange, U8Int32, ServoInfo
 from pi_driver.srv import SetInt32, GetInt32, SetInt32Response, GetInt32Response,\
     GetMotorsInfo, GetMotorsInfoResponse, SensorGet3Axes, SensorGet3AxesResponse,\
     GetPowerState, GetPowerStateResponse, GetSensorInfo, GetSensorInfoResponse
 from pi_driver.srv import SetString, SetStringResponse, GetString, GetStringResponse
+from pi_driver.srv import SetServoPosition , SetServoPositionResponse, GetServosInfo, GetServosInfoResponse,SetServoParam,SetServoParamResponse
 
 #from pymouse import PyMouse
 #from pykeyboard import PyKeyboard
@@ -51,10 +52,16 @@ class PiDriverNode:
         rospy.Service('~9axes_set_enable', SetInt32,
                       self.srvSensor9AxesSetEnable)
         rospy.Service('~get_power_state', GetPowerState, self.srvGetPowerState)
-        rospy.Service('~input_string', SetString, self.srvInputString)
-        rospy.Service('~input_char', SetInt32, self.srvInputChar)
+        # rospy.Service('~input_string', SetString, self.srvInputString)
+        # rospy.Service('~input_char', SetInt32, self.srvInputChar)
         # rospy.Service('~mouse_click', SetString, self.cbMouseClick)
         rospy.Service('~variable_list', GetString, self.srvGetVariableList)
+        rospy.Service('~servo_get_u8', SetServoParam, self.srvServoGetU8)
+        rospy.Service('~servo_get_u16', SetServoParam, self.srvServoGetU16)
+        rospy.Service('~servo_set_u8', SetServoParam, self.srvServoSetU8)
+        rospy.Service('~servo_set_u16', SetServoParam, self.srvServoSetU16)
+        rospy.Service('~servo_set_position', SetServoPosition, self.srvServoSetPosition)
+        rospy.Service('~servos_get_info', GetServosInfo, self.srvServosGetInfo)
         self.i2c_driver = I2cDriver(self.pubButton)
         self.d51_driver = D51Driver(self.pubSensorChange)
         self.sub_motor_set_pulse = rospy.Subscriber(
@@ -194,7 +201,7 @@ class PiDriverNode:
     def srvGetPowerState(self, params):
         data = self.i2c_driver.readBatOcv()
         return GetPowerStateResponse(data[0], data[1], data[3])
-
+    '''
     def srvInputString(self, params):
         try:
             self.mouse.click(2, 2, 1)
@@ -213,7 +220,7 @@ class PiDriverNode:
         elif params.port == 3:
             self.keyboard.release_key(params.value)
         return SetInt32Response()
-
+    '''
     def srvGetVariableList(self, params):
         variable_list = {}
         try:
@@ -222,6 +229,46 @@ class PiDriverNode:
             print(e)
         return GetStringResponse(json.dumps(variable_list))
 
+    def srvServosGetInfo(self, params):
+        # print(params)
+        rsp = GetServosInfoResponse()
+        if len(params.ids) == 0:
+            ids = Lepi.servo_scan()
+        else:
+            ids = params.ids
+        print(ids)
+        for servo_id in ids:
+            info = ServoInfo()
+            info.id = servo_id
+            # print(servo_id)
+            info.min_position = Lepi.servo_read_u16(servo_id,EEPROM.MIN_POSITION_H)
+            info.cur_position = Lepi.servo_read_u16(servo_id,EEPROM.CURRENT_POSITION_H)
+            info.max_position = Lepi.servo_read_u16(servo_id,EEPROM.MAX_POSITION_H)
+            rsp.servos.append(info)
+        return rsp
+
+    def srvServoSetPosition(self,params):
+        status = Lepi.servo_set_position(params.id,params.position,params.ms,params.speed)
+        return SetServoPositionResponse(status)
+
+    def srvServoSetU8(self,params):
+        if params.param_id == 0x99:
+            status = Lepi.servo_reset(params.id)
+        else:
+            status = Lepi.servo_write_u8(params.id,params.param_id,params.value)
+        return SetServoParamResponse(status)
+
+    def srvServoSetU16(self,params):
+        status = Lepi.servo_write_u16(params.id,params.param_id,params.value)
+        return SetServoParamResponse(status)
+
+    def srvServoGetU8(self,params):
+        status = Lepi.servo_read_u8(params.id,params.param_id)
+        return SetServoParamResponse(status)
+
+    def srvServoGetU16(self,params):
+        status = Lepi.servo_read_u16(params.id,params.param_id)
+        return SetServoParamResponse(status)
 
 if __name__ == '__main__':
     rospy.init_node('pi_driver_node', anonymous=False)
