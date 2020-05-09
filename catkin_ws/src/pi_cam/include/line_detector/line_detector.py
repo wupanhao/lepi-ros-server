@@ -30,9 +30,9 @@ class LineDetector:
         self.size = self.config[u'缩放尺寸']
         self.roi = self.config[u'识别区域']
 
-    def detect_color(self, image, color_hsv):
+    def detect_hsv(self, image, color_hsv):
         """
-        detect_color 函数, 检测颜色
+        detect_hsv 函数, 检测颜色
         Keyword arguments::
         image: image 输入opencv图像
         color_hsv: [(min_h,min_s,min_v),(max_h,max_s,max_v)] hsv颜色阈值
@@ -56,7 +56,9 @@ class LineDetector:
             # center = [x+w/2,y+h/2]
             cv2.drawContours(image, [cnt], -1, (0, 255, 255), thickness=2)
         return cnt, image
-
+    def detect_color(self,image,color):
+        color_hsv = self.colors[color]
+        return self.detect_hsv(image,color_hsv)
     def detect_cnt(self, image, color_hsv):
         """
         detect_cnt 函数, 检测轮廓
@@ -120,7 +122,18 @@ class LineDetector:
             if area > self.min_cnt_area and area > max_area:
                 max_cnt = cnt
         return max_cnt
-
+    def toLineDetections(self,cnt):
+        if cnt is not None:
+            center,wh,angle = cv2.minAreaRect(cnt)
+            return [center[0],center[1],wh[0],wh[1],angle]
+        return [0,0,0,0,0]
+    def crop(self,image,x1,y1,x2,y2):
+        if y1 < y2 and x1 < x2:
+            return image[y1:y2,x1:x2]
+        return image
+    def getColorDetection(self,cv_image,color_hsv):
+        cnt, image = self.detect_color(cv_image,color_hsv)
+        return self.toLineDetections(cnt)
 
 if __name__ == '__main__':
     """

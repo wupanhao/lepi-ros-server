@@ -30,7 +30,7 @@ class LineDetectorNode(object):
 		self.image_msg = None
 		self.lost_count = 0
 		self.line_msg = GetLineDetectionResponse()
-		self.pub_image_detection = rospy.Publisher("~image_detections", Image, queue_size=1)
+		self.pub_image_detection = rospy.Publisher("~image_color", Image, queue_size=1)
 		self.pub_line_detection = rospy.Publisher("~line_detection", LineDetection, queue_size=1)
 
 		self.detect_line_srv = rospy.Service('~detect_line', GetLineDetection, self.cbGetLineDetection)
@@ -106,7 +106,7 @@ class LineDetectorNode(object):
 		# 	cv_image = cv2.resize(cv_image,self.size)
 		if params.y1 < params.y2 and params.x1 < params.x2:
 			rect_image = cv_image[params.y1:params.y2,params.x1:params.x2]
-		cnt,image = self.detector.detect_color(rect_image,self.detector.colors[color])
+		cnt,image = self.detector.detect_hsv(rect_image,self.detector.colors[color])
 		if self.visualization:
 			cv_image[params.y1:params.y2,params.x1:params.x2] = image
 			cv2.rectangle(cv_image, (params.x1,params.y1), (params.x2,params.y2), (0,0,0), 1)

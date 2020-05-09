@@ -33,7 +33,7 @@ class FaceRecognizerNode(object):
 		self.visualization = True
 
 		self.image_msg = None
-		self.pub_detections = rospy.Publisher("~image_face_detections", Image, queue_size=1)
+		self.pub_detections = rospy.Publisher("~image_face", Image, queue_size=1)
 		self.recognizer = FaceRecognizer(scale=3)
 
 		rospy.Service('~detect_face_locations', GetFaceDetections, self.cbDetectFaceLocations)

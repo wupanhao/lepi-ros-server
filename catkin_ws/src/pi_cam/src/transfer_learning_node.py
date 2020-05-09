@@ -21,7 +21,7 @@ from data_utils import get_labels
 from pi_cam.srv import GetFrame,GetFrameRequest
 from std_msgs.msg import Empty
 
-class CameraNode(object):
+class TransferNode(object):
 	def __init__(self):
 		self.node_name = rospy.get_name()
 		rospy.loginfo("[%s] Initializing......" % (self.node_name))
@@ -35,6 +35,7 @@ class CameraNode(object):
 		self.image_msg = None # Image()
 
 		self.training_logs_topic = rospy.Publisher("~training_logs", String, queue_size=1)
+		self.pub_image = rospy.Publisher("~image_transfer", Image, queue_size=1)
 
 		rospy.Service('~camera_save_frame', SetString, self.srvCameraSaveFrame)
 		rospy.Service('~set_ns', SetString, self.srv_set_ns)
@@ -184,7 +185,7 @@ class CameraNode(object):
 
 if __name__ == '__main__':
 	rospy.init_node('transfer_learning_node', anonymous=False)
-	camera_node = CameraNode()
+	transfer_node = TransferNode()
 	rospy.on_shutdown(camera_node.onShutdown)
 	#thread.start_new_thread(camera_node.startCaptureRawCV, ())
 	# thread.start_new_thread(camera_node.startCaptureCompressed, ())

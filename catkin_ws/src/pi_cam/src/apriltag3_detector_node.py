@@ -31,7 +31,7 @@ class ApriltagDetectorNode(object):
 		self.cali_file = os.path.dirname(os.path.abspath(__file__)) + "/default.yaml"
 		self.camera_info_msg = load_camera_info_2(self.cali_file)
 		self.image_msg = None
-		self.pub_detections = rospy.Publisher("~image_detections", Image, queue_size=1)
+		self.pub_detections = rospy.Publisher("~image_apriltag", Image, queue_size=1)
 
 		self.tag_srv = rospy.Service('~detect_apriltag', GetApriltagDetections, self.cbGetApriltagDetections)
 		rospy.Subscriber('~shutdown', Empty, self.cbShutdown)
