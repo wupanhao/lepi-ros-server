@@ -2,6 +2,7 @@
 import cv2
 import threading
 import time
+from image_rector import ImageRector
 
 class UsbCamera(object):
 	"""docstring for UsbCamera"""
@@ -12,7 +13,10 @@ class UsbCamera(object):
 		self._reader = None #threading.Thread(target=self.continuous_capture)
 		self.last_image = None
 		self.callback = callback
+		self.rectify = False
+		self.flip_code = 2
 		self.active = False
+		self.rector = ImageRector()
 	def open_camera(self,camera_id=0):
 		self.camera_id = camera_id
 		try:
@@ -28,16 +32,20 @@ class UsbCamera(object):
 			if self.cap.isOpened():
 				self.active = True
 				self.cap.set(cv2.CAP_PROP_FPS,30)
-				self._reader.start()
 				print('open camera with index %d successfully' % (camera_id) )
+				self._reader.start()
+				while self.last_image is None:
+					time.sleep(0.5)
+					print('wait for first image')
+				print('first image captured')
 				return 0
 			else:
 				print('open camera with index %d failed' % (camera_id) )
 				self.cap = cv2.VideoCapture(camera_id+1)
 			if self.cap.isOpened():
 				self.active = True
-				self._reader.start()
 				print('open camera with index %d successfully' % (camera_id+1) )
+				self._reader.start()
 				return 0
 			else:
 				print('open camera with index %d failed' % (camera_id+1) )
@@ -50,7 +58,7 @@ class UsbCamera(object):
 		finally:
 			pass
 	def close_camera(self):
-		print('close_camera')
+		print('close_camera',self.active,self.cap)
 		if self.cap is not None:
 			try:
 				self.cap.release()
@@ -64,7 +72,7 @@ class UsbCamera(object):
 			print('camera not opened')
 			return
 		print('start continuous_capture thread')
-		while self.active == True:
+		while self.active == True and self.cap is not None:
 			try:
 				ret,frame = self.cap.read()
 				if ret == True:
@@ -93,11 +101,25 @@ class UsbCamera(object):
 				return 1
 		else:
 			return 2
-
+	def getImage(self):
+		if self.last_image is None:
+			return None
+		if abs(self.flip_code) <= 1:
+			cv_image = cv2.flip(self.last_image,self.flip_code)
+		else:
+			cv_image = self.last_image
+		if self.rectify:
+			cv_image = self.rector.rect(cv_image)
+		cv_image = cv2.resize(cv_image,(480,360))
+		return cv_image
+	def setFlip(self,flip_code=2):
+		self.flip_code = flip_code
+	def setRectify(self,rectify=False):
+		self.rectify = rectify
 def show_pic(frame):
     cv2.imshow("capture", frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
-	print('q pressed')
+		print('q pressed')
 if __name__ == '__main__':
 	cam = UsbCamera(callback=show_pic)
 	cam.open_camera()

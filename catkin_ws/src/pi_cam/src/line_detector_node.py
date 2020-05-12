@@ -106,7 +106,7 @@ class LineDetectorNode(object):
 		# 	cv_image = cv2.resize(cv_image,self.size)
 		if params.y1 < params.y2 and params.x1 < params.x2:
 			rect_image = cv_image[params.y1:params.y2,params.x1:params.x2]
-		cnt,image = self.detector.detect_hsv(rect_image,self.detector.colors[color])
+		detection,image = self.detector.detect_hsv(rect_image,self.detector.colors[color])
 		if self.visualization:
 			cv_image[params.y1:params.y2,params.x1:params.x2] = image
 			cv2.rectangle(cv_image, (params.x1,params.y1), (params.x2,params.y2), (0,0,0), 1)
@@ -115,7 +115,7 @@ class LineDetectorNode(object):
 			self.pub_image_detection.publish(imgmsg)
 		end = time.time()
 		# print('time cost in detect line: %.2f ms' %  ((end - start)*1000))
-		return self.toLineDetections(cnt)
+		return GetLineDetectionResponse(detection[0:2],detection[2:4],detection[4])
 	def toLineDetections(self,cnt):
 		if cnt is not None:
 			center,wh,angle = cv2.minAreaRect(cnt)

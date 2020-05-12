@@ -29,6 +29,7 @@ class LineDetector:
         self.colors = self.config[u'颜色区间']
         self.size = self.config[u'缩放尺寸']
         self.roi = self.config[u'识别区域']
+        # print(self.colors)
 
     def detect_hsv(self, image, color_hsv):
         """
@@ -55,8 +56,11 @@ class LineDetector:
             # x,y,w,h = cv2.boundingRect(cnt)
             # center = [x+w/2,y+h/2]
             cv2.drawContours(image, [cnt], -1, (0, 255, 255), thickness=2)
-        return cnt, image
+        return self.toLineDetections(cnt),image
     def detect_color(self,image,color):
+        # print(self.colors,color)
+        if image is None:
+            return [0,0,0,0,0],None
         color_hsv = self.colors[color]
         return self.detect_hsv(image,color_hsv)
     def detect_cnt(self, image, color_hsv):
@@ -128,12 +132,11 @@ class LineDetector:
             return [center[0],center[1],wh[0],wh[1],angle]
         return [0,0,0,0,0]
     def crop(self,image,x1,y1,x2,y2):
+        if image is None:
+            return None
         if y1 < y2 and x1 < x2:
             return image[y1:y2,x1:x2]
         return image
-    def getColorDetection(self,cv_image,color_hsv):
-        cnt, image = self.detect_color(cv_image,color_hsv)
-        return self.toLineDetections(cnt)
 
 if __name__ == '__main__':
     """
@@ -147,7 +150,8 @@ if __name__ == '__main__':
         if cv_image is None:
             print('None')
             continue
-        cnt, image = detector.detect_color(cv_image, detector.colors[u'黄线'])
+        cnt, image = detector.detect_color(cv_image, u'黄线')
+        # cnt, image = detector.detect_hsv(cv_image, detector.colors[u'黄线'])
         cv2.imshow("images", image)
         # cv2.imshow("images", np.hstack([image, output]))
         c = cv2.waitKey(2)

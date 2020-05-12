@@ -11,7 +11,8 @@ from camera_utils import load_camera_info_2
 class ImageRector:
     def __init__(self):
         # Get path to calibration yaml file
-        self.cali_file = rospkg.RosPack().get_path('pi_cam') + "/camera_info/calibrations/default.yaml"
+        # self.cali_file = rospkg.RosPack().get_path('pi_cam') + "/camera_info/calibrations/default.yaml"
+        self.cali_file = os.path.dirname(os.path.abspath(__file__)) + "/default.yaml"
 
         # Load calibration yaml file
         self.camera_info_msg = load_camera_info_2(self.cali_file)
