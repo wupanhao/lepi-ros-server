@@ -399,7 +399,7 @@ class Lepi(object):
         # [0,180] => [-1550,-7450]
         if self.Motors.has_key(port) and abs(angle) <= 90:
             self.spi_write_32(Message.SetMortorSpeed(
-                self.Motors[port]), int(-4500+angle*32))
+                self.Motors[port]), int(4500+angle*32))
         return ERROR_PORT
 
     @classmethod
