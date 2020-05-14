@@ -3,4 +3,4 @@ uint16 position
 uint16 ms
 uint16 speed
 ----
-uint8 status
+int16 status
