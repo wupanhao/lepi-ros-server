@@ -472,7 +472,7 @@ class Lepi(object):
         time.sleep(0.002)
         l = Lepi.servo_rx_len()
         status = Lepi.servo_rx_data(l)
-        print('servo_set_position',id,position,ms,speed,status)
+        print('servo_set_position',id,position,ms,speed,status,l)
         return l
 
     @classmethod
@@ -636,7 +636,7 @@ if __name__ == '__main__':
     # print(Lepi.servo_get_position(1))
     # # time.sleep(2)
     # print(Lepi.servo_get_position(1))
-    print((Lepi.servo_scan()))
+    # print((Lepi.servo_scan()))
     # print(Lepi.servo_read_u8(1,EEPROM.LOCK))
     # Lepi.servo_write_u8(1,EEPROM.LOCK,0)
     # print(Lepi.servo_read_u8(1,EEPROM.LOCK))
@@ -647,7 +647,7 @@ if __name__ == '__main__':
     # Lepi.servo_ping(2)
     # print(Lepi.servo_write_u16(2,EEPROM.MAX_POSITION_H,1000))
     # print(Lepi.servo_write_u16(2,EEPROM.MIN_POSITION_H,0))
-    # Lepi.servo_set_position(2,0,1000,200)
+    Lepi.servo_set_position(2,0,1000,200)
     # print(Lepi.servo_write_u16(2,0x2c,200))
     # print(Lepi.servo_read_u16(2,EEPROM.MIN_POSITION_H))
     # print(Lepi.servo_read_u16(2,EEPROM.MAX_POSITION_H))
