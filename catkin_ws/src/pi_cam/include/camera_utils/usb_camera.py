@@ -2,7 +2,7 @@
 import cv2
 import threading
 import time
-from image_rector import ImageRector
+from .image_rector import ImageRector
 
 class UsbCamera(object):
 	"""docstring for UsbCamera"""
@@ -119,7 +119,7 @@ class UsbCamera(object):
 def show_pic(frame):
     cv2.imshow("capture", frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
-		print('q pressed')
+      print('q pressed')
 if __name__ == '__main__':
 	cam = UsbCamera(callback=show_pic)
 	cam.open_camera()

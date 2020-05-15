@@ -2,7 +2,7 @@
 from scipy.spatial.transform import Rotation as R
 import rospkg
 from apriltags3 import Detector
-from camera_utils import load_camera_info_2
+from camera_utils import load_camera_info_3
 import cv2
 import numpy as np
 import os
@@ -17,9 +17,9 @@ class ApriltagDetector:
 
     def __init__(self):
         cur_dir = os.path.dirname(os.path.abspath(__file__))
-        self.cali_file = cur_dir + "/default.yaml"
         # self.cali_file = rospkg.RosPack().get_path('pi_cam') + "/camera_info/calibrations/default.yaml"
-        self.camera_info_msg = load_camera_info_2(self.cali_file)
+        # self.cali_file = "default.yaml"
+        self.camera_info_msg = load_camera_info_3()
         # self.detector = Detector(
         print(cur_dir + '/../../../../devel_isolated/apriltag/lib')
         self.detector = Detector(searchpath=[cur_dir + '/../../../../devel_isolated/apriltag/lib'],
@@ -69,11 +69,37 @@ class ApriltagDetector:
             image_gray, True, self.camera_params, tag_size)  # tag size in meter
         return tags
 
+    def label_tags(self,rect_image,tags):
+      for tag in tags:
+        for idx in range(len(tag.corners)):
+          cv2.line(rect_image, tuple(tag.corners[idx-1, :].astype(int)), tuple(tag.corners[idx, :].astype(int)), (0, 255, 0))
+          cv2.putText(rect_image, str(tag.tag_id),
+            org=(tag.corners[0, 0].astype(int)+10,tag.corners[0, 1].astype(int)+10),
+            fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+            fontScale=0.8,color=(0, 0, 255))
 
 if __name__ == '__main__':
+    import time
     detector = ApriltagDetector()
-    import os
-    os.system(
-        'wget https://april.eecs.umich.edu/media/apriltag/apriltagrobots_overlay.jpg -O /tmp/test.jpg')
-    test_image = cv2.imread('/tmp/test.jpg')
-    print(detector.detect(test_image))
+    # import os
+    # os.system(
+    #     'wget https://april.eecs.umich.edu/media/apriltag/apriltagrobots_overlay.jpg -O /tmp/test.jpg')
+    # test_image = cv2.imread('/tmp/test.jpg')
+    # print(detector.detect(test_image))
+
+    cap = cv2.VideoCapture(0)
+    while True:
+        # Grab a single frame of video
+        ret, frame = cap.read()
+        start = time.time()
+        tags = detector.detect(frame)
+        end = time.time()
+        detector.label_tags(frame,tags)
+        print("detect %d frame in %.2f ms" %
+              (1, (end - start)*1000))
+        cv2.imshow("images", frame)
+        c = cv2.waitKey(4)
+        if c == 27:
+            break
+    cap.release()
+    cv2.destroyAllWindows()

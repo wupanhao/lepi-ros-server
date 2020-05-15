@@ -6,16 +6,16 @@ import cv2
 import time
 import rospkg
 
-from camera_utils import load_camera_info_2
+from camera_utils import load_camera_info_3
 
 class ImageRector:
     def __init__(self):
         # Get path to calibration yaml file
         # self.cali_file = rospkg.RosPack().get_path('pi_cam') + "/camera_info/calibrations/default.yaml"
-        self.cali_file = os.path.dirname(os.path.abspath(__file__)) + "/default.yaml"
+        # self.cali_file = "default.yaml"
 
         # Load calibration yaml file
-        self.camera_info_msg = load_camera_info_2(self.cali_file)
+        self.camera_info_msg = load_camera_info_3()
 
         K = np.array(self.camera_info_msg.K).reshape((3,3))
         # D = np.array(self.camera_info_msg.D[:4])
@@ -30,6 +30,21 @@ class ImageRector:
 
 if __name__ == '__main__':
     rector = ImageRector()
-    test_image = cv2.imread('./test_norect.png')
-    rect_image = rector.rect(test_image)
-    cv2.imwrite('./test_rect.png',rect_image)
+    #test_image = cv2.imread('./test_norect.png')
+    #rect_image = rector.rect(test_image)
+    #cv2.imwrite('./test_rect.png',rect_image)
+    cap = cv2.VideoCapture(0)
+    while True:
+        # Grab a single frame of video
+        ret, frame = cap.read()
+        start = time.time()
+        rect_image = rector.rect(frame)
+        end = time.time()
+        print("rect 1 frame in %.2f ms" %
+              ( (end - start)*1000))
+        cv2.imshow("images", rect_image)
+        c = cv2.waitKey(4)
+        if c == 27:
+            break
+    cap.release()
+    cv2.destroyAllWindows()

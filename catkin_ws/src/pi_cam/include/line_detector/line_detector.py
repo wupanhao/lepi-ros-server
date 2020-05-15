@@ -142,6 +142,7 @@ if __name__ == '__main__':
     """
     测试函数，实时检测黄色
     """
+    import time
     detector = LineDetector()
     capture = cv2.VideoCapture(0)
     while True:
@@ -150,7 +151,11 @@ if __name__ == '__main__':
         if cv_image is None:
             print('None')
             continue
-        cnt, image = detector.detect_color(cv_image, u'黄线')
+        start = time.time()
+        cnt, image = detector.detect_color(cv_image, u'黄色')
+        end = time.time()
+        print("detect 1 frame in %.2f ms" %
+              ( (end - start)*1000))
         # cnt, image = detector.detect_hsv(cv_image, detector.colors[u'黄线'])
         cv2.imshow("images", image)
         # cv2.imshow("images", np.hstack([image, output]))

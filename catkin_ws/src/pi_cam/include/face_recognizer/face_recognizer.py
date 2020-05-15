@@ -259,7 +259,7 @@ def test_detect():
         ret, frame = cap.read()
         start = time.time()
         face_locations = fr.detect(frame)
-        nframe = fr.label_faces(frame, face_locations, face_names)
+        nframe = fr.rect_faces(frame, face_locations)
         end = time.time()
         print("labeled %d faces in %.2f ms" %
               (len(face_locations), (end - start)*1000))
@@ -301,7 +301,8 @@ def test_recognize():
 
 if __name__ == '__main__':
     # test_recognize()
-    fr = FaceRecognizer()
-    frame = cv2.imread('./吴畔昊.png')
-    print(fr.detect(frame))
-    print(fr.add_face_label(frame, 'panhao', save=True))
+    test_detect()
+    #fr = FaceRecognizer()
+    #frame = cv2.imread('./吴畔昊.png')
+    #print(fr.detect(frame))
+    #print(fr.add_face_label(frame, 'panhao', save=True))
