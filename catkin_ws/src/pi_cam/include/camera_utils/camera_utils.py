@@ -36,7 +36,7 @@ def load_camera_info_2(filename):
       return cam_info
 
 def load_camera_info_3(filename="default.yaml"):
-    cali_file = os.path.dirname(os.path.abspath(__file__)) + "/"+ filename
+    cali_file = os.path.dirname(os.path.abspath(__file__)) + "/../../camera_info/calibrations/"+ filename
     with open(cali_file, 'r') as stream:
       calib_data = yaml.load(stream)
       cam_info = CameraInfo()

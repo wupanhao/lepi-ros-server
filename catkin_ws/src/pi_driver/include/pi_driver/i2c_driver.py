@@ -1,8 +1,11 @@
 #!coding:utf-8
 import time
-import smbus
-import RPi.GPIO as GPIO
 
+try:
+  import smbus
+  import RPi.GPIO as GPIO
+except Exception as e:
+  print(e)
 ReadButtonState = 0x82
 
 ReadAccSensor = 0x83

@@ -2,14 +2,18 @@
 import spidev
 import time
 import ctypes
-import RPi.GPIO as GPIO
 import numpy as np
+try:
+  import RPi.GPIO as GPIO
 
-LP_SPI = spidev.SpiDev()
-LP_SPI.open(0, 1)
-LP_SPI.max_speed_hz = 50000
-LP_SPI.mode = 0b00
-LP_SPI.bits_per_word = 8
+  LP_SPI = spidev.SpiDev()
+  LP_SPI.open(0, 1)
+  LP_SPI.max_speed_hz = 50000
+  LP_SPI.mode = 0b00
+  LP_SPI.bits_per_word = 8
+except Exception as e:
+  LP_SPI = {}
+  print(e)
 
 NO_ADDR = 0
 

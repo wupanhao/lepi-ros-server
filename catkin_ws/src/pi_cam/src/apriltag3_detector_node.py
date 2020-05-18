@@ -12,7 +12,7 @@ from pi_cam.srv import GetApriltagDetections,GetApriltagDetectionsResponse
 from scipy.spatial.transform import Rotation as R
 import os
 
-from camera_utils import load_camera_info_2,bgr_from_jpg
+from camera_utils import load_camera_info_3,bgr_from_jpg
 from apriltag_detector import ApriltagDetector
 
 from pi_cam.srv import GetFrame,GetFrameRequest
@@ -28,8 +28,7 @@ class ApriltagDetectorNode(object):
 		self.detector = ApriltagDetector()
 		self.visualization = True
 
-		self.cali_file = os.path.dirname(os.path.abspath(__file__)) + "/../include/camera_utils/default.yaml"
-		self.camera_info_msg = load_camera_info_2(self.cali_file)
+		self.camera_info_msg = load_camera_info_3()
 		self.image_msg = None
 		self.pub_detections = rospy.Publisher("~image_apriltag", Image, queue_size=1)
 

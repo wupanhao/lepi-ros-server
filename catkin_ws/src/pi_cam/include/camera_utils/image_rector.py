@@ -9,7 +9,7 @@ import rospkg
 from camera_utils import load_camera_info_3
 
 class ImageRector:
-    def __init__(self):
+    def __init__(self,size=(480,360)):
         # Get path to calibration yaml file
         # self.cali_file = rospkg.RosPack().get_path('pi_cam') + "/camera_info/calibrations/default.yaml"
         # self.cali_file = "default.yaml"
@@ -21,7 +21,8 @@ class ImageRector:
         # D = np.array(self.camera_info_msg.D[:4])
         D = np.array([0.,0.,0.,0.])
         # P = np.array(self.camera_info_msg.P).reshape((3,4))
-        DIM = (self.camera_info_msg.width,self.camera_info_msg.height)
+        # DIM = (self.camera_info_msg.width,self.camera_info_msg.height)
+        DIM = size
         self.mapx, self.mapy = cv2.fisheye.initUndistortRectifyMap(K, D, np.eye(3), K, DIM, cv2.CV_16SC2)
 
     def rect(self, cv_image):
