@@ -20,6 +20,7 @@ from pi_cam.srv import GetFrame,GetFrameResponse
 from camera_utils import UsbCamera
 import os
 import cv2
+import time
 
 class CameraNode(object):
     def __init__(self):
@@ -40,11 +41,14 @@ class CameraNode(object):
 
         # self.r = rospy.Rate(self.rate)
         self.rector = ImageRector(self.size)
+        # self.rector = ImageRector((640,480))
         self.cali_file_folder = os.path.dirname(os.path.abspath(__file__)) + "/../camera_info/calibrations/"
         self.cali_file = "default.yaml"
         self.camera_info_msg = load_camera_info_3()
         self.camera_info_msg_rect = load_camera_info_3()
         self.image_msg = None # Image()
+        self.last_publish = 0
+        self.last_update = time.time()
         self.pub_raw = rospy.Publisher("~image_raw", Image, queue_size=1)
         # self.pub_rect = rospy.Publisher("~image_rect", Image, queue_size=1)
         self.pub_camera_info = rospy.Publisher("~camera_info", CameraInfo, queue_size=1)
@@ -61,7 +65,7 @@ class CameraNode(object):
         # self.pid_set_enable_srv = rospy.Service('~pid_set_enable', SetPid, self.cbPidSetEnable)
         # self.pub_image_detection = rospy.Publisher("~image_detections", Image, queue_size=1)
 
-        rospy.Timer(rospy.Duration.from_sec(1.0/15), self.cbPublish)
+        rospy.Timer(rospy.Duration.from_sec(1.0/20), self.cbPublish)
         rospy.loginfo("[%s] Initialized......" % (self.node_name))
     def srvCameraSetEnable(self,params):
         if params.value == 1 and self.camera.active == False:
@@ -89,10 +93,14 @@ class CameraNode(object):
 
     def cbImg(self,cv_image):
         self.cv_image = cv_image
-
-    def cbPublish(self,channel):
+        self.last_update = time.time()
+        # self.cbPublish()
+    def cbPublish(self,channel=None):
         if self.camera.active == False or self.cv_image is None:
             return
+        # if self.last_update <= self.last_publish:
+        #     return
+        self.last_publish = self.last_update
         cv_image = self.cv_image
         cv_image = cv2.resize(cv_image,(480,360))
         if self.rectify:
