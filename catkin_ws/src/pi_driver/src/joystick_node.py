@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import rospy
-import thread
+# import thread
 from pi_driver import MyJoy
 from pi_driver.srv import GetString, GetInt32, GetStringResponse, GetInt32Response
 from std_msgs.msg import String
@@ -54,6 +54,6 @@ if __name__ == '__main__':
     rospy.init_node('joystick_node', anonymous=False)
     node = JoystickNode()
     rospy.on_shutdown(node.onShutdown)
-    thread.start_new_thread(node.joy.start_open_loop, ())
+    # thread.start_new_thread(node.joy.start_open_loop, ())
     # node.joy.start_open_loop()
     rospy.spin()

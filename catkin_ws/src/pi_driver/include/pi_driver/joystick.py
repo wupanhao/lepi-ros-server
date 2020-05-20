@@ -1,6 +1,7 @@
 #!coding:utf-8
 import struct
 import time
+import thread
 
 BUTTON = 129
 AXIS = 130
@@ -27,7 +28,7 @@ class MyJoy(object):
         self.axes = {}
         self.buttons = {}
         self.infile_path = "/dev/input/js0"
-
+        thread.start_new_thread(self.start_open_loop, ())
     def start_listen_loop(self):
         """
         start_listen_loop 函数, 按键监听循环
@@ -44,9 +45,9 @@ class MyJoy(object):
                 self.buttons[number] = value
             elif event_type == EVENT_AXIS or event_type == AXIS:
                 self.axes[number] = value
-            print(self.getState())
             if self.callback is not None:
                 self.callback()
+            # print(self.getState())
             event = file.read(EVENT_SIZE)
 
     def start_open_loop(self):
@@ -67,16 +68,27 @@ class MyJoy(object):
         """
         state = {'Axes': self.axes, 'Buttons': self.buttons}
         return state
-
+    def getAxisValue(self,id):
+        time.sleep(0.005)
+        if self.axes.has_key(id):
+            return self.axes[id]
+        else:
+            return 0
+    def getButtonState(self,id):
+        time.sleep(0.005)
+        if self.buttons.has_key(id):
+            return self.buttons[id]
+        else:
+            return 0
 
 if __name__ == '__main__':
     from car import CarDriver3
     import threading
     car = CarDriver3()
     joy = MyJoy(callback=None)
-    reader = threading.Thread(target=joy.start_open_loop)
-    reader.daemon = True
-    reader.start()
+    # reader = threading.Thread(target=joy.start_open_loop)
+    # reader.daemon = True
+    # reader.start()
 
     def setCarSpeed():
         if joy.axes.has_key(1) and joy.axes.has_key(3):
