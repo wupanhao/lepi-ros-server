@@ -168,11 +168,12 @@ class I2cDriver:
         self.m031_addr = 0x15
         self.int_pin = 22  # GPIO25 40pin 第22号引脚
         self.bus = smbus.SMBus(1)
-        GPIO.setmode(GPIO.BOARD)
-        GPIO.setup(self.int_pin, GPIO.IN)
-        GPIO.add_event_detect(self.int_pin, GPIO.BOTH,
-                              callback=self.int_handler, bouncetime=20)
-        self.btn_handler = btn_handler
+        if btn_handler is not None:
+            self.btn_handler = btn_handler
+            GPIO.setmode(GPIO.BOARD)
+            GPIO.setup(self.int_pin, GPIO.IN)
+            GPIO.add_event_detect(self.int_pin, GPIO.BOTH,
+                                callback=self.int_handler, bouncetime=20)
 
     def nineAxisSetEnable(self, value=0x47):
         """
