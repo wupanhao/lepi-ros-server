@@ -40,8 +40,8 @@ class CameraNode(object):
         self.lost_count = 0
 
         # self.r = rospy.Rate(self.rate)
-        self.rector = ImageRector(self.size)
-        # self.rector = ImageRector((640,480))
+        # self.rector = ImageRector(self.size)
+        self.rector = ImageRector((640,480))
         self.cali_file_folder = os.path.dirname(os.path.abspath(__file__)) + "/../camera_info/calibrations/"
         self.cali_file = "default.yaml"
         self.camera_info_msg = load_camera_info_3()
@@ -76,16 +76,14 @@ class CameraNode(object):
             return SetInt32Response(1,0)
         return SetInt32Response()
     def srvCameraSetFlip(self,params):
-        self.flip_code = params.value
-        return SetInt32Response(0,self.flip_code)
+        self.camera.setFlip(params.value)
+        return SetInt32Response(0,params.value)
     def srvCameraSetRectify(self,params):
         if params.value == 1:
-            self.rectify = True
-            return SetInt32Response(1,params.value)
+            self.camera.setRectify(True)
         elif params.value == 0:
-            self.rectify = False
-            return SetInt32Response(1,params.value)
-        return SetInt32Response()
+            self.camera.setRectify(False)
+        return SetInt32Response(1,params.value)
     def srvCameraGetFrame(self,params):
         if self.image_msg is None:
             return GetFrameResponse()
@@ -100,13 +98,8 @@ class CameraNode(object):
             return
         # if self.last_update <= self.last_publish:
         #     return
-        self.last_publish = self.last_update
-        cv_image = self.cv_image
-        cv_image = cv2.resize(cv_image,(480,360))
-        if self.rectify:
-            cv_image = self.rector.rect(cv_image)
-        if abs(self.flip_code) <= 1:
-            cv_image = cv2.flip(cv_image,self.flip_code)            
+        # self.last_publish = self.last_update
+        cv_image = self.camera.getImage()
         image_msg = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
         image_msg.header.stamp = rospy.Time.now()
         image_msg.header.frame_id = self.frame_id

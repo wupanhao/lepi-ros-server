@@ -16,8 +16,8 @@ class UsbCamera(object):
 		self.rectify = False
 		self.flip_code = 2
 		self.active = False
-		self.rector = ImageRector()
-		# self.rector = ImageRector((640,480))
+		# self.rector = ImageRector()
+		self.rector = ImageRector(size=(640,480),cali_file="pi_cam_640x480.yaml")
 	def open_camera(self,camera_id=0):
 		self.camera_id = camera_id
 		try:
@@ -81,7 +81,7 @@ class UsbCamera(object):
 					if self.callback is not None :
 						self.callback(frame)
 				else:
-					self.last_image = None
+					# self.last_image = None
 					pass
 			except Exception as e:
 				raise e
@@ -105,14 +105,14 @@ class UsbCamera(object):
 	def getImage(self):
 		if self.last_image is None:
 			return None
-		cv_image = cv2.resize(self.last_image,(480,360))
+		# cv_image = cv2.resize(self.last_image,(480,360))
 		if abs(self.flip_code) <= 1:
 			cv_image = cv2.flip(self.last_image,self.flip_code)
 		else:
 			cv_image = self.last_image
 		if self.rectify:
 			cv_image = self.rector.rect(cv_image)
-		# cv_image = cv2.resize(cv_image,(480,360))
+		cv_image = cv2.resize(cv_image,(480,360))
 		return cv_image
 	def setFlip(self,flip_code=2):
 		self.flip_code = flip_code
