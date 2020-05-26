@@ -17,6 +17,7 @@ add_message_files(
   ApriltagPose.msg
   FaceDetection.msg
   LineDetection.msg
+  ObjectDetection.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -30,6 +31,7 @@ add_service_files(
   SetPid.srv
   SetColorThreshold.srv
   GetColorThreshold.srv
+  GetObjectDetections.srv
 )
 
 catkin_python_setup()

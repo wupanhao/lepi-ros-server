@@ -98,22 +98,10 @@ class FaceRecognizerNode(object):
 		scale = self.recognizer.scale
 		if len(face_names)>0 and len(face_names) == len(face_locations):
 			for (top, right, bottom, left), name in zip(face_locations, face_names):
-				# cv_x = (right+left)/2*self.recognizer.scale
-				# cv_y = (top+bottom)/2*self.recognizer.scale
-				# scratch_x,scratch_y = toScratchAxes(cv_x,cv_y)
-				# width = (right - left)*self.recognizer.scale
-				# height = (bottom - top)*self.recognizer.scale
-				# face_detection = FaceDetection(name,[scratch_x,scratch_y,width,height])
 				face_detection = FaceDetection(name,[top*scale, right*scale, bottom*scale, left*scale])
 				msg.detections.append(face_detection)
 		elif len(face_locations) > 0:
 			for (top, right, bottom, left) in face_locations:
-				# cv_x = (right+left)/2*self.recognizer.scale
-				# cv_y = (top+bottom)/2*self.recognizer.scale
-				# scratch_x,scratch_y = toScratchAxes(cv_x,cv_y)
-				# width = (right - left)*self.recognizer.scale
-				# height = (bottom - top)*self.recognizer.scale
-				# face_detection = FaceDetection("",[scratch_x,scratch_y,width,height])
 				face_detection = FaceDetection("",[top*scale, right*scale, bottom*scale, left*scale])
 				msg.detections.append(face_detection)
 		return msg

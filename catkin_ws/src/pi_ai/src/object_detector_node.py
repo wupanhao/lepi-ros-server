@@ -1,0 +1,62 @@
+#!/usr/bin/python3
+#!coding:utf-8
+import time
+import os
+import cv2
+from cv_bridge import CvBridge
+import rospy
+from sensor_msgs.msg import Image
+# from sensor_msgs.srv import SetCameraInfo, SetCameraInfoResponse
+import numpy as np
+from pi_cam.msg import ObjectDetection
+from pi_cam.srv import GetObjectDetections,GetObjectDetectionsResponse
+
+from pi_ai import ObjectDetector
+
+from pi_cam.srv import GetFrame,GetFrameRequest
+
+class ObjectDetectorNode(object):
+    def __init__(self):
+        self.node_name = rospy.get_name()
+        rospy.loginfo("[%s] Initializing......" % (self.node_name))
+
+        self.bridge = CvBridge()
+        self.visualization = True
+
+        self.pub_detections = rospy.Publisher("~image_object", Image, queue_size=1)
+
+        rospy.Service('~detect_object', GetObjectDetections, self.cbGetObjectDetections)
+        self.detector = ObjectDetector()
+        self.detector.load_model()
+        rospy.loginfo("[%s] wait_for_service : camera_get_frame..." % (self.node_name))
+        rospy.wait_for_service('~camera_get_frame')
+        self.get_frame = rospy.ServiceProxy('~camera_get_frame', GetFrame)
+        rospy.loginfo("[%s] Initialized." % (self.node_name))
+
+    def cbGetObjectDetections(self,params):
+        res = self.get_frame(GetFrameRequest())
+        self.image_msg = res.image
+        image = self.bridge.imgmsg_to_cv2(self.image_msg)
+        # image = self.bridge.imgmsg_to_cv2(self.image_msg, desired_encoding="bgr8")
+        boxes,classes,scores = self.detector.detect(image)
+        if self.visualization:
+            image = self.detector.draw_labels(image,boxes,classes,scores)
+        imgmsg = self.bridge.cv2_to_imgmsg(image,"bgr8")
+        self.pub_detections.publish(imgmsg)
+        self.pub_detections.publish(imgmsg)
+        return self.toObjectDetections(boxes,classes,scores)
+    def toObjectDetections(self,boxes,classes,scores):
+        rsp = GetObjectDetectionsResponse()
+        for i,score in enumerate(scores):
+            if score >= self.detector.min_conf_threshold:
+                detection = ObjectDetection(self.detector.getRealBox(boxes[i]), self.detector.labels[int(classes[i])],score*100)
+                rsp.detections.append(detection)
+        return rsp
+    def onShutdown(self):
+        rospy.loginfo("[%s] Shutdown." % (self.node_name))
+
+if __name__ == '__main__':
+    rospy.init_node('object_detector_node', anonymous=False)
+    node = ObjectDetectorNode()
+    rospy.on_shutdown(node.onShutdown)
+    rospy.spin()

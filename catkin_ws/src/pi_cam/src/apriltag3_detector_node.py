@@ -16,7 +16,6 @@ from camera_utils import load_camera_info_3,bgr_from_jpg
 from apriltag_detector import ApriltagDetector
 
 from pi_cam.srv import GetFrame,GetFrameRequest
-from std_msgs.msg import Empty
 
 class ApriltagDetectorNode(object):
 	def __init__(self):
@@ -33,7 +32,6 @@ class ApriltagDetectorNode(object):
 		self.pub_detections = rospy.Publisher("~image_apriltag", Image, queue_size=1)
 
 		self.tag_srv = rospy.Service('~detect_apriltag', GetApriltagDetections, self.cbGetApriltagDetections)
-		rospy.Subscriber('~shutdown', Empty, self.cbShutdown)
 		# self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,  queue_size=1)
 		# self.sub_image = rospy.Subscriber("~image_rect/compressed", CompressedImage, self.cbImg ,  queue_size=1)
 		rospy.loginfo("[%s] wait_for_service : camera_get_frame..." % (self.node_name))
@@ -81,9 +79,6 @@ class ApriltagDetectorNode(object):
 			detection = ApriltagPose(id=tag.tag_id,pose_r=euler,pose_t=offset)
 			msg.detections.append(detection)
 		return msg
-	def cbShutdown(self,msg):
-		rospy.loginfo("[%s] receiving shutdown msg." % (self.node_name))
-		rospy.signal_shutdown("shutdown receiving msg")
 	def onShutdown(self):
 		rospy.loginfo("[%s] Shutdown." % (self.node_name))
 

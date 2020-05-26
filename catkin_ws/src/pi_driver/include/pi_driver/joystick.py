@@ -1,8 +1,8 @@
 #!coding:utf-8
 import struct
 import time
-import thread
-
+# import thread
+import threading
 BUTTON = 129
 AXIS = 130
 
@@ -28,7 +28,10 @@ class MyJoy(object):
         self.axes = {}
         self.buttons = {}
         self.infile_path = "/dev/input/js0"
-        thread.start_new_thread(self.start_open_loop, ())
+        # thread.start_new_thread(self.start_open_loop, ())
+        reader = threading.Thread(target=self.start_open_loop)
+        # reader.daemon = True
+        reader.start()
     def start_listen_loop(self):
         """
         start_listen_loop 函数, 按键监听循环

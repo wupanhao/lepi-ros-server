@@ -1,4 +1,4 @@
-from lepi import Lepi
+from .lepi import Lepi
 import time
 
 class CarDriver:
