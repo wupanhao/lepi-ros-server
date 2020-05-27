@@ -16,9 +16,10 @@ class UsbCamera(object):
 		self.rectify = False
 		self.flip_code = 2
 		self.active = False
-		# self.rector = ImageRector()
-		self.rector = ImageRector(size=(640,480),cali_file="pi_cam_640x480.yaml")
+		self.rector = ImageRector()
 	def open_camera(self,camera_id=0):
+		self.rector = ImageRector(cali_file="default.yaml")
+		# self.rector = ImageRector(size=(480,360),cali_file="default.yaml")
 		self.camera_id = camera_id
 		try:
 			if (self._reader is not None) and( self._reader.isAlive()):
@@ -105,13 +106,13 @@ class UsbCamera(object):
 	def getImage(self):
 		if self.last_image is None:
 			return None
-		# cv_image = cv2.resize(self.last_image,(480,360))
-		if abs(self.flip_code) <= 1:
-			cv_image = cv2.flip(self.last_image,self.flip_code)
-		else:
-			cv_image = self.last_image
+		cv_image = self.last_image
+		# cv_image = cv2.resize(cv_image,(480,360))
 		if self.rectify:
 			cv_image = self.rector.rect(cv_image)
+		# cv_image = cv2.resize(cv_image,(480,360))
+		if abs(self.flip_code) <= 1:
+			cv_image = cv2.flip(cv_image,self.flip_code)
 		cv_image = cv2.resize(cv_image,(480,360))
 		return cv_image
 	def setFlip(self,flip_code=2):

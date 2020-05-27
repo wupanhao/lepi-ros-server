@@ -1,9 +1,9 @@
 #!coding:utf-8
-import spidev
 import time
 import ctypes
 import numpy as np
 try:
+  import spidev
   import RPi.GPIO as GPIO
 
   LP_SPI = spidev.SpiDev()

@@ -47,7 +47,7 @@ class TransferNode(object):
 		rospy.Service('~train_classifier', SetString, self.srv_train_classifier)
 		rospy.Service('~predict', GetPredictions, self.srv_predict)
 		rospy.Service('~get_training_data', GetPredictions, self.srv_get_training_data)
-		# self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,  queue_size=1)
+		self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,  queue_size=1)
 		rospy.Subscriber('~shutdown', Empty, self.cbShutdown)
 		rospy.loginfo("[%s] wait_for_service : camera_get_frame..." % (self.node_name))
 		rospy.wait_for_service('~camera_get_frame')
@@ -62,8 +62,20 @@ class TransferNode(object):
 			return SetInt32Response(0,0)
 		else:
 			return SetInt32Response(1,1)
+	def getBox(self):
+		img_size = self.ic.IMAGE_SIZE
+		xmin = (480 - img_size)/2
+		ymin = (360 - img_size)/2
+		xmax = xmin + img_size
+		ymax = ymin + img_size
+		return [xmin,ymin,xmax,ymax]
 	def cbImg(self,image_msg):
 		self.image_msg = image_msg
+		cv_image = self.bridge.imgmsg_to_cv2(self.image_msg, desired_encoding="bgr8")
+		xmin,ymin,xmax,ymax = self.getBox()
+		cv2.rectangle(cv_image,(xmin,ymin),(xmax,ymax),(10, 255, 0), 2)
+		msg = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
+		self.pub_image.publish(msg)
 	def srvCameraSaveFrame(self,params):
 		if self.ns is None:
 			return SetStringResponse("训练没有定义，创建或者选择一次训练")
@@ -76,6 +88,8 @@ class TransferNode(object):
 			full_path = os.path.join(directory,file_name)
 			if self.image_msg is not None:
 				cv_image = self.bridge.imgmsg_to_cv2(self.image_msg, desired_encoding="bgr8")
+				xmin,ymin,xmax,ymax = self.getBox()
+				cv_image = cv_image[ymin:ymax,xmin:xmax]
 				cv2.imwrite(full_path,cv_image)
 				# print(cv_image)
 				return SetStringResponse("保存至%s成功" % (full_path))
@@ -160,7 +174,9 @@ class TransferNode(object):
 		if self.ic.model is None or self.image_msg is None:
 			return GetPredictionsResponse()
 		try:
-			cv_image = self.bridge.imgmsg_to_cv2(self.image_msg, desired_encoding="bgr8")			
+			cv_image = self.bridge.imgmsg_to_cv2(self.image_msg, desired_encoding="bgr8")	
+			xmin,ymin,xmax,ymax = self.getBox()
+			cv_image = cv_image[ymin:ymax,xmin:xmax]
 			res = self.ic.predict(cv_img = cv_image)
 			if res is not None:
 				return GetPredictionsResponse(res[0],res[1])
@@ -185,8 +201,6 @@ class TransferNode(object):
 
 if __name__ == '__main__':
 	rospy.init_node('transfer_learning_node', anonymous=False)
-	transfer_node = TransferNode()
-	rospy.on_shutdown(camera_node.onShutdown)
-	#thread.start_new_thread(camera_node.startCaptureRawCV, ())
-	# thread.start_new_thread(camera_node.startCaptureCompressed, ())
+	node = TransferNode()
+	rospy.on_shutdown(node.onShutdown)
 	rospy.spin()

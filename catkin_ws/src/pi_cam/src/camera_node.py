@@ -29,10 +29,8 @@ class CameraNode(object):
 
         self.is_shutdown = False
         self.rectify = False
-        self.visualization = True
-        self.flip_code = 2
         self.rate = 60
-        self.size = (480,360)
+        # self.size = (480,360)
         self.bridge = CvBridge()
         self.frame_id = rospy.get_namespace().strip('/') + "/camera_optical_frame"
         self.camera = UsbCamera(rate=self.rate,callback = self.cbImg)
@@ -41,15 +39,16 @@ class CameraNode(object):
 
         # self.r = rospy.Rate(self.rate)
         # self.rector = ImageRector(self.size)
-        self.rector = ImageRector((640,480))
+        # self.rector = ImageRector((640,480))
         self.cali_file_folder = os.path.dirname(os.path.abspath(__file__)) + "/../camera_info/calibrations/"
         self.cali_file = "default.yaml"
-        self.camera_info_msg = load_camera_info_3()
-        self.camera_info_msg_rect = load_camera_info_3()
+        # self.camera_info_msg = load_camera_info_3()
+        # self.camera_info_msg_rect = load_camera_info_3()
         self.image_msg = None # Image()
         self.last_publish = 0
         self.last_update = time.time()
         self.pub_raw = rospy.Publisher("~image_raw", Image, queue_size=1)
+        self.pub_image = rospy.Publisher("~image", Image, queue_size=1)
         # self.pub_rect = rospy.Publisher("~image_rect", Image, queue_size=1)
         self.pub_camera_info = rospy.Publisher("~camera_info", CameraInfo, queue_size=1)
 
@@ -92,6 +91,8 @@ class CameraNode(object):
     def cbImg(self,cv_image):
         self.cv_image = cv_image
         self.last_update = time.time()
+        image_msg = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
+        self.pub_image.publish(image_msg)        
         # self.cbPublish()
     def cbPublish(self,channel=None):
         if self.camera.active == False or self.cv_image is None:

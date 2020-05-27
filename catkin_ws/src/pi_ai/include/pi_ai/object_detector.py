@@ -16,7 +16,7 @@ class ObjectDetector:
         self.min_conf_threshold = 0.5
 
     def load_model(self,use_TPU = False):
-        MODEL_PATH = '/home/pi/Lepi_Data/ros/object_detector/coco_ssd_mobilenet_v1'
+        MODEL_PATH = os.path.expanduser('~')+'/Lepi_Data/ros/object_detector/coco_ssd_mobilenet_v1'
         GRAPH_NAME = 'detect.tflite'
         LABELMAP_NAME = 'labelmap.txt'
 

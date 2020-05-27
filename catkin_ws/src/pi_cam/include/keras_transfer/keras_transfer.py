@@ -76,11 +76,11 @@ class ImageClassifier:
     ns: str 单次训练命名空间
     """
 
-    def __init__(self, model_path=None, data_root='/home/pi/Lepi_Data/ros/transfer_learning'):
+    def __init__(self, model_path=None, data_root=os.path.expanduser('~')+'/Lepi_Data/ros/transfer_learning'):
         self.data_root = data_root
         self.FC_NUMS = 64
         self.FREEZE_LAYERS = 17
-        self.IMAGE_SIZE = 112
+        self.IMAGE_SIZE = 224
         self.model = None
         self.busy = False
         self.ns = None
