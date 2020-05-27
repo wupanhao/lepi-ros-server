@@ -1,11 +1,12 @@
 #!coding:utf-8
 import face_recognition
 import cv2
-from PIL import Image, ImageFont, ImageDraw
+# from PIL import Image, ImageFont, ImageDraw
 import numpy as np
 import os
 import time
 
+from camera_utils import putText
 
 class FaceRecognizer(object):
     """
@@ -22,28 +23,12 @@ class FaceRecognizer(object):
         super(FaceRecognizer, self).__init__()
         self.data_dir = "/home/pi/Lepi_Data/ros/face_recognizer/known_face"
         self.scale = scale
-        self.font = ImageFont.truetype(
-            '/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf', fontSize)
+        # self.font = ImageFont.truetype(
+        #     '/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf', fontSize)
         self.known_faces = {}
         self.threshold = threshold
         self.load_faces()
 
-    def putText(self, frame, text, pos, color):
-        """
-        将文本显示在图片上
-        Keyword arguments:
-        frame: image 原图
-        text：str 想要显示的文本
-        pos：(x,y) 指定显示的初始坐标(左上角顶点)
-        color: [r,g,b] 指定文本颜色的r、g、b值
-        Returns:
-        cv_img: image 叠加了文本的新图片(不改变原图)
-        """
-        pil_image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-        draw = ImageDraw.Draw(pil_image)
-        draw.text(pos, text.decode('utf-8'), font=self.font, fill=color)
-        cv_img = cv2.cvtColor(np.asarray(pil_image), cv2.COLOR_RGB2BGR)
-        return cv_img
 
     def detect(self, frame, scale=None):
         """
@@ -149,7 +134,7 @@ class FaceRecognizer(object):
             # cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
             # Draw a label with a name below the face
             color = (0, 0, 255)
-            frame = self.putText(frame, name, (left + 6, bottom - 24), color)
+            frame = putText(frame, name, (left + 6, bottom - 24), color)
         return frame
 
     def load_faces(self):
@@ -222,7 +207,6 @@ class FaceRecognizer(object):
         except Exception as e:
             print(e)
             return "删除出错"
-
 
 def add_faces():
     """
@@ -297,7 +281,6 @@ def test_recognize():
             break
     cap.release()
     cv2.destroyAllWindows()
-
 
 if __name__ == '__main__':
     # test_recognize()

@@ -6,9 +6,10 @@ import cv2
 import numpy as np
 import sys
 import importlib.util
+from camera_utils import putText3
+from .labels_map import detector_map
+from .load_runtime import load_tflite_model
 
-input_mean = 127.5
-input_std = 127.5
 
 class ObjectDetector:
     def __init__(self):
@@ -18,18 +19,6 @@ class ObjectDetector:
         MODEL_PATH = '/home/pi/Lepi_Data/ros/object_detector/coco_ssd_mobilenet_v1'
         GRAPH_NAME = 'detect.tflite'
         LABELMAP_NAME = 'labelmap.txt'
-        # Import TensorFlow libraries
-        # If tflite_runtime is installed, import interpreter from tflite_runtime, else import from regular tensorflow
-        # If using Coral Edge TPU, import the load_delegate library
-        pkg = importlib.util.find_spec('tflite_runtime')
-        if pkg:
-            from tflite_runtime.interpreter import Interpreter
-            if use_TPU:
-                from tflite_runtime.interpreter import load_delegate
-        else:
-            from tensorflow.lite.python.interpreter import Interpreter
-            if use_TPU:
-                from tensorflow.lite.python.interpreter import load_delegate
 
         # If using Edge TPU, assign filename for Edge TPU model
         if use_TPU:
@@ -53,17 +42,7 @@ class ObjectDetector:
         # First label is '???', which has to be removed.
         if self.labels[0] == '???':
             del(self.labels[0])
-
-        # Load the Tensorflow Lite model.
-        # If using Edge TPU, use special load_delegate argument
-        if use_TPU:
-            self.interpreter = Interpreter(model_path=PATH_TO_CKPT,
-                                    experimental_delegates=[load_delegate('libedgetpu.so.1.0')])
-            print(PATH_TO_CKPT)
-        else:
-            self.interpreter = Interpreter(model_path=PATH_TO_CKPT)
-
-        self.interpreter.allocate_tensors()
+        self.interpreter = load_tflite_model(model_path=PATH_TO_CKPT)
 
         # Get model details
         self.input_details = self.interpreter.get_input_details()
@@ -84,7 +63,9 @@ class ObjectDetector:
 
         # Normalize pixel values if using a floating model (i.e. if model is non-quantized)
         if self.floating_model:
-            input_data = (np.float32(input_data) - self.input_mean) / self.input_std
+            input_mean = 127.5
+            input_std = 127.5
+            input_data = (np.float32(input_data) - input_mean) / input_std
 
         # Perform the actual detection by running the model with the image as input
         self.interpreter.set_tensor(self.input_details[0]['index'],input_data)
@@ -96,6 +77,9 @@ class ObjectDetector:
         scores = self.interpreter.get_tensor(self.output_details[2]['index'])[0] # Confidence of detected objects
         #num = interpreter.get_tensor(output_details[3]['index'])[0]  # Total number of detected objects (inaccurate and not needed)
         return boxes,classes,scores
+    def set_threshold(self,threshold):
+        if threshold < 100:
+            self.min_conf_threshold = threshold/100.0
     def draw_labels(self,image,boxes,classes,scores):
         imH, imW, _ = image.shape
         # Loop over all detections and draw detection box if confidence is above minimum threshold
@@ -110,11 +94,14 @@ class ObjectDetector:
 
                 # Draw label
                 object_name = self.labels[int(classes[i])] # Look up object name from "labels" array using class index
+                if object_name in detector_map:
+                    object_name = detector_map[object_name]
                 label = '%s: %d%%' % (object_name, int(scores[i]*100)) # Example: 'person: 72%'
-                labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2) # Get font size
-                label_ymin = max(ymin, labelSize[1] + 10) # Make sure not to draw label too close to top of window
-                cv2.rectangle(image, (xmin, label_ymin-labelSize[1]-10), (xmin+labelSize[0], label_ymin+baseLine-10), (255, 255, 255), cv2.FILLED) # Draw white box to put label text in
-                cv2.putText(image, label, (xmin, label_ymin-7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2) # Draw label text
+                # labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2) # Get font size
+                # label_ymin = max(ymin, labelSize[1] + 10) # Make sure not to draw label too close to top of window
+                # cv2.rectangle(image, (xmin, label_ymin-labelSize[1]-10), (xmin+labelSize[0], label_ymin+baseLine-10), (255, 255, 255), cv2.FILLED) # Draw white box to put label text in
+                # cv2.putText(image, label, (xmin, label_ymin-7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2) # Draw label text
+                image = putText3(image, label, (xmin, ymin+5),(0, 0, 0)) # Draw label text
         return image
     def getRealBox(self,box,size=(480,360)):
         imW,imH = size

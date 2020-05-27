@@ -10,6 +10,7 @@ from sensor_msgs.msg import Image
 import numpy as np
 from pi_cam.msg import ObjectDetection
 from pi_cam.srv import GetObjectDetections,GetObjectDetectionsResponse
+from pi_driver.srv import SetInt32,SetInt32Response
 
 from pi_ai import ObjectDetector
 
@@ -26,6 +27,7 @@ class ObjectDetectorNode(object):
         self.pub_detections = rospy.Publisher("~image_object", Image, queue_size=1)
 
         rospy.Service('~detect_object', GetObjectDetections, self.cbGetObjectDetections)
+        rospy.Service('~set_threshold', SetInt32, self.cbSetThreshold)
         self.detector = ObjectDetector()
         self.detector.load_model()
         rospy.loginfo("[%s] wait_for_service : camera_get_frame..." % (self.node_name))
@@ -52,6 +54,9 @@ class ObjectDetectorNode(object):
                 detection = ObjectDetection(self.detector.getRealBox(boxes[i]), self.detector.labels[int(classes[i])],score*100)
                 rsp.detections.append(detection)
         return rsp
+    def cbSetThreshold(self,params):
+        self.detector.set_threshold(params.value)
+        return SetInt32Response(params.port, params.value)
     def onShutdown(self):
         rospy.loginfo("[%s] Shutdown." % (self.node_name))
 
