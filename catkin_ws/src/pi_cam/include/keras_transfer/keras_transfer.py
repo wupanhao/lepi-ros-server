@@ -12,11 +12,11 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import GlobalAveragePooling2D, Dense
 from tensorflow.keras.optimizers import SGD
 import cv2
+import numpy as np
 import pickle
 import sys  # 引用sys模块进来，并不是进行sys的第一次加载
 reload(sys)  # 重新加载sys
 sys.setdefaultencoding('utf8')  # 调用setdefaultencoding函数
-
 
 class AccuracyLogger(keras.callbacks.Callback):
     """
@@ -70,7 +70,7 @@ class ImageClassifier:
     Attributes:
     data_root: str 数据根目录
     FC_NUMS: int 回合
-    FREEZE_LAYERS: int 批次
+    TRAIN_LAYERS: int 批次
     model: model 模型
     busy: bool 是否正在执行操作
     ns: str 单次训练命名空间
@@ -79,19 +79,21 @@ class ImageClassifier:
     def __init__(self, model_path=None, data_root=os.path.expanduser('~')+'/Lepi_Data/ros/transfer_learning'):
         self.data_root = data_root
         self.FC_NUMS = 64
-        self.FREEZE_LAYERS = 17
-        self.IMAGE_SIZE = 224
+        self.TRAIN_LAYERS = 2
+        self.IMAGE_SIZE = 112
         self.model = None
         self.busy = False
         self.ns = None
 
-    def load_model(self, path):
+    def load_model(self):
         """
         on_batch_end 函数, 在batch训练结束后自动调用
         Keyword arguments::
         batch: int 批次数
         """
         self.busy = True
+        data_dir = os.path.join(self.data_root, self.ns)
+        path = os.path.join(data_dir, 'model.h5')
         try:
             if self.model is None:
                 self.model = load_model(path)  # 加载训练模型
@@ -101,21 +103,82 @@ class ImageClassifier:
             self.model._make_predict_function()
             self.session = K.get_session()
             self.graph = tf.get_default_graph()
-            self.graph.finalize()
+            # self.graph.finalize()
         except Exception as e:
             print(e)
         finally:
             self.busy = False
+    def preprocess_input(self,cv_img):
+        cv_img = cv2.resize(cv_img, (self.IMAGE_SIZE, self.IMAGE_SIZE)).astype('float32')
+        # cv_img = cv2.normalize(cv_img, None, 0, 1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32FC3)
+        # cv_img = cv_img.reshape(-1, self.IMAGE_SIZE, self.IMAGE_SIZE, 3)
+        input_data = np.expand_dims(cv_img, axis=0)
+        return input_data
+    def get_base_model(self,name='vgg16'):
+        print('using model : ',name)
+        if name == 'mobilenet_v2':
+            from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2
+            base_model = MobileNetV2(input_shape=(
+                self.IMAGE_SIZE, self.IMAGE_SIZE, 3), include_top=False, weights='imagenet')
+        elif name == 'mobilenet':
+            from tensorflow.keras.applications.mobilenet import MobileNet
+            base_model = MobileNet(input_shape=(
+                self.IMAGE_SIZE, self.IMAGE_SIZE, 3), include_top=False, weights='imagenet')
+        elif name == 'densenet121':
+            from tensorflow.keras.applications.densenet import DenseNet121
+            base_model = DenseNet121(input_shape=(
+                self.IMAGE_SIZE, self.IMAGE_SIZE, 3), include_top=False, weights='imagenet')
+        elif name == 'densenet169':
+            from tensorflow.keras.applications.densenet import DenseNet169
+            base_model = DenseNet169(input_shape=(
+                self.IMAGE_SIZE, self.IMAGE_SIZE, 3), include_top=False, weights='imagenet')
+        elif name == 'densenet201':
+            from tensorflow.keras.applications.densenet import DenseNet201
+            base_model = DenseNet201(input_shape=(
+                self.IMAGE_SIZE, self.IMAGE_SIZE, 3), include_top=False, weights='imagenet')                
+        elif name == 'inception_resnet_v2':
+            from tensorflow.keras.applications.inception_resnet_v2 import InceptionResNetV2
+            base_model = InceptionResNetV2(input_shape=(
+                self.IMAGE_SIZE, self.IMAGE_SIZE, 3), include_top=False, weights='imagenet')
+        elif name == 'inception_v3':
+            from tensorflow.keras.applications.inception_v3 import InceptionV3
+            base_model = InceptionV3(input_shape=(
+                self.IMAGE_SIZE, self.IMAGE_SIZE, 3), include_top=False, weights='imagenet')
+        elif name == 'nasnet_large':
+            from tensorflow.keras.applications.nasnet import NASNetLarge
+            base_model = NASNetLarge(input_shape=(
+                self.IMAGE_SIZE, self.IMAGE_SIZE, 3), include_top=False, weights='imagenet')
+        elif name == 'nasnet_mobile':
+            from tensorflow.keras.applications.nasnet import NASNetMobile
+            base_model = NASNetMobile(input_shape=(
+                self.IMAGE_SIZE, self.IMAGE_SIZE, 3), include_top=False, weights='imagenet')                
+        elif name == 'resnet50':
+            from tensorflow.keras.applications.resnet50 import ResNet50
+            base_model = ResNet50(input_shape=(
+                self.IMAGE_SIZE, self.IMAGE_SIZE, 3), include_top=False, weights='imagenet')
+        elif name == 'xception':
+            from tensorflow.keras.applications.xception import Xception
+            base_model = Xception(input_shape=(
+                self.IMAGE_SIZE, self.IMAGE_SIZE, 3), include_top=False, weights='imagenet')
+        elif name == 'vgg19':
+            from tensorflow.keras.applications.vgg19 import VGG19
+            base_model = VGG19(input_shape=(
+                self.IMAGE_SIZE, self.IMAGE_SIZE, 3), include_top=False, weights='imagenet')
+        else:
+            from tensorflow.keras.applications.vgg16 import VGG16
+            # 采用VGG16为基本模型，include_top为False，表示FC层是可自定义的，抛弃模型中的FC层；该模型会在~/.keras/models下载基本模型
+            base_model = VGG16(input_shape=(
+                self.IMAGE_SIZE, self.IMAGE_SIZE, 3), include_top=False, weights='imagenet')
 
-    def download_model(self):
+        # self.preprocess_input = preprocess_input
+        return base_model
+    def download_model(self,name='vgg16'):
         """
         下载模型
         """
-        from tensorflow.keras.applications.vgg16 import VGG16, preprocess_input
-        base_model = VGG16(input_shape=(
-            self.IMAGE_SIZE, self.IMAGE_SIZE, 3), include_top=False, weights='imagenet')
+        self.get_base_model(name)
 
-    def train(self, data_dir, epochs=3, callback=None):
+    def train(self, data_dir, epochs=3, callback=None,model_name='vgg16'):
         """
         train 函数, 训练模型
         Keyword arguments::
@@ -126,14 +189,11 @@ class ImageClassifier:
         self.busy = True
         label_names = get_labels(data_dir)
         self.NUM_CLASSES = len(label_names)
-        from tensorflow.keras.applications.vgg16 import VGG16, preprocess_input
-        # 采用VGG16为基本模型，include_top为False，表示FC层是可自定义的，抛弃模型中的FC层；该模型会在~/.keras/models下载基本模型
-        base_model = VGG16(input_shape=(
-            self.IMAGE_SIZE, self.IMAGE_SIZE, 3), include_top=False, weights='imagenet')
+        base_model = self.get_base_model(model_name)
         x_data, y_label = load_img_from_dir(data_dir, target_size=(
             self.IMAGE_SIZE, self.IMAGE_SIZE), max_num=30)
         for i in range(x_data.shape[0]):
-            x_data[i] = preprocess_input(x_data[i])
+            x_data[i] = self.preprocess_input(x_data[i])
         print(x_data.shape)
         print(x_data[0].shape)
         x_data = x_data.reshape(
@@ -156,10 +216,10 @@ class ImageClassifier:
 
         # 除了FC层，靠近FC层的一部分卷积层可参与参数训练，
         # 一般来说，模型结构已经标明一个卷积块包含的层数，
-        # 在这里我们选择FREEZE_LAYERS为17，表示最后一个卷积块和FC层要参与参数训练
-        for layer in model.layers[:self.FREEZE_LAYERS]:
+        # 在这里我们选择TRAIN_LAYERS为3，表示最后一个卷积块和FC层要参与参数训练
+        for layer in model.layers:
             layer.trainable = False
-        for layer in model.layers[self.FREEZE_LAYERS:]:
+        for layer in model.layers[-self.TRAIN_LAYERS:]:
             layer.trainable = True
         for layer in model.layers:
             print("layer.trainable:", layer.trainable)
@@ -178,7 +238,9 @@ class ImageClassifier:
                   verbose=1, shuffle=True)
         self.model = model
         model.save(os.path.join(data_dir, 'model.h5'))
+        self.label_names = label_names
         self.dump_label_name(label_names)
+        # self.convert_tflite()
         self.session = K.get_session()
         self.graph = tf.get_default_graph()
         self.busy = False
@@ -187,16 +249,23 @@ class ImageClassifier:
         """
         保存训练标签
         """
-        with open(os.path.join(self.data_root, self.ns, "label_names.txt"), "wb") as f:
-            pickle.dump(dirs, f, protocol=2)
+        with open(os.path.join(self.data_root, self.ns, "labelmap.txt"), "w") as f:
+            # pickle.dump(dirs, f, protocol=2)
+            to_write = []
+            for item in dirs:
+                to_write.append(item+'\n')
+            f.writelines(to_write)
 
     def load_label_name(self):
         """
         加载训练标签
         """
-        with open(os.path.join(self.data_root, self.ns, "label_names.txt"), "rb") as f:
-            dirs = np.array(pickle.load(f))
-        return dirs
+        import numpy as np
+        with open(os.path.join(self.data_root, self.ns, "labelmap.txt"), "r") as f:
+            # label_names = np.array(pickle.load(f))
+            label_names = [line.strip() for line in f.readlines()]
+        self.label_names = label_names
+        return label_names
 
     def evaluate(self, data_dir):
         """
@@ -205,7 +274,7 @@ class ImageClassifier:
         x_data, y_label = load_img_from_dir(data_dir, target_size=(
             self.IMAGE_SIZE, self.IMAGE_SIZE), max_num=60)
         for i in range(x_data.shape[0]):
-            x_data[i] = preprocess_input(x_data[i])
+            x_data[i] = self.preprocess_input(x_data[i])
         x_data = x_data.reshape(
             x_data.shape[0], self.IMAGE_SIZE, self.IMAGE_SIZE, 3)
         y_label_one_hot = prepress_labels(y_label)
@@ -226,23 +295,36 @@ class ImageClassifier:
         """
         with self.session.as_default():
             with self.graph.as_default():
-                data_dir = os.path.join(self.data_root, self.ns)
                 if path is not None:
                     cv_img = cv2.imread(path)
-                label_names = get_labels(data_dir)
-                rs_img_f32 = cv2.resize(
-                    cv_img, (self.IMAGE_SIZE, self.IMAGE_SIZE)).astype('float32')
-                input_data = rs_img_f32.reshape(-1,
-                                                self.IMAGE_SIZE, self.IMAGE_SIZE, 3)
+                # label_names = get_labels(data_dir)
+                # rs_img_f32 = cv2.resize(cv_img, (self.IMAGE_SIZE, self.IMAGE_SIZE)).astype('float32')
+                if cv_img is None:
+                    print('no cv image provided')
+                    return None
+                input_data = self.preprocess_input(cv_img)
                 if self.model is not None:
                     result = self.model.predict(input_data, steps=1)
-                    print(label_names)
+                    # print(label_names)
                     print("result:", result)
-                    return label_names, result[0]
+                    return self.label_names, result[0]
                 else:
                     print('your model is not ready')
                     return None
-
+    def convert_tflite(self):
+        input_graph_name = os.path.join(self.data_root,self.ns,'model.h5')
+        np.set_printoptions(suppress=True)
+        output_graph_name = input_graph_name[:-3] + '.tflite'
+        converter = tf.lite.TFLiteConverter.from_keras_model_file(model_file=input_graph_name)
+        # converter.optimizations = [tf.lite.Optimize.DEFAULT]
+        converter.optimizations = [tf.lite.Optimize.OPTIMIZE_FOR_SIZE]
+        # converter.inference_type = tf.lite.constants.QUANTIZED_UINT8
+        # input_arrays = converter.get_input_arrays()
+        # converter.quantized_input_stats = {input_arrays[0] : (0., 1.)}  # mean, std_dev
+        #在windows平台这个函数有问题，无法正常使用
+        tflite_model = converter.convert()
+        open(output_graph_name, "wb").write(tflite_model)
+        print ("tflite model:",output_graph_name)
 
 def test_thread():
     """
@@ -268,24 +350,41 @@ def test_thread():
     # train16()
     # train19()
 
-
-def test_train():
+def test_train(model_name = 'vgg16'):
     """
     test_train 函数, 训练测试
     """
     IC = ImageClassifier()
     IC.ns = '分类测试'
-
+    epoch_total = 3
     def pub_training_logs(epoch, batch, logs):
         # logs {'loss': 0.33773628, 'accuracy': 0.71428573, 'batch': 6, 'size': 4}
         print(logs)
         msg = '第%d/%d轮, 批次: %d, 损失: %.2f, 准确率: %.2f' % (
-            epoch+1, 2, batch, logs['loss'], logs['acc'])
+            epoch+1, epoch_total, batch, logs['loss'], logs['acc'])
         print(msg)
-    IC.train(os.path.join(IC.data_root, '分类测试'), 2, callback=pub_training_logs)
-
-
-if __name__ == '__main__':
+    IC.train(os.path.join(IC.data_root, '分类测试'), epoch_total, callback=pub_training_logs,model_name=model_name)
+def test_convert():
+    """
+    test_train 函数, 训练测试
+    """
     IC = ImageClassifier()
-    IC.download_model()
-    # test_train()
+    IC.ns = '分类测试'
+    IC.convert_tflite()
+if __name__ == '__main__':
+    # IC = ImageClassifier()
+    # IC.download_model()
+    # test_convert()
+    test_train('vgg16')
+    # test_train('vgg19')
+    # test_train('mobilenet')
+    # test_train('mobilenet_v2')
+    # test_train('resnet50')
+    # test_train('inception_resnet_v2')
+    # test_train('inception_v3')
+    # test_train('xception')
+    # test_train('densenet121')
+    # test_train('densenet169')
+    # test_train('densenet201')
+    # test_train('nasnet_large')
+    # test_train('nasnet_mobile')

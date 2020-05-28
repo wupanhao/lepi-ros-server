@@ -1,0 +1,10 @@
+<launch>
+    <arg name="launch_prefix" default="" /> <!-- set to value="gdbserver localhost:10000" for remote debugging -->
+    <arg name="node_namespace" default="ubiquityrobot" />
+    <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
+    <include file="$(find pi_cam)/launch/web_video.launch" />
+    <group ns="$(arg node_namespace)">
+        <include file="$(find pi_cam)/launch/camera_node.launch" />
+        <include file="$(find pi_cam)/launch/transfer_learning_node.launch" />
+    </group>
+</launch>

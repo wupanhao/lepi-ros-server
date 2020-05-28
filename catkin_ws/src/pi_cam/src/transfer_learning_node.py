@@ -26,12 +26,10 @@ class TransferNode(object):
 		self.node_name = rospy.get_name()
 		rospy.loginfo("[%s] Initializing......" % (self.node_name))
 
-		self.is_shutdown = False
+		self.IMAGE_SIZE = 224
 		self.bridge = CvBridge()
 		self.ic = ImageClassifier()
 		# self.ic.load_model('/root/keras/分类测试/model.h5')
-		self.data_root = self.ic.data_root
-		self.ns = None
 		self.image_msg = None # Image()
 
 		self.training_logs_topic = rospy.Publisher("~training_logs", String, queue_size=1)
@@ -42,8 +40,8 @@ class TransferNode(object):
 		rospy.Service('~delete_ns', SetString, self.srv_delete_ns)
 		rospy.Service('~create_cat', SetString, self.srv_create_cat)
 		rospy.Service('~delete_cat', SetString, self.srv_delete_cat)
-		rospy.Service('~list_ns', SetString, self.srv_list_ns)
-		rospy.Service('~list_cat', SetString, self.srv_list_cat)
+		rospy.Service('~list_ns', GetStrings, self.srv_list_ns)
+		rospy.Service('~list_cat', GetStrings, self.srv_list_cat)
 		rospy.Service('~train_classifier', SetString, self.srv_train_classifier)
 		rospy.Service('~predict', GetPredictions, self.srv_predict)
 		rospy.Service('~get_training_data', GetPredictions, self.srv_get_training_data)
@@ -63,7 +61,7 @@ class TransferNode(object):
 		else:
 			return SetInt32Response(1,1)
 	def getBox(self):
-		img_size = self.ic.IMAGE_SIZE
+		img_size = self.IMAGE_SIZE
 		xmin = (480 - img_size)/2
 		ymin = (360 - img_size)/2
 		xmax = xmin + img_size
@@ -77,13 +75,13 @@ class TransferNode(object):
 		msg = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
 		self.pub_image.publish(msg)
 	def srvCameraSaveFrame(self,params):
-		if self.ns is None:
+		if self.ic.ns is None:
 			return SetStringResponse("训练没有定义，创建或者选择一次训练")
 		try:
 			res = self.get_frame(GetFrameRequest())
 			self.image_msg = res.image		
 			cat_name = params.data
-			directory = os.path.join(self.data_root, self.ns,cat_name)
+			directory = os.path.join(self.ic.data_root, self.ic.ns,cat_name)
 			file_name = '%d.jpg' % (len(os.listdir(directory))+1)
 			full_path = os.path.join(directory,file_name)
 			if self.image_msg is not None:
@@ -101,10 +99,10 @@ class TransferNode(object):
 		finally:
 			pass
 	def srv_create_cat(self,params):
-		if self.ns == None:
+		if self.ic.ns == None:
 			return SetStringResponse("请先设置训练名称")
 		try:
-			data_dir = os.path.join(self.data_root,self.ns,params.data)
+			data_dir = os.path.join(self.ic.data_root,self.ic.ns,params.data)
 			if os.path.exists(data_dir):
 				print('data_dir %s exists' %(data_dir))
 				return SetStringResponse("分类已存在")
@@ -117,39 +115,55 @@ class TransferNode(object):
 			return SetStringResponse("创建失败")
 
 	def srv_list_cat(self,params):
-		if self.ns is not None:
-			data_dir = os.path.join(self.data_root,self.ns)
-			return GetStringsResponse(os.listdir(data_dir))
+		if self.ic.ns is not None:
+			data_dir = os.path.join(self.ic.data_root,self.ic.ns)
+			dirs = []
+			for item in os.listdir(data_dir):
+				if os.path.isdir( os.path.join( data_dir ,item)):
+					dirs.append(item)
+			# print(dirs)
+			return GetStringsResponse(dirs)
 		else:
 			return GetStringsResponse()
 	def srv_list_ns(self,params):
-		return GetStringsResponse(os.listdir(self.data_root))
+		dirs = []
+		for item in os.listdir(self.ic.data_root):
+			if os.path.isdir(os.path.join( self.ic.data_root ,item)):
+				dirs.append(item)
+		# print(dirs)
+		return GetStringsResponse(dirs)
 	def srv_set_ns(self,params):
 		try:
-			data_dir = os.path.join(self.data_root,params.data)
+			data_dir = os.path.join(self.ic.data_root,params.data)
+			model_path = os.path.join(data_dir,'model.h5')
+			label_path = os.path.join(data_dir,'labelmap.txt')
+			self.ic.ns = params.data
 			if not os.path.exists(data_dir):		
 				os.makedirs(data_dir)
-			self.ns = params.data
-			self.ic.ns = params.data
-			return SetStringResponse("设置成功")
+				return SetStringResponse("已创建训练，继续添加分类和数据以训练模型")
+			if os.path.exists(model_path) and os.path.exists(label_path):
+				self.ic.load_label_name()
+				self.ic.load_model()
+				return SetStringResponse("已加载训练，并加载已训练的模型")
+			return SetStringResponse("已加载训练，添加分类和数据训练模型吧")
 		except Exception as e:
 			print(e)
 			return SetStringResponse("设置失败")
 	def srv_delete_ns(self,params):
 		try:
-			data_dir = os.path.join(self.data_root,params.data)
-			if len(data_dir)>len(self.data_root):
+			data_dir = os.path.join(self.ic.data_root,params.data)
+			if len(data_dir)>len(self.ic.data_root):
 				os.system('rm -rf '+data_dir)
 				return SetStringResponse("删除成功")
 		except Exception as e:
 			print(e)
 			return SetStringResponse("删除失败")
 	def srv_delete_cat(self,params):
-		if self.ns is None:
+		if self.ic.ns is None:
 			return SetStringResponse("请先设置训练名称")
 		try:
-			data_dir = os.path.join(self.data_root,self.ns,params.data)
-			if len(data_dir)>len(self.data_root):
+			data_dir = os.path.join(self.ic.data_root,self.ic.ns,params.data)
+			if len(data_dir)>len(self.ic.data_root):
 				os.system('rm -rf '+data_dir)
 				return SetStringResponse("删除成功")
 		except Exception as e:
@@ -159,10 +173,10 @@ class TransferNode(object):
 		try:
 			epochs = int(params.data)
 			if epochs <= 0:
-				return SetStringResponse('至少训练1次~')
-			data_dir = os.path.join(self.data_root,self.ns)
+				return SetStringResponse('至少训练1次')
+			data_dir = os.path.join(self.ic.data_root,self.ic.ns)
 			self.epochs = epochs
-			self.ic.ns = self.ns
+			self.ic.ns = self.ic.ns
 			self.ic.train(data_dir,epochs,self.pub_training_logs)
 			return SetStringResponse('训练完成，可以进行测试了')
 		except Exception as e:
@@ -189,7 +203,7 @@ class TransferNode(object):
 		msg = String('第%d/%d轮, 批次: %d, 损失: %.2f, 准确率: %.2f' % (epoch+1,self.epochs,batch,logs['loss'],logs['acc']))
 		self.training_logs_topic.publish(msg)
 	def srv_get_training_data(self,params):
-		data_dir = os.path.join(self.data_root,self.ns)
+		data_dir = os.path.join(self.ic.data_root,self.ic.ns)
 		labels = get_labels(data_dir)
 		counts = [len(os.listdir(os.path.join(data_dir,label))) for label in labels]
 		return GetPredictionsResponse(labels,counts)

@@ -12,13 +12,15 @@ from load_runtime import load_tflite_model
 
 class ImageClassifier:
     def __init__(self):
-        self.min_conf_threshold = 0.2
+        self.min_conf_threshold = 0.15
 
     def load_model(self,use_TPU = False):
-        MODEL_PATH = '/home/pi/Lepi_Data/ros/image_classifier/mobilenet_v1_1.0_224_quant_and_labels'
-        default_model_name = 'mobilenet_v1_1.0_224_quant.tflite'
+        modal_name = 'mobilenet_v1_1.0_224_quant_and_labels'
+        # modal_name = 'test_detector'
+        MODEL_PATH = os.path.expanduser('~')+'/Lepi_Data/ros/image_classifier/'+modal_name
+        default_model_name = 'model.tflite'
         GRAPH_NAME = default_model_name
-        LABELMAP_NAME = 'labels_mobilenet_quant_v1_224.txt'
+        LABELMAP_NAME = 'labelmap.txt'
 
         # If using Edge TPU, assign filename for Edge TPU model
         if use_TPU:
@@ -51,15 +53,16 @@ class ImageClassifier:
         self.width = self.input_details[0]['shape'][2]
         
         self.floating_model = (self.input_details[0]['dtype'] == np.float32)
-        print(self.input_details)
-        print(self.output_details)
+        print('input_details: ',self.input_details)
+        print('output_details: ',self.output_details)
+        print('floating_model: ',self.floating_model)
 
     # Loop over every image and perform detection
     def detect(self,image,top_k=1):
         # Load image and resize to expected shape [1xHxWx3]
         # image = cv2.imread(image_path)
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image_resized = cv2.resize(image_rgb, (self.width, self.height))
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image_resized = cv2.resize(image, (self.width, self.height))
         input_data = np.expand_dims(image_resized, axis=0)
         # Normalize pixel values if using a floating model (i.e. if model is non-quantized)
         if self.floating_model:

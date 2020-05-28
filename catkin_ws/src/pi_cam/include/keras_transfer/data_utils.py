@@ -88,20 +88,19 @@ def loadFromPickle():
         labels = np.array(pickle.load(f))
     return features, labels
 
-
-def dump_label_name(dirs):
+def dump_label_name(dirs,name="label_names"):
     """
     保存标签名，因为模型不会记录标签
     """
-    with open("label_names", "wb") as f:
+    with open(name, "wb") as f:
         pickle.dump(dirs, f, protocol=4)
 
 
-def load_label_name():
+def load_label_name(name="label_names"):
     """
     加载标签名
     """
-    with open("label_names", "rb") as f:
+    with open(name, "rb") as f:
         dirs = np.array(pickle.load(f))
     return dirs
 

@@ -17,13 +17,13 @@ class ObjectDetector:
 
     def load_model(self,use_TPU = False):
         MODEL_PATH = os.path.expanduser('~')+'/Lepi_Data/ros/object_detector/coco_ssd_mobilenet_v1'
-        GRAPH_NAME = 'detect.tflite'
+        GRAPH_NAME = 'model.tflite'
         LABELMAP_NAME = 'labelmap.txt'
 
         # If using Edge TPU, assign filename for Edge TPU model
         if use_TPU:
             # If user has specified the name of the .tflite file, use that name, otherwise use default 'edgetpu.tflite'
-            if (GRAPH_NAME == 'detect.tflite'):
+            if (GRAPH_NAME == 'model.tflite'):
                 GRAPH_NAME = 'edgetpu.tflite'
 
 
