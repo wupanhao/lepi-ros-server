@@ -64,7 +64,7 @@ class CameraNode(object):
         # self.pid_set_enable_srv = rospy.Service('~pid_set_enable', SetPid, self.cbPidSetEnable)
         # self.pub_image_detection = rospy.Publisher("~image_detections", Image, queue_size=1)
 
-        rospy.Timer(rospy.Duration.from_sec(1.0/20), self.cbPublish)
+        rospy.Timer(rospy.Duration.from_sec(1.0/15), self.cbPublish)
         rospy.loginfo("[%s] Initialized......" % (self.node_name))
     def srvCameraSetEnable(self,params):
         if params.value == 1 and self.camera.active == False:

@@ -12,7 +12,7 @@ from .load_runtime import load_tflite_model
 
 class ImageClassifier:
     def __init__(self):
-        self.min_conf_threshold = 0.5
+        self.min_conf_threshold = 0.15
 
     def load_model(self,use_TPU = False):
         modal_name = 'mobilenet_v1_1.0_224_quant_and_labels'

@@ -25,10 +25,11 @@ class ImageClassifierNode(object):
         self.bridge = CvBridge()
         self.visualization = True
 
-        self.pub_image = rospy.Publisher("~image_classifier", Image, queue_size=1)
+        self.pub_image = rospy.Publisher("~image_class", Image, queue_size=1)
 
         rospy.Service('~class_image', GetObjectDetections, self.cbGetObjectDetections)
         rospy.Service('~set_threshold', SetInt32, self.cbSetThreshold)
+        rospy.Service('~set_size', SetInt32, self.srv_set_size)
         self.detector = ImageClassifier()
         self.detector.load_model()
         self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,  queue_size=1)
@@ -37,36 +38,45 @@ class ImageClassifierNode(object):
         self.get_frame = rospy.ServiceProxy('~camera_get_frame', GetFrame)
         rospy.loginfo("[%s] Initialized." % (self.node_name))
     def getBox(self):
-        xmin = (480 - self.IMAGE_W)/2
-        ymin = (360 - self.IMAGE_H)/2
+        xmin = (480 - self.IMAGE_W)//2
+        ymin = (360 - self.IMAGE_H)//2
         xmax = xmin + self.IMAGE_W
         ymax = ymin + self.IMAGE_H
         return [xmin,ymin,xmax,ymax]
     def cbImg(self,image_msg):
-        self.image_msg = image_msg
-        cv_image = self.bridge.imgmsg_to_cv2(self.image_msg, desired_encoding="bgr8")
+        cv_image = self.bridge.imgmsg_to_cv2(image_msg)
         xmin,ymin,xmax,ymax = self.getBox()
         cv2.rectangle(cv_image,(xmin,ymin),(xmax,ymax),(10, 255, 0), 2)
-        msg = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
+        msg = self.bridge.cv2_to_imgmsg(cv_image,"bgr8")
         self.pub_image.publish(msg)
     def cbGetObjectDetections(self,params):
         res = self.get_frame(GetFrameRequest())
-        self.image_msg = res.image
-        image = self.bridge.imgmsg_to_cv2(self.image_msg)
+        image_msg = res.image
+        image = self.bridge.imgmsg_to_cv2(image_msg)
+        xmin,ymin,xmax,ymax = self.getBox()
+        image = image[ymin:ymax,xmin:xmax]
         # image = self.bridge.imgmsg_to_cv2(self.image_msg, desired_encoding="bgr8")
         detections = self.detector.detect(image)
+        # print(detections)
         return self.toObjectDetections(detections)
 
     def toObjectDetections(self,detections):
         rsp = GetObjectDetectionsResponse()
         for class_,score in detections:
             if score >= self.detector.min_conf_threshold:
-                detection = ObjectDetection([0,0,0,0], self.detector.labels[class_],score*100)
+                detection = ObjectDetection([0,0,0,0], class_,score*100)
                 rsp.detections.append(detection)
         return rsp
     def cbSetThreshold(self,params):
         self.detector.set_threshold(params.value)
         return SetInt32Response(params.port, params.value)
+
+    def srv_set_size(self,params):
+        if params.port <= 480 and params.port >= 10:
+            self.IMAGE_W = params.port
+        if params.value <= 360 and params.value >= 10:
+            self.IMAGE_H = params.value
+        return SetInt32Response(params.port,params.value)
     def onShutdown(self):
         rospy.loginfo("[%s] Shutdown." % (self.node_name))
 
