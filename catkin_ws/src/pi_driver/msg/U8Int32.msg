@@ -1,2 +1,2 @@
-uint8 port
+int32 port
 int32 value

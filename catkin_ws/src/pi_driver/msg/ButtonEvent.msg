@@ -1,2 +1,2 @@
-uint8 type
-uint8 value
+int32 type
+int32 value

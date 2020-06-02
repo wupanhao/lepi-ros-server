@@ -26,7 +26,8 @@ class TransferNode(object):
 		self.node_name = rospy.get_name()
 		rospy.loginfo("[%s] Initializing......" % (self.node_name))
 
-		self.IMAGE_SIZE = 224
+		self.IMAGE_W = 224
+		self.IMAGE_H = 224
 		self.bridge = CvBridge()
 		self.ic = ImageClassifier()
 		# self.ic.load_model('/root/keras/分类测试/model.h5')
@@ -45,27 +46,18 @@ class TransferNode(object):
 		rospy.Service('~train_classifier', SetString, self.srv_train_classifier)
 		rospy.Service('~predict', GetPredictions, self.srv_predict)
 		rospy.Service('~get_training_data', GetPredictions, self.srv_get_training_data)
+		rospy.Service('~set_size', SetInt32, self.srv_set_size)
 		self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,  queue_size=1)
-		rospy.Subscriber('~shutdown', Empty, self.cbShutdown)
 		rospy.loginfo("[%s] wait_for_service : camera_get_frame..." % (self.node_name))
 		rospy.wait_for_service('~camera_get_frame')
 		self.get_frame = rospy.ServiceProxy('~camera_get_frame', GetFrame)
 		rospy.loginfo("[%s] Initialized......" % (self.node_name))
-	def srvCameraSetEnable(self,params):
-		if params.value == 1 and self.camera.active == False:
-			ret = self.camera.open_camera(params.port)
-			return SetInt32Response(0,ret)
-		elif params.value == 0:
-			self.camera.active = False
-			return SetInt32Response(0,0)
-		else:
-			return SetInt32Response(1,1)
+
 	def getBox(self):
-		img_size = self.IMAGE_SIZE
-		xmin = (480 - img_size)/2
-		ymin = (360 - img_size)/2
-		xmax = xmin + img_size
-		ymax = ymin + img_size
+		xmin = (480 - self.IMAGE_W)/2
+		ymin = (360 - self.IMAGE_H)/2
+		xmax = xmin + self.IMAGE_W
+		ymax = ymin + self.IMAGE_H
 		return [xmin,ymin,xmax,ymax]
 	def cbImg(self,image_msg):
 		self.image_msg = image_msg
@@ -207,9 +199,12 @@ class TransferNode(object):
 		labels = get_labels(data_dir)
 		counts = [len(os.listdir(os.path.join(data_dir,label))) for label in labels]
 		return GetPredictionsResponse(labels,counts)
-	def cbShutdown(self,msg):
-		rospy.loginfo("[%s] receiving shutdown msg." % (self.node_name))
-		rospy.signal_shutdown("shutdown receiving msg")
+	def srv_set_size(self,params):
+		if params.port <= 480 and params.port >= 10:
+			self.IMAGE_W = params.port
+		if params.value <= 360 and params.value >= 10:
+			self.IMAGE_H = params.value
+		return SetInt32Response(params.port,params.value)
 	def onShutdown(self):
 		rospy.loginfo("[%s] Shutdown." % (self.node_name))
 

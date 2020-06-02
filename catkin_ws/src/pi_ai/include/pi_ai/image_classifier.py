@@ -7,12 +7,12 @@ import numpy as np
 import sys
 import importlib.util
 from camera_utils import putText3
-from labels_map import detector_map
-from load_runtime import load_tflite_model
+# from labels_map import detector_map
+from .load_runtime import load_tflite_model
 
 class ImageClassifier:
     def __init__(self):
-        self.min_conf_threshold = 0.15
+        self.min_conf_threshold = 0.5
 
     def load_model(self,use_TPU = False):
         modal_name = 'mobilenet_v1_1.0_224_quant_and_labels'
@@ -99,7 +99,9 @@ class ImageClassifier:
             # cv2.putText(image, label, (xmin, label_ymin-7), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2) # Draw label text
             image = putText3(image, label, (25, 25),(0, 0, 0)) # Draw label text
         return image
-
+    def set_threshold(self,threshold):
+        if threshold < 100:
+            self.min_conf_threshold = threshold/100.0
 if __name__ == '__main__':
     import sys,time
     image = cv2.imread(sys.argv[1])
