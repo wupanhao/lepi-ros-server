@@ -31,7 +31,11 @@ class ImageClassifierNode(object):
         rospy.Service('~set_threshold', SetInt32, self.cbSetThreshold)
         rospy.Service('~set_size', SetInt32, self.srv_set_size)
         self.detector = ImageClassifier()
-        self.detector.load_model()
+        try:
+            self.detector.load_model(use_TPU=True)
+        except Exception as e:
+            print(e)
+            self.detector.load_model(use_TPU=False)
         self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,  queue_size=1)
         rospy.loginfo("[%s] wait_for_service : camera_get_frame..." % (self.node_name))
         rospy.wait_for_service('~camera_get_frame')

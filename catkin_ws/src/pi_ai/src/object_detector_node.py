@@ -29,7 +29,11 @@ class ObjectDetectorNode(object):
         rospy.Service('~detect_object', GetObjectDetections, self.cbGetObjectDetections)
         rospy.Service('~set_threshold', SetInt32, self.cbSetThreshold)
         self.detector = ObjectDetector()
-        self.detector.load_model()
+        try:
+            self.detector.load_model(use_TPU=True)
+        except Exception as e:
+            print(e)
+            self.detector.load_model(use_TPU=False)
         rospy.loginfo("[%s] wait_for_service : camera_get_frame..." % (self.node_name))
         rospy.wait_for_service('~camera_get_frame')
         self.get_frame = rospy.ServiceProxy('~camera_get_frame', GetFrame)
@@ -44,7 +48,7 @@ class ObjectDetectorNode(object):
         if self.visualization:
             image = self.detector.draw_labels(image,boxes,classes,scores)
         imgmsg = self.bridge.cv2_to_imgmsg(image,"bgr8")
-        self.pub_detections.publish(imgmsg)
+        # self.pub_detections.publish(imgmsg)
         self.pub_detections.publish(imgmsg)
         return self.toObjectDetections(boxes,classes,scores)
     def toObjectDetections(self,boxes,classes,scores):

@@ -26,13 +26,15 @@ class ImageClassifier:
         if use_TPU:
             # If user has specified the name of the .tflite file, use that name, otherwise use default 'edgetpu.tflite'
             if (GRAPH_NAME == default_model_name):
-                GRAPH_NAME = 'edgetpu.tflite'
+                GRAPH_NAME = 'model_edgetpu.tflite'
 
         # Path to .tflite file, which contains the model that is used for object detection
         PATH_TO_CKPT = os.path.join(MODEL_PATH,GRAPH_NAME)
 
         # Path to label map file
         PATH_TO_LABELS = os.path.join(MODEL_PATH,LABELMAP_NAME)
+
+        self.interpreter = load_tflite_model(model_path=PATH_TO_CKPT,use_TPU = use_TPU)
 
         # Load the label map
         with open(PATH_TO_LABELS, 'r') as f:
@@ -43,8 +45,6 @@ class ImageClassifier:
         # First label is '???', which has to be removed.
         if self.labels[0] == '???':
             del(self.labels[0])
-
-        self.interpreter = load_tflite_model(model_path=PATH_TO_CKPT)
 
         # Get model details
         self.input_details = self.interpreter.get_input_details()
@@ -106,7 +106,11 @@ if __name__ == '__main__':
     import sys,time
     image = cv2.imread(sys.argv[1])
     detector = ImageClassifier()
-    detector.load_model()
+    try:
+        detector.load_model(use_TPU=True)
+    except Exception as e:
+        print(e)
+        detector.load_model(use_TPU=False)
     start = time.time()
     class_,score = detector.detect(image)[0]
     end = time.time()

@@ -17,9 +17,9 @@ def load_tflite_model(model_path,use_TPU = False):
     # If using Edge TPU, use special load_delegate argument
     if use_TPU:
         interpreter = Interpreter(model_path=model_path,
-                                experimental_delegates=[load_delegate('libedgetpu.so.1.0')])
-        print(model_path)
+                                experimental_delegates=[load_delegate('libedgetpu.so.1',{})])
     else:
         interpreter = Interpreter(model_path=model_path)
+    print(model_path)
     interpreter.allocate_tensors()
     return interpreter

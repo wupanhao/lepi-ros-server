@@ -5,7 +5,6 @@ import os
 import cv2
 import numpy as np
 import sys
-import importlib.util
 from camera_utils import putText3
 from .labels_map import detector_map
 from .load_runtime import load_tflite_model
@@ -17,6 +16,7 @@ class ObjectDetector:
 
     def load_model(self,use_TPU = False):
         MODEL_PATH = os.path.expanduser('~')+'/Lepi_Data/ros/object_detector/coco_ssd_mobilenet_v1'
+        # MODEL_PATH = os.path.expanduser('~')+'/Lepi_Data/ros/object_detector/mobilenet_ssd_v2_coco_quant_postprocess'
         GRAPH_NAME = 'model.tflite'
         LABELMAP_NAME = 'labelmap.txt'
 
@@ -24,14 +24,15 @@ class ObjectDetector:
         if use_TPU:
             # If user has specified the name of the .tflite file, use that name, otherwise use default 'edgetpu.tflite'
             if (GRAPH_NAME == 'model.tflite'):
-                GRAPH_NAME = 'edgetpu.tflite'
-
+                GRAPH_NAME = 'model_edgetpu.tflite'
 
         # Path to .tflite file, which contains the model that is used for object detection
         PATH_TO_CKPT = os.path.join(MODEL_PATH,GRAPH_NAME)
 
         # Path to label map file
         PATH_TO_LABELS = os.path.join(MODEL_PATH,LABELMAP_NAME)
+
+        self.interpreter = load_tflite_model(model_path=PATH_TO_CKPT,use_TPU=use_TPU)
 
         # Load the label map
         with open(PATH_TO_LABELS, 'r') as f:
@@ -42,7 +43,6 @@ class ObjectDetector:
         # First label is '???', which has to be removed.
         if self.labels[0] == '???':
             del(self.labels[0])
-        self.interpreter = load_tflite_model(model_path=PATH_TO_CKPT)
 
         # Get model details
         self.input_details = self.interpreter.get_input_details()
