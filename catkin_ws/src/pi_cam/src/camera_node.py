@@ -9,17 +9,18 @@ import yaml
 from sensor_msgs.msg import Image,CompressedImage,CameraInfo
 from sensor_msgs.srv import SetCameraInfo, SetCameraInfoResponse
 
-from camera_utils import load_camera_info_3
+# from camera_utils import load_camera_info_3
 from camera_utils import ImageRector
 
 from pi_driver.srv import SetInt32,SetInt32Response
-from pi_driver.srv import GetStrings,GetStringsResponse
+from pi_driver.srv import GetStrings,GetStringsResponse,SetString,SetStringResponse
 from pi_cam.srv import GetFrame,GetFrameResponse
 # from std_msgs.msg import Empty
 
 from camera_utils import UsbCamera
 import os
 import cv2
+import numpy as np
 import time
 
 class CameraNode(object):
@@ -29,7 +30,7 @@ class CameraNode(object):
 
         self.is_shutdown = False
         self.rectify = False
-        self.rate = 60
+        self.rate = 30
         # self.size = (480,360)
         self.bridge = CvBridge()
         self.frame_id = rospy.get_namespace().strip('/') + "/camera_optical_frame"
@@ -48,21 +49,30 @@ class CameraNode(object):
         self.last_publish = 0
         self.last_update = time.time()
         self.pub_raw = rospy.Publisher("~image_raw", Image, queue_size=1)
-        self.pub_image = rospy.Publisher("~image", Image, queue_size=1)
+
         # self.pub_rect = rospy.Publisher("~image_rect", Image, queue_size=1)
         self.pub_camera_info = rospy.Publisher("~camera_info", CameraInfo, queue_size=1)
 
-        # self.pub_compressed = rospy.Publisher("~image_raw/compressed", CompressedImage, queue_size=1)
+        self.pub_compressed = rospy.Publisher("~image_raw/compressed", CompressedImage, queue_size=1)
         # self.pub_camera_info_rect = rospy.Publisher("~rect/camera_info", CameraInfo, queue_size=1)
         rospy.Service('~camera_set_enable', SetInt32, self.srvCameraSetEnable)
         rospy.Service('~camera_set_flip', SetInt32, self.srvCameraSetFlip)
         rospy.Service('~camera_set_rectify', SetInt32, self.srvCameraSetRectify)
         rospy.Service('~camera_get_frame', GetFrame, self.srvCameraGetFrame)
         rospy.Service('~get_image_topics', GetStrings, self.srvGetImageTopics)
-        self.srv_set_camera_info = rospy.Service("~set_camera_info", SetCameraInfo, self.cbSrvSetCameraInfo)
+        rospy.Service('~list_cali_file', GetStrings, self.srvListCaliFile)
+        rospy.Service('~load_cali_file', SetString, self.srvLoadCaliFile)
+        rospy.Service("~set_camera_info", SetCameraInfo, self.srvSetCameraInfo)
         # rospy.Subscriber('~shutdown', Empty, self.cbShutdown)
         # self.pid_set_enable_srv = rospy.Service('~pid_set_enable', SetPid, self.cbPidSetEnable)
         # self.pub_image_detection = rospy.Publisher("~image_detections", Image, queue_size=1)
+
+        calibrate = rospy.get_param('~calibrate',False)
+        if calibrate:
+            self.pub_image = rospy.Publisher("~image", Image, queue_size=1)
+            self.camera.open_camera(0)
+        else:
+            self.pub_image = None
 
         rospy.Timer(rospy.Duration.from_sec(1.0/15), self.cbPublish)
         rospy.loginfo("[%s] Initialized......" % (self.node_name))
@@ -90,9 +100,9 @@ class CameraNode(object):
 
     def cbImg(self,cv_image):
         self.cv_image = cv_image
-        self.last_update = time.time()
-        image_msg = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
-        self.pub_image.publish(image_msg)        
+        # self.last_update = time.time()
+        # image_msg = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
+        # self.pub_image.publish(image_msg)
         # self.cbPublish()
     def cbPublish(self,channel=None):
         if self.camera.active == False or self.cv_image is None:
@@ -101,30 +111,38 @@ class CameraNode(object):
         #     return
         # self.last_publish = self.last_update
         cv_image = self.camera.getImage()
-        image_msg = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
-        image_msg.header.stamp = rospy.Time.now()
-        image_msg.header.frame_id = self.frame_id
-        self.image_msg = image_msg
-        self.pub_raw.publish(image_msg)        
+        if self.pub_image is not None:
+            image_msg = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
+            self.pub_image.publish(image_msg)
+        # image_msg = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
+        # image_msg.header.stamp = rospy.Time.now()
+        # image_msg.header.frame_id = self.frame_id
+        # self.image_msg = image_msg
+        # self.pub_raw.publish(image_msg)
+
+        msg = CompressedImage()
+        msg.header.stamp = rospy.Time.now()
+        msg.format = "jpeg"
+        msg.data = np.array(cv2.imencode('.jpg', cv_image)[1]).tostring()
+        # Publish new image
+        self.pub_compressed.publish(msg)
 
     def srvGetImageTopics(self,params):
         topics = rospy.get_published_topics()
         res = GetStringsResponse()
         for topic in topics:
-            if topic[1] == 'sensor_msgs/Image':
+            if topic[1] == 'sensor_msgs/CompressedImage':
                 res.data.append(topic[0])
         return res
-    def cbShutdown(self,msg):
-        rospy.loginfo("[%s] receiving shutdown msg." % (self.node_name))
-        rospy.signal_shutdown("shutdown receiving msg")
     def onShutdown(self):
         rospy.loginfo("[%s] Closing camera." % (self.node_name))
         self.is_shutdown = True
         rospy.loginfo("[%s] Shutdown." % (self.node_name))
-    def cbSrvSetCameraInfo(self, req):
+    def srvSetCameraInfo(self, req):
         # TODO: save req.camera_info to yaml file
         rospy.loginfo("[cbSrvSetCameraInfo] Callback!")
-        filename = self.cali_file_folder + "pi_cam_%dx%d" % (480,360) + ".yaml"
+        # filename = self.cali_file_folder + "pi_cam_%dx%d" % (480,360) + ".yaml"
+        filename = self.cali_file_folder + time.strftime('%Y-%m-%d %H:%M:%S') + ".yaml"
         response = SetCameraInfoResponse()
         response.success = self.saveCameraInfo(req.camera_info, filename)
         response.status_message = "Write to %s" % filename  #TODO file name
@@ -152,6 +170,15 @@ class CameraNode(object):
                 return True
         except IOError:
             return False
+    def srvListCaliFile(self,params):
+        return GetStringsResponse(os.listdir(self.cali_file_folder))
+    def srvLoadCaliFile(self,params):
+        try:
+            rector = ImageRector(cali_file=params.data)
+            self.camera.rector = rector
+            return SetStringResponse('加载成功')
+        except Exception as e:
+            return SetStringResponse('加载失败')
 if __name__ == '__main__':
     rospy.init_node('camera_node', anonymous=False)
     camera_node = CameraNode()

@@ -18,7 +18,7 @@ class UsbCamera(object):
 		self.active = False
 		self.rector = ImageRector()
 	def open_camera(self,camera_id=0):
-		self.rector = ImageRector(cali_file="default.yaml")
+		# self.rector = ImageRector(cali_file="default.yaml")
 		# self.rector = ImageRector(size=(480,360),cali_file="default.yaml")
 		self.camera_id = camera_id
 		try:
@@ -30,6 +30,7 @@ class UsbCamera(object):
 			if self.cap is not None:
 				self.cap.release()
 				self.cap = None
+				# cv2.CAP_OPENCV_MJPEG
 			self.cap = cv2.VideoCapture(camera_id)
 			if self.cap.isOpened():
 				self.active = True

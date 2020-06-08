@@ -1,5 +1,4 @@
 #!coding:utf-8
-import face_recognition
 import cv2
 # from PIL import Image, ImageFont, ImageDraw
 import numpy as np
@@ -7,6 +6,7 @@ import os
 import time
 
 from camera_utils import putText
+import face_recognition
 
 class FaceRecognizer(object):
     """
@@ -21,7 +21,7 @@ class FaceRecognizer(object):
 
     def __init__(self, scale=5, threshold=0.45, fontSize=18):
         super(FaceRecognizer, self).__init__()
-        self.data_dir = "/home/pi/Lepi_Data/ros/face_recognizer/known_face"
+        self.data_dir = os.path.expanduser('~') + "/Lepi_Data/ros/face_recognizer/known_face"
         self.scale = scale
         # self.font = ImageFont.truetype(
         #     '/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf', fontSize)

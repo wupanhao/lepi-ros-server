@@ -23,6 +23,8 @@ def bgr_from_jpg(data):
         raise ValueError(msg)
     return bgr
 
+def jpg_from_bgr(image):
+    return np.array(cv2.imencode('.jpg', image)[1]).tostring()
 
 def load_camera_info_2(filename):
     with open(filename, 'r') as stream:

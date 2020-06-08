@@ -4,7 +4,7 @@ import os.path
 import numpy as np
 import cv2
 import time
-import rospkg
+# import rospkg
 
 from camera_utils import load_camera_info_3
 
