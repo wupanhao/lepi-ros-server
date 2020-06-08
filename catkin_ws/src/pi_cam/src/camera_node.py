@@ -41,7 +41,8 @@ class CameraNode(object):
         # self.r = rospy.Rate(self.rate)
         # self.rector = ImageRector(self.size)
         # self.rector = ImageRector((640,480))
-        self.cali_file_folder = os.path.dirname(os.path.abspath(__file__)) + "/../camera_info/calibrations/"
+        # self.cali_file_folder = os.path.dirname(os.path.abspath(__file__)) + "/../camera_info/calibrations/"
+        self.cali_file_folder = os.path.expanduser('~')+"/Lepi_Data/ros/camera/calibrations/"
         self.cali_file = "default.yaml"
         # self.camera_info_msg = load_camera_info_3()
         # self.camera_info_msg_rect = load_camera_info_3()
@@ -112,7 +113,7 @@ class CameraNode(object):
         # self.last_publish = self.last_update
         cv_image = self.camera.getImage()
         if self.pub_image is not None:
-            image_msg = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
+            image_msg = self.bridge.cv2_to_imgmsg(self.cv_image, "bgr8")
             self.pub_image.publish(image_msg)
         # image_msg = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
         # image_msg.header.stamp = rospy.Time.now()
@@ -142,7 +143,7 @@ class CameraNode(object):
         # TODO: save req.camera_info to yaml file
         rospy.loginfo("[cbSrvSetCameraInfo] Callback!")
         # filename = self.cali_file_folder + "pi_cam_%dx%d" % (480,360) + ".yaml"
-        filename = self.cali_file_folder + time.strftime('%Y-%m-%d %H:%M:%S') + ".yaml"
+        filename = self.cali_file_folder + time.strftime('%Y-%m-%d_%H-%M-%S') + ".yaml"
         response = SetCameraInfoResponse()
         response.success = self.saveCameraInfo(req.camera_info, filename)
         response.status_message = "Write to %s" % filename  #TODO file name
@@ -174,7 +175,7 @@ class CameraNode(object):
         return GetStringsResponse(os.listdir(self.cali_file_folder))
     def srvLoadCaliFile(self,params):
         try:
-            rector = ImageRector(cali_file=params.data)
+            rector = ImageRector(size=(640,480),cali_file=params.data)
             self.camera.rector = rector
             return SetStringResponse('加载成功')
         except Exception as e:
