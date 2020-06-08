@@ -1,0 +1,10 @@
+<launch>
+ <group ns="/ubiquityrobot">
+  <node name="camera_node" pkg="pi_cam" type="camera_node.py" output="screen" >
+    <param name="image_width" value="640" />
+    <param name="image_height" value="480" />
+    <param name="camera_frame_id" value="pi_cam" />
+    <param name="calibrate" value="True" />
+  </node>
+ </group>
+</launch>
