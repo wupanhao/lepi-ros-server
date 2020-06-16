@@ -6,11 +6,11 @@ import os
 from PIL import Image, ImageFont, ImageDraw
 
 # from cam_info_reader_node
-# from sensor_msgs.msg import CameraInfo
+from sensor_msgs.msg import CameraInfo
 
 
-class CameraInfo:
-    pass
+# class CameraInfo:
+#     pass
 
 
 def bgr_from_jpg(data):
@@ -26,8 +26,8 @@ def bgr_from_jpg(data):
 def jpg_from_bgr(image):
     return np.array(cv2.imencode('.jpg', image)[1]).tostring()
 
-def load_camera_info_2(filename):
-    with open(filename, 'r') as stream:
+def load_camera_info_2(cali_file):
+    with open(cali_file, 'r') as stream:
       calib_data = yaml.load(stream)
       cam_info = CameraInfo()
       cam_info.width = calib_data['image_width']
@@ -39,9 +39,9 @@ def load_camera_info_2(filename):
       cam_info.distortion_model = calib_data['distortion_model']
       return cam_info
 
-def load_camera_info_3(filename="default.yaml"):
-    # cali_file = os.path.dirname(os.path.abspath(__file__)) + "/../../camera_info/calibrations/" + filename
-    cali_file = os.path.expanduser('~')+"/Lepi_Data/ros/camera/calibrations/" + filename
+def load_camera_info_3(cali_file="default.yaml"):
+    # cali_file = os.path.dirname(os.path.abspath(__file__)) + "/../../camera_info/calibrations/" + cali_file
+    cali_file = os.path.expanduser('~')+"/Lepi_Data/ros/camera/calibrations/" + cali_file
     with open(cali_file, 'r') as stream:
       calib_data = yaml.load(stream)
       cam_info = CameraInfo()

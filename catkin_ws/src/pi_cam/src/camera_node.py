@@ -175,8 +175,9 @@ class CameraNode(object):
         return GetStringsResponse(os.listdir(self.cali_file_folder))
     def srvLoadCaliFile(self,params):
         try:
-            rector = ImageRector(size=(640,480),cali_file=params.data)
-            self.camera.rector = rector
+            # rector = ImageRector(size=(640,480),cali_file=params.data)
+            # self.camera.rector = rector
+            self.camera.loadCaliFile(params.data)
             return SetStringResponse('加载成功')
         except Exception as e:
             return SetStringResponse('加载失败')
