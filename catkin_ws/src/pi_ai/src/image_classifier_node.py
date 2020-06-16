@@ -1,7 +1,5 @@
 #!/usr/bin/python3
 #!coding:utf-8
-import time
-import os
 import cv2
 from cv_bridge import CvBridge
 import rospy
@@ -13,7 +11,6 @@ from pi_cam.msg import ObjectDetection
 from pi_cam.srv import GetObjectDetections,GetObjectDetectionsResponse
 from pi_driver.srv import SetInt32,SetInt32Response
 from pi_ai import ImageClassifier
-from pi_cam.srv import GetFrame,GetFrameRequest
 
 class ImageClassifierNode(object):
     def __init__(self):
@@ -37,9 +34,7 @@ class ImageClassifierNode(object):
             self.detector.load_model(use_TPU=False)
         # self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,  queue_size=1)
         self.sub_image = rospy.Subscriber("~image_raw/compressed", CompressedImage, self.cbImg ,  queue_size=1)
-        rospy.loginfo("[%s] wait_for_service : camera_get_frame..." % (self.node_name))
-        rospy.wait_for_service('~camera_get_frame')
-        self.get_frame = rospy.ServiceProxy('~camera_get_frame', GetFrame)
+
         rospy.loginfo("[%s] Initialized." % (self.node_name))
     def getBox(self):
         xmin = (480 - self.IMAGE_W)//2

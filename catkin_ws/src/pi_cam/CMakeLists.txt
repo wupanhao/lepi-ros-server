@@ -29,6 +29,7 @@ add_service_files(
   GetLineDetection.srv
   GetFrame.srv
   SetPid.srv
+  SetRoi.srv
   SetColorThreshold.srv
   GetColorThreshold.srv
   GetObjectDetections.srv

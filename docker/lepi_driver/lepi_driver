@@ -1,6 +1,6 @@
 # Note: this container will have the name wupanhao/lepi_driver
 # docker build . -f lepi_driver -t wupanhao/lepi_driver:melodic
-FROM ros:melodic
+FROM ros:melodic-ros-core
 
 #RUN export http_proxy=http://192.168.50.162:1080 && export https_proxy=http://192.168.50.162:1080
 
@@ -27,7 +27,7 @@ RUN apt update && apt install -y --no-install-recommends ros-$ROS_DISTRO-rosbrid
 #WORKDIR /root/deps
 
 COPY ./ ./
-#RUN apt install gcc python-roslib python-roslaunch -y
+RUN apt install gcc g++ -y
 #RUN mv ./pip /usr/bin/pip && \
 #RUN mv ./pip.conf /etc && \
 RUN mv ./publishers.py /opt/ros/$ROS_DISTRO/lib/python2.7/dist-packages/rosbridge_library/internal/publishers.py && \

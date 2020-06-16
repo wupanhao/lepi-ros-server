@@ -1,7 +1,5 @@
 #!/usr/bin/python3
 #!coding:utf-8
-import time
-import os
 import cv2
 from cv_bridge import CvBridge
 import rospy
