@@ -17,7 +17,7 @@ class TextRecognizerNode(object):
     def __init__(self):
         self.node_name = rospy.get_name()
         rospy.loginfo("[%s] Initializing......" % (self.node_name))
-        self.roi = [(120,80),(320,280)]
+        self.roi = [(120,120),(360,240)]
         self.bridge = CvBridge()
         self.visualization = True
         self.image_msg = None
@@ -36,20 +36,24 @@ class TextRecognizerNode(object):
         cv2.rectangle(cv_image,self.roi[0],self.roi[1],(10, 255, 0), 2)
         self.pubImage(cv_image)
 
-    def detect(self,image):
+    def detect(self,image,lang='eng'):
         im = Image.fromarray(cv2.cvtColor(image,cv2.COLOR_BGR2RGB))  
-        return pytesseract.image_to_string(im)
+        return pytesseract.image_to_string(im,lang)
 
     def cbSetRoi(self,params):
         if params.x1 < params.x2 and params.x2 <= 480 and params.x1 >=0:
             if params.y1 < params.y2 and params.y2 <= 360 and params.y1 >=0:
                 self.roi = [(params.x1,params.y1),(params.x2,params.y2)]
-        return SetRoiResponse()
-
+                return SetRoiResponse('设置成功')
+        return SetRoiResponse('参数无效,设置失败')
     def cbTextDetection(self,params):
         image = self.getImage(self.image_msg)
         img = image[self.roi[0][1]:self.roi[1][1],self.roi[0][0]:self.roi[1][0]]
-        text = self.detect(img)
+        text = ''
+        try:
+            text = self.detect(img,params.data)
+        except Exception as e:
+            print(e)
         return GetStringResponse(text)
 
     def pubImage(self,image):
