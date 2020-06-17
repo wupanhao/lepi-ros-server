@@ -1,0 +1,39 @@
+# Note: this container will have the name wupanhao/lepi_driver
+# docker build . -f lepi_driver -t wupanhao/lepi_driver:melodic
+FROM arm32v7/ros:eloquent-ros-core
+
+#RUN export http_proxy=http://192.168.50.162:1080 && export https_proxy=http://192.168.50.162:1080
+
+#ENV http_proxy http://192.168.50.162:1080
+#ENV https_proxy http://192.168.50.162:1080
+ENV ROS_DISTRO=eloquent
+
+#	ros-$ROS_DISTRO-cv-bridge \
+# dep for apritag_ros
+#	ros-$ROS_DISTRO-tf \
+#	ros-$ROS_DISTRO-image-geometry \
+# common dep
+# size of deps for ros-$ROS_DISTRO-web-video-server : ~355M
+RUN apt update && apt install -y --no-install-recommends ros-dashing-rosbridge-server \
+#	ros-$ROS_DISTRO-web-video-server \
+#	libatlas-base-dev \
+#	nano \
+#	python-cv-bridge \
+	python3-pip \
+	python3-smbus 
+	
+#RUN pip install --upgrade pip 
+
+#WORKDIR /root/deps
+
+#COPY ./ ./
+RUN apt install gcc g++ -y
+#RUN mv ./pip /usr/bin/pip && \
+#RUN mv ./pip.conf /etc && \
+#RUN mv ./publishers.py /opt/ros/$ROS_DISTRO/lib/python2.7/dist-packages/rosbridge_library/internal/publishers.py && \
+#RUN echo "[global]\nextra-index-url=https://www.piwheels.org/simple" > /etc/pip.conf && pip install spidev RPi.GPIO
+RUN    pip3 install spidev RPi.GPIO
+#    echo "deb http://raspbian.raspberrypi.org/raspbian/ buster main contrib non-free rpi" >> /etc/apt/sources.list && \
+#    wget https://archive.raspbian.org/raspbian.public.key -O - | apt-key add - && \
+#    apt update && apt install python-spidev python-rpi.gpio
+CMD /bin/bash

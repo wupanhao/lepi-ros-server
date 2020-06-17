@@ -1,1 +1,1 @@
-from apriltag_detector import *
+from .apriltag_detector import *

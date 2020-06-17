@@ -2,6 +2,8 @@ build_isolated
 devel_isolated
 build
 devel
+install
+log
 /docker/demo_duck/kinetic
 *.whl
 *.png
