@@ -3,7 +3,8 @@ import cv2
 import threading
 import time
 # from .image_rector import ImageRector
-import image_geometry
+import cameramodels as image_geometry
+
 from camera_utils import load_camera_info_3
 
 class UsbCamera(object):
@@ -115,7 +116,8 @@ class UsbCamera(object):
         if self.camera_info_msg.width == 480:
             cv_image = cv2.resize(cv_image,(480,360))
         if self.rectify:
-            self.cameraModel.rectifyImage(cv_image,cv_image)
+            self.cameraModel.remapImage(cv_image,cv_image)
+            # self.cameraModel.rectifyImage(cv_image,cv_image)
             # cv_image = self.rector.rect(cv_image)
         if self.camera_info_msg.width == 640:
             cv_image = cv2.resize(cv_image,(480,360))

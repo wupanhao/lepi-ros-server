@@ -75,7 +75,7 @@ class CameraNode(object):
         else:
             self.pub_image = None
 
-        rospy.Timer(rospy.Duration.from_sec(1.0/15), self.cbPublish)
+        rospy.Timer(rospy.Duration.from_sec(1.0/10), self.cbPublish)
         rospy.loginfo("[%s] Initialized......" % (self.node_name))
     def srvCameraSetEnable(self,params):
         if params.value == 1 and self.camera.active == False:
