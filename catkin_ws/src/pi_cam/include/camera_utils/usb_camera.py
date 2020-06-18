@@ -112,14 +112,15 @@ class UsbCamera(object):
         if self.last_image is None:
             return None
         cv_image = self.last_image
-        # cv_image = cv2.resize(cv_image,(480,360))
+        if self.camera_info_msg.width == 480:
+            cv_image = cv2.resize(cv_image,(480,360))
         if self.rectify:
             self.cameraModel.rectifyImage(cv_image,cv_image)
             # cv_image = self.rector.rect(cv_image)
-        # cv_image = cv2.resize(cv_image,(480,360))
+        if self.camera_info_msg.width == 640:
+            cv_image = cv2.resize(cv_image,(480,360))
         if abs(self.flip_code) <= 1:
             cv_image = cv2.flip(cv_image,self.flip_code)
-        cv_image = cv2.resize(cv_image,(480,360))
         return cv_image
     def setFlip(self,flip_code=2):
         self.flip_code = flip_code

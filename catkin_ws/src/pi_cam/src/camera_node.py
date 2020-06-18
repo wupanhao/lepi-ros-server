@@ -113,7 +113,7 @@ class CameraNode(object):
         # self.last_publish = self.last_update
         cv_image = self.camera.getImage()
         if self.pub_image is not None:
-            image_msg = self.bridge.cv2_to_imgmsg(self.cv_image, "bgr8")
+            image_msg = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
             self.pub_image.publish(image_msg)
         # image_msg = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
         # image_msg.header.stamp = rospy.Time.now()
