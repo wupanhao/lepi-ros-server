@@ -203,7 +203,7 @@ class I2cDriver:
         acc_x = data[1] << 8 | data[0]
         acc_y = data[3] << 8 | data[2]
         acc_z = data[5] << 8 | data[4]
-        # print("Acc_X=: "+str(acc_x)+"    Acc_Y=: "+str(acc_y)+"   Acc_Z: "+str(acc_z))
+        print("Acc_X=: "+str(acc_x)+"    Acc_Y=: "+str(acc_y)+"   Acc_Z: "+str(acc_z))
         return (acc_x, acc_y, acc_z)
 
     def readGyroData(self):
@@ -216,7 +216,7 @@ class I2cDriver:
         gyro_x = data[1] << 8 | data[0]
         gyro_y = data[3] << 8 | data[2]
         gyro_z = data[5] << 8 | data[4]
-        # print("Gyro_X=: "+str(gyro_x)+"    Gyro_Y=: "+str(gyro_y)+"   Gyro_Z: "+str(gyro_z))
+        print("Gyro_X=: "+str(gyro_x)+"    Gyro_Y=: "+str(gyro_y)+"   Gyro_Z: "+str(gyro_z))
         return (gyro_x, gyro_y, gyro_z)
 
     def readMagnData(self):
@@ -230,7 +230,7 @@ class I2cDriver:
         magn_x = data[1] << 8 | data[0]
         magn_y = data[3] << 8 | data[2]
         magn_z = data[5] << 8 | data[4]
-        # print("Magn_X=: "+str(magn_x)+"    Magn_Y=: "+str(magn_y)+"   Magn_Z: "+str(magn_z))
+        print("Magn_X=: "+str(magn_x)+"    Magn_Y=: "+str(magn_y)+"   Magn_Z: "+str(magn_z))
         return (magn_x, magn_y, magn_z)
 
     def readBatOcv(self):
@@ -250,12 +250,28 @@ class I2cDriver:
         # print("剩余电量: "+str(n_power))
         charging = power[1] & 0xF0
         bat_power_ocv = (power[3] << 8 | power[2])*0.26855/1000+2.6
-        est_power = (bat_power_ocv-3.625)*200
-        if est_power > 100:
-            est_power = 100
-        elif est_power < 0:
-            est_power = 0
-        # print("电池开路电压=:"+str(bat_power_ocv)+"v")
+        #est_power = (bat_power_ocv-3.625)*200
+        est_power = power[0]
+	#if est_power > 100:
+        #    est_power = 100
+        #elif est_power < 0:
+        #    est_power = 0
+        if(charging):
+	    est_powerc=est_power&0x1F
+	    if(est_powerc==0x1F):
+		est_power=100
+	    elif(est_powerc==0x0F):
+		est_power=75
+	    elif(est_powerc==0x07):
+		est_power=50
+	    elif(est_powerc==0x03):
+		est_power=25
+	    elif(est_powerc==0x01):
+		est_power==1
+            else:
+		#est_power=99;
+                pass
+	# print("电池开路电压=:"+str(bat_power_ocv)+"v")
         return (charging, bat_power_ocv, n_power, est_power)
 
     def readVout(self):
