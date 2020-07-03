@@ -113,7 +113,7 @@ class FaceRecognizerNode(object):
         if len(params.data) == 0:
             return SetStringResponse("添加失败,名称长度为0")
         try:
-            cv_image = self.bridge.imgmsg_to_cv2(self.image_msg, desired_encoding="bgr8")
+            cv_image = self.getImage(self.image_msg)
             res = self.recognizer.add_face_label(cv_image,params.data,save=True)
             return SetStringResponse(res)    
         except Exception as e:
@@ -134,6 +134,20 @@ class FaceRecognizerNode(object):
         msg.format = "jpeg"
         msg.data = jpg_from_bgr(image)
         self.pub_detections.publish(msg)
+    def getImage(self,image_msg):
+        if hasattr(image_msg,'format'): # CompressedImage
+            try:
+                cv_image = bgr_from_jpg(image_msg.data)
+            except ValueError as e:
+                rospy.loginfo('[%s] cannot decode image: %s' % (self.node_name,e))
+                return None
+        else: # Image
+            try:
+                cv_image = self.bridge.imgmsg_to_cv2(image_msg)
+            except Exception as e:
+                rospy.loginfo('[%s] cannot convert image: %s' % (self.node_name,e))
+                return None
+        return cv_image
     def onShutdown(self):
         rospy.loginfo("[%s] Shutdown." % (self.node_name))
 if __name__ == '__main__':
