@@ -1,8 +1,8 @@
 #!coding:utf-8
 from scipy.spatial.transform import Rotation as R
 import rospkg
-# from apriltags3 import Detector
-from dt_apriltags import Detector
+from apriltags3 import Detector
+# from dt_apriltags import Detector
 from camera_utils import load_camera_info_3
 import cv2
 import numpy as np
@@ -22,9 +22,9 @@ class ApriltagDetector:
         # self.cali_file = "default.yaml"
         self.camera_info_msg = load_camera_info_3()
         # self.detector = Detector(
-        print(cur_dir + '/../../../../devel_isolated/apriltag/lib')
-        # self.detector = Detector(searchpath=[cur_dir + '/../../../../devel_isolated/apriltag/lib'],
-        self.detector = Detector(families='tag36h11',
+        # print(cur_dir + '/../../../../devel_isolated/apriltag/lib')
+        self.detector = Detector(searchpath=[cur_dir + '/../../../../devel_isolated/apriltag/lib'],
+        # self.detector = Detector(families='tag36h11',
                                  nthreads=1,
                                  quad_decimate=3.0,
                                  quad_sigma=0.0,

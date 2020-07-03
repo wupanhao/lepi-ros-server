@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 #!coding:utf-8
 import time
 import cv2
@@ -76,8 +76,10 @@ class ApriltagDetectorNode(object):
     def toApriltagDetections(self,tags):
         msg = GetApriltagDetectionsResponse()
         for tag in tags:
-            # r = R.from_dcm(np.array(tag.pose_R))
-            r = R.from_matrix(np.array(tag.pose_R))
+            if hasattr(R,'from_dcm'):
+              r = R.from_dcm(np.array(tag.pose_R))
+            else:
+              r = R.from_matrix(np.array(tag.pose_R))
             offset = np.array(tag.pose_t)*100
             euler = r.as_euler('xyz', degrees=True)
             detection = ApriltagPose(id=tag.tag_id,pose_r=euler,pose_t=offset)

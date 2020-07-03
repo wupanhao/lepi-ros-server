@@ -252,26 +252,26 @@ class I2cDriver:
         bat_power_ocv = (power[3] << 8 | power[2])*0.26855/1000+2.6
         #est_power = (bat_power_ocv-3.625)*200
         est_power = power[0]
-	#if est_power > 100:
+        #if est_power > 100:
         #    est_power = 100
         #elif est_power < 0:
         #    est_power = 0
         if(charging):
-	    est_powerc=est_power&0x1F
-	    if(est_powerc==0x1F):
-		est_power=100
-	    elif(est_powerc==0x0F):
-		est_power=75
-	    elif(est_powerc==0x07):
-		est_power=50
-	    elif(est_powerc==0x03):
-		est_power=25
-	    elif(est_powerc==0x01):
-		est_power==1
-            else:
-		#est_power=99;
-                pass
-	# print("电池开路电压=:"+str(bat_power_ocv)+"v")
+            est_powerc=est_power&0x1F
+        if(est_powerc==0x1F):
+            est_power=100
+        elif(est_powerc==0x0F):
+            est_power=75
+        elif(est_powerc==0x07):
+            est_power=50
+        elif(est_powerc==0x03):
+            est_power=25
+        elif(est_powerc==0x01):
+            est_power==1
+        else:
+            #est_power=99;
+            pass
+    # print("电池开路电压=:"+str(bat_power_ocv)+"v")
         return (charging, bat_power_ocv, n_power, est_power)
 
     def readVout(self):
@@ -313,3 +313,4 @@ if __name__ == '__main__':
 #     #time.sleep(1)
 #     print(bus.read_i2c_block_data(adress,0x8B,4))
 #     print(bus.read_byte_data(adress,0x8C))
+

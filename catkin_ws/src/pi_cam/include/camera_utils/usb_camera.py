@@ -3,7 +3,7 @@ import cv2
 import threading
 import time
 # from .image_rector import ImageRector
-import cameramodels as image_geometry
+from .cameramodels import PinholeCameraModel
 
 from camera_utils import load_camera_info_3
 
@@ -20,7 +20,7 @@ class UsbCamera(object):
         self.flip_code = 2
         self.active = False
         # self.rector = ImageRector()
-        self.cameraModel = image_geometry.PinholeCameraModel()
+        self.cameraModel = PinholeCameraModel()
         self.loadCaliFile()
     def open_camera(self,camera_id=0):
         # self.rector = ImageRector(cali_file="default.yaml")
