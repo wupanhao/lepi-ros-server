@@ -21,7 +21,7 @@ class TextRecognizerNode(object):
         self.bridge = CvBridge()
         self.visualization = True
         self.image_msg = None
-        self.pub_detections = rospy.Publisher("~image_text", CompressedImage, queue_size=1)
+        # self.pub_detections = rospy.Publisher("~image_text", CompressedImage, queue_size=1)
 
         rospy.Service('~detect_text', GetString, self.cbTextDetection)
         rospy.Service('~set_roi', SetRoi, self.cbSetRoi)
@@ -32,6 +32,7 @@ class TextRecognizerNode(object):
 
     def cbImg(self,image_msg):
         self.image_msg = image_msg
+        return
         cv_image = self.getImage(image_msg)
         cv2.rectangle(cv_image,self.roi[0],self.roi[1],(10, 255, 0), 2)
         self.pubImage(cv_image)

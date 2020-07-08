@@ -21,7 +21,7 @@ class ImageClassifierNode(object):
         self.bridge = CvBridge()
         self.visualization = True
         self.image_msg = None
-        self.pub_detections = rospy.Publisher("~image_class", CompressedImage, queue_size=1)
+        # self.pub_detections = rospy.Publisher("~image_class", CompressedImage, queue_size=1)
 
         rospy.Service('~class_image', GetObjectDetections, self.cbGetObjectDetections)
         rospy.Service('~set_threshold', SetInt32, self.cbSetThreshold)
@@ -44,6 +44,7 @@ class ImageClassifierNode(object):
         return [xmin,ymin,xmax,ymax]
     def cbImg(self,image_msg):
         self.image_msg = image_msg
+        return
         cv_image = self.getImage(image_msg)
         xmin,ymin,xmax,ymax = self.getBox()
         cv2.rectangle(cv_image,(xmin,ymin),(xmax,ymax),(10, 255, 0), 2)

@@ -34,7 +34,7 @@ class TransferNode(object):
         self.image_msg = None # Image()
 
         self.training_logs_topic = rospy.Publisher("~training_logs", String, queue_size=1)
-        self.pub_detections = rospy.Publisher("~image_transfer", CompressedImage, queue_size=1)
+        # self.pub_detections = rospy.Publisher("~image_transfer", CompressedImage, queue_size=1)
 
         rospy.Service('~camera_save_frame', SetString, self.srvCameraSaveFrame)
         rospy.Service('~set_ns', SetString, self.srv_set_ns)
@@ -76,6 +76,7 @@ class TransferNode(object):
         return cv_image
     def cbImg(self,image_msg):
         self.image_msg = image_msg
+        return
         cv_image = self.getImage(image_msg)
         xmin,ymin,xmax,ymax = self.getBox()
         cv2.rectangle(cv_image,(xmin,ymin),(xmax,ymax),(10, 255, 0), 2)
