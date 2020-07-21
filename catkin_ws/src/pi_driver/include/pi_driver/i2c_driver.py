@@ -258,19 +258,19 @@ class I2cDriver:
         #    est_power = 0
         if(charging):
             est_powerc=est_power&0x1F
-        if(est_powerc==0x1F):
-            est_power=100
-        elif(est_powerc==0x0F):
-            est_power=75
-        elif(est_powerc==0x07):
-            est_power=50
-        elif(est_powerc==0x03):
-            est_power=25
-        elif(est_powerc==0x01):
-            est_power==1
-        else:
-            #est_power=99;
-            pass
+            if(est_powerc==0x1F):
+                est_power=100
+            elif(est_powerc==0x0F):
+                est_power=75
+            elif(est_powerc==0x07):
+                est_power=50
+            elif(est_powerc==0x03):
+                est_power=25
+            elif(est_powerc==0x01):
+                est_power==1
+            else:
+                #est_power=99;
+                pass
     # print("电池开路电压=:"+str(bat_power_ocv)+"v")
         return (charging, bat_power_ocv, n_power, est_power)
 

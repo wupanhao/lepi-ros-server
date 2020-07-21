@@ -238,21 +238,31 @@ def test_info():
 	print(Lepi.motor_get_info(4))
 	print(Lepi.motor_get_info(5))
 
+def testRW():
+        while True:
+            for i in range(1,6):
+              info = Lepi.motor_get_info(i)
+              if info[1] != 0:
+                  print('data error')
+                  print(info)
+
+
 if __name__ == '__main__':
+	testRW()
 	# test_motor()
-	write_enable(0)
-	read_enable()
-	write_speed(23)
-	read_speed()
-	write_enable(1)
-	read_speed()	
-	write_speed(233)
-	read_speed()
-	write_enable(1)
-	read_speed()
-	write_speed(2333)
-	read_speed()
-	write_speed(23333)
-	read_speed()	
+	#write_enable(0)
+	#read_enable()
+	#write_speed(23)
+	#read_speed()
+	#write_enable(1)
+	#read_speed()	
+	#write_speed(233)
+	#read_speed()
+	#write_enable(1)
+	#read_speed()
+	#write_speed(2333)
+	#read_speed()
+	#write_speed(23333)
+	#read_speed()	
 	# read_speed()
 	# test_info()
