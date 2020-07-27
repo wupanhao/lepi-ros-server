@@ -250,7 +250,7 @@ class I2cDriver:
         # print("剩余电量: "+str(n_power))
         charging = power[1] & 0xF0
         bat_power_ocv = (power[3] << 8 | power[2])*0.26855/1000+2.6
-        est_power = (bat_power_ocv-3.625)*200
+        est_power = int( (bat_power_ocv-3.625)*200)
         # est_power = power[0]
         if est_power > 100:
            est_power = 100
