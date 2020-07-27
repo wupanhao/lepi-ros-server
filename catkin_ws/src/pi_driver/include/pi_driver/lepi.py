@@ -326,9 +326,21 @@ class Lepi(object):
         return ERROR_PORT
 
     @classmethod
+    def motor_set_current_position(self, port, position):
+        if self.Motors.has_key(port):
+            return self.spi_write_32(Message.SetCurrentPosition(
+                self.Motors[port]), position)
+        elif port == 0:
+            self.spi_write_32(Message.SetCurrentPosition(self.Motors[1]), position)
+            self.spi_write_32(Message.SetCurrentPosition(self.Motors[2]), position)
+            self.spi_write_32(Message.SetCurrentPosition(self.Motors[3]), position)
+            self.spi_write_32(Message.SetCurrentPosition(self.Motors[4]), position)
+            self.spi_write_32(Message.SetCurrentPosition(self.Motors[5]), position)
+        return ERROR_PORT
+    @classmethod
     def motor_set_target_position(self, port, position):
         if self.Motors.has_key(port):
-            self.spi_write_32(Message.SetTargetPosition(
+            return self.spi_write_32(Message.SetTargetPosition(
                 self.Motors[port]), position)
         return ERROR_PORT
 
@@ -651,7 +663,8 @@ if __name__ == '__main__':
     # Lepi.servo_ping(2)
     # print(Lepi.servo_write_u16(2,EEPROM.MAX_POSITION_H,1000))
     # print(Lepi.servo_write_u16(2,EEPROM.MIN_POSITION_H,0))
-    Lepi.servo_set_position(2,0,1000,200)
+    # Lepi.servo_set_position(2,0,1000,200)
+    Lepi.motor_set_current_position(0,0)
     # print(Lepi.servo_write_u16(2,0x2c,200))
     # print(Lepi.servo_read_u16(2,EEPROM.MIN_POSITION_H))
     # print(Lepi.servo_read_u16(2,EEPROM.MAX_POSITION_H))

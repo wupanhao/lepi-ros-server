@@ -37,8 +37,11 @@ class PiDriverNode:
         rospy.Service("~motor_set_enable", SetInt32, self.srvMotorSetEnable)
         rospy.Service("~motor_get_enable", GetInt32, self.srvMotorGetEnable)
         rospy.Service("~motor_set_speed", SetInt32, self.srvMotorSetSpeed)
+        rospy.Service("~motor_set_rotate", SetInt32, self.srvMotorSetRotate)
         rospy.Service("~motor_get_speed", GetInt32, self.srvMotorGetSpeed)
         rospy.Service("~motor_get_pulse", GetInt32, self.srvMotorGetPulse)
+        rospy.Service('~motor_set_current_position', SetInt32,
+                      self.srvMotorSetCurrentPosition)
         rospy.Service('~motor_set_position', SetInt32,
                       self.srvMotorSetPosition)
         rospy.Service('~motor_get_position', GetInt32,
@@ -142,7 +145,12 @@ class PiDriverNode:
         # print(params)
         speed = Lepi.motor_get_speed(params.port)
         return GetInt32Response(speed)
-
+    def srvMotorSetRotate(self, params):
+        # print(params)
+        cur_position = Lepi.motor_get_current_position(params.port)
+        # print(cur_position,params.value*2+cur_position)
+        Lepi.motor_set_target_position(params.port, params.value*2+cur_position)
+        return SetInt32Response(params.port, params.value)
     def srvMotorGetPulse(self, params):
         value = Lepi.motor_get_pulse(params.port)
         return GetInt32Response(value)
@@ -150,6 +158,10 @@ class PiDriverNode:
     def srvMotorSetPosition(self, params):
         # print(params)
         Lepi.motor_set_target_position(params.port, params.value)
+        return SetInt32Response(params.port, params.value)
+    def srvMotorSetCurrentPosition(self, params):
+        # print(params)
+        Lepi.motor_set_current_position(params.port, params.value)
         return SetInt32Response(params.port, params.value)
 
     def srvMotorGetPosition(self, params):
