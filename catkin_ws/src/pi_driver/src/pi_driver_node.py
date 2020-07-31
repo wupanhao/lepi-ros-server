@@ -295,10 +295,10 @@ class PiDriverNode:
         status = Lepi.servo_read_u16(params.id,params.param_id)
         return SetServoParamResponse(status)
     def srvSensorGetMode(self,params):
-        status = Lepi.sensor_get_mode(params.port)
+        status = Lepi.sensor_get_mode(6-params.port)
         return GetInt32Response(status) 
     def srvSensorSetMode(self,params):
-        status = Lepi.sensor_set_mode(params.port,params.value)
+        status = Lepi.sensor_set_mode(6-params.port,params.value)
         return SetInt32Response(params.port,params.value) 
 if __name__ == '__main__':
     rospy.init_node('pi_driver_node', anonymous=False)
