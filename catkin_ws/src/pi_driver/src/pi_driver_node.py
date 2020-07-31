@@ -48,6 +48,8 @@ class PiDriverNode:
                       self.srvMotorGetPosition)
         rospy.Service('~motors_get_info', GetMotorsInfo, self.srvMotorsGetInfo)
         rospy.Service('~sensor_get_type', GetInt32, self.srvSensorGetType)
+        rospy.Service('~sensor_get_mode', GetInt32, self.srvSensorGetMode)
+        rospy.Service('~sensor_set_mode', SetInt32, self.srvSensorSetMode)
         rospy.Service('~sensor_get_value', GetInt32, self.srvSensorGetValue)
         rospy.Service('~sensor_get_info', GetSensorInfo, self.srvSensorGetInfo)
         rospy.Service('~sensors_get_info', GetMotorsInfo, self.srvSensorsGetInfo)
@@ -292,7 +294,12 @@ class PiDriverNode:
     def srvServoGetU16(self,params):
         status = Lepi.servo_read_u16(params.id,params.param_id)
         return SetServoParamResponse(status)
-
+    def srvSensorGetMode(self,params):
+        status = Lepi.sensor_get_mode(params.port)
+        return GetInt32Response(status) 
+    def srvSensorSetMode(self,params):
+        status = Lepi.sensor_set_mode(params.port,params.value)
+        return SetInt32Response(params.port,params.value) 
 if __name__ == '__main__':
     rospy.init_node('pi_driver_node', anonymous=False)
     node = PiDriverNode()

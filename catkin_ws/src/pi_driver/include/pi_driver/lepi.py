@@ -154,6 +154,10 @@ class Message(object):
         return Command.READ | port | Sensor.MODE
 
     @staticmethod
+    def SetSensorMode(port):
+        return Command.WRITE | port | Sensor.MODE
+
+    @staticmethod
     def GetSensorValue(port):
         return Command.READ | port | Sensor.VALUE
 
@@ -385,6 +389,12 @@ class Lepi(object):
     def sensor_get_mode(self, port):
         if self.Sensors.has_key(port):
             return self.spi_read_32(Message.GetSensorMode(self.Sensors[port]))
+        return ERROR_PORT
+
+    @classmethod
+    def sensor_set_mode(self, port,value):
+        if self.Sensors.has_key(port):
+            return self.spi_write_32(Message.SetSensorMode(self.Sensors[port]),value)
         return ERROR_PORT
 
     @classmethod
