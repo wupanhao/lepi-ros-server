@@ -410,7 +410,7 @@ class Lepi(object):
     @classmethod
     def sensor_set_value(self, port,value):
         if self.Sensors.has_key(port):
-            return self.spi_write_32(Message.GetSensorValue(self.Sensors[port]),value)
+            return self.spi_write_32(Message.SetSensorValue(self.Sensors[port]),value)
         return ERROR_PORT
 
     @classmethod
