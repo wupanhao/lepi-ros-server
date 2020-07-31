@@ -162,6 +162,10 @@ class Message(object):
         return Command.READ | port | Sensor.VALUE
 
     @staticmethod
+    def SetSensorValue(port):
+        return Command.WRITE | port | Sensor.VALUE
+
+    @staticmethod
     def GetSensorStatus():
         return Command.READ | System.SENSOR_STATUS
 
@@ -402,6 +406,13 @@ class Lepi(object):
         if self.Sensors.has_key(port):
             return self.spi_read_32(Message.GetSensorValue(self.Sensors[port]))
         return ERROR_PORT
+
+    @classmethod
+    def sensor_set_value(self, port,value):
+        if self.Sensors.has_key(port):
+            return self.spi_write_32(Message.GetSensorValue(self.Sensors[port]),value)
+        return ERROR_PORT
+
     @classmethod
     def sensor_get_info(self, port):
         if self.Sensors.has_key(port):
