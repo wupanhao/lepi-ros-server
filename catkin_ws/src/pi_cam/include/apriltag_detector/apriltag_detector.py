@@ -65,9 +65,10 @@ class ApriltagDetector:
                 [0.58391835]]
                 pose_err = 5.94095039944e-07
         """
-        image_gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
+        if len(cv_image.shape) == 3:
+            cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
         tags = self.detector.detect(
-            image_gray, True, self.camera_params, tag_size)  # tag size in meter
+            cv_image, True, self.camera_params, tag_size)  # tag size in meter
         return tags
 
     def label_tags(self,rect_image,tags):

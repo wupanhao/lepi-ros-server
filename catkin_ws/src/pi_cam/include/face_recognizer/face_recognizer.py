@@ -27,6 +27,9 @@ class FaceRecognizer(object):
         #     '/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf', fontSize)
         self.known_faces = {}
         self.threshold = threshold
+        self.face_locations = []
+        self.face_names = []
+        self.face_data = []
         self.load_faces()
 
 
@@ -45,8 +48,9 @@ class FaceRecognizer(object):
         small_frame = cv2.resize(frame, (0, 0), fx=1.0/scale, fy=1.0/scale)
         # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
         rgb_small_frame = small_frame[:, :, ::-1]
-        face_locations = face_recognition.face_locations(rgb_small_frame)
-        return face_locations
+        self.face_locations = face_recognition.face_locations(rgb_small_frame)
+        self.face_data = self.getFaceData(0)
+        return self.face_locations
 
     def recognize(self, frame, scale=None):
         """
@@ -84,8 +88,29 @@ class FaceRecognizer(object):
         end = time.time()
         print("recognized %d faces in %.2f ms" %
               (len(face_locations), (end - start)*1000))
+        self.face_locations = face_locations
+        self.face_names = face_names
+        self.face_data = self.getFaceData(0)
         return face_locations, face_names
 
+    def getFaceData(self,index):
+        if len(self.face_locations)>index:
+            (top, right, bottom, left) = self.face_locations[index]
+            top *= self.scale
+            right *= self.scale
+            bottom *= self.scale
+            left *= self.scale
+            return [int((right+left)/2),int((top+bottom)/2),int(right-left),int(bottom-top)]
+        else:
+            return [0,0,0,0]
+    def detectedFaceLabel(self,name):
+        if name in self.face_names:
+            index = self.face_names.index(name)
+            self.face_data = self.getFaceData(index)
+            return True
+        else:
+            self.face_data = []
+            return False
     def rect_faces(self, frame, face_locations, scale=None):
         """
         把检测到的人脸用矩形框出来

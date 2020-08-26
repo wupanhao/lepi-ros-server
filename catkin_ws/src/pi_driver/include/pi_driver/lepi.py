@@ -8,7 +8,8 @@ try:
 
   LP_SPI = spidev.SpiDev()
   LP_SPI.open(0, 1)
-  LP_SPI.max_speed_hz = 50000
+#   LP_SPI.max_speed_hz = 125000000,62500000,31200000,15600000,7800000,3900000,1953000,976000,488000,244000,122000,61000,30500,15200,7629
+  LP_SPI.max_speed_hz = 488000
   LP_SPI.mode = 0b00
   LP_SPI.bits_per_word = 8
 except Exception as e:
@@ -89,6 +90,7 @@ class EEPROM(object):
 
 class System(object):
     SENSOR_STATUS = 0
+    VERSION = 1
     SENSOR_1 = 0x01 << 16
     SENSOR_2 = 0x01 << 17
     SENSOR_3 = 0x01 << 18
@@ -180,6 +182,10 @@ class Message(object):
     @staticmethod
     def SetServoTx():
         return Command.WRITE | Group.SERVO | SERVO.Tx
+
+    @staticmethod
+    def GetSystemVersion():
+        return Command.READ | Group.SYSTEM | System.VERSION
 
 def chk_sum(data):
     data[-1] = 0
@@ -444,13 +450,14 @@ class Lepi(object):
         data = [Message.SetServoTx(),0xff,0xff,id,0x02,0x01,0]
         data[-1] = chk_sum(data[3:])
         # print('transfer:',data)
-        self.spi.xfer2(data)
-        time.sleep(0.002)
-        l = Lepi.servo_rx_len()
-        status = Lepi.servo_rx_data(l)
-        print('ping',id,status)
-        if(len(status) == 6 ):
-            return True
+        for i in range(1):
+            self.spi.xfer2(data)
+            time.sleep(0.002)
+            l = Lepi.servo_rx_len()
+            status = Lepi.servo_rx_data(l)
+            # print('ping',id,l,status)
+            if(len(status) == 6 and status[2]==id):
+                return True
         else:
             return False
 
@@ -522,6 +529,8 @@ class Lepi(object):
     def servo_rx_data(self,count):
         if(count<2):
             return [0]
+        if(count>253):
+            return [1]
         data = [0 for i in range(count+2)]
         data[0] = Message.GetServoRx()
         # print('transfer:',data)
@@ -534,9 +543,10 @@ class Lepi(object):
     @classmethod
     def servo_scan(self):
         devices = []
-        for i in range(254):
+        for i in range(10):
             if(self.servo_ping(i)):
                 devices.append(i)
+                print(self.servo_get_info(i))
         return devices
 
     @classmethod
@@ -605,6 +615,19 @@ class Lepi(object):
         else:
             print('data error: receive ',res)
             return 0
+    @classmethod
+    def servo_get_info(self,servo_id):
+        info = [0,0,0]
+        info[0] = Lepi.servo_read_u16(servo_id,EEPROM.MIN_POSITION_H)
+        info[1] = Lepi.servo_read_u16(servo_id,EEPROM.CURRENT_POSITION_H)
+        info[2] = Lepi.servo_read_u16(servo_id,EEPROM.MAX_POSITION_H)
+        return info
+
+    @classmethod
+    def system_get_version(self):
+        res = self.spi_read_32(Message.GetSystemVersion())
+        # print('receive:',res)
+        return res
 
 class D51Driver:
     """
@@ -685,7 +708,10 @@ if __name__ == '__main__':
     # print(Lepi.servo_write_u16(2,EEPROM.MAX_POSITION_H,1000))
     # print(Lepi.servo_write_u16(2,EEPROM.MIN_POSITION_H,0))
     # Lepi.servo_set_position(2,0,1000,200)
-    Lepi.motor_set_current_position(0,0)
+    # Lepi.motor_set_current_position(0,0)
+    print(Lepi.system_get_version())
+    for i in range(100):
+        print(Lepi.servo_scan())
     # print(Lepi.servo_write_u16(2,0x2c,200))
     # print(Lepi.servo_read_u16(2,EEPROM.MIN_POSITION_H))
     # print(Lepi.servo_read_u16(2,EEPROM.MAX_POSITION_H))

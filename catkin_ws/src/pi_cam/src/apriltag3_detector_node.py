@@ -58,18 +58,22 @@ class ApriltagDetectorNode(object):
         else: # Image
             cv_image = self.bridge.imgmsg_to_cv2(image_msg, desired_encoding="bgr8")
         rect_image = cv_image
-        tags = self.detector.detect(rect_image)
+        image_gray = cv2.cvtColor(rect_image, cv2.COLOR_BGR2GRAY)
+        resized_image = cv2.resize(image_gray,(640,480))
+        tags = self.detector.detect(resized_image)
         if self.visualization:
             for tag in tags:
                 for idx in range(len(tag.corners)):
-                    cv2.line(rect_image, tuple(tag.corners[idx-1, :].astype(int)), tuple(tag.corners[idx, :].astype(int)), (0, 255, 0))
-                cv2.putText(rect_image, str(tag.tag_id),
+                    cv2.line(resized_image, tuple(tag.corners[idx-1, :].astype(int)), tuple(tag.corners[idx, :].astype(int)), (0, 255, 0))
+                cv2.putText(resized_image, str(tag.tag_id),
                             org=(tag.corners[0, 0].astype(int)+10,tag.corners[0, 1].astype(int)+10),
                             fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-                            fontScale=0.8,
+                            fontScale=1,
                             color=(0, 0, 255))
             # imgmsg = self.bridge.cv2_to_imgmsg(rect_image,"bgr8")
             # self.pub_detections.publish(imgmsg)
+            resized_image = cv2.resize(resized_image,(480,360))
+
             self.pubImage(rect_image)
 
         return self.toApriltagDetections(tags)

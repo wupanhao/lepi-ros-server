@@ -8,7 +8,6 @@ from PIL import Image, ImageFont, ImageDraw
 # from cam_info_reader_node
 from sensor_msgs.msg import CameraInfo
 
-
 # class CameraInfo:
 #     pass
 
@@ -84,6 +83,36 @@ def putText3(frame, text, pos, color, font=defaultFont):
     cv_img = cv2.cvtColor(np.asarray(pil_image), cv2.COLOR_RGB2BGR)
     # cv2.rectangle(cv_img, (pos[0], pos[1]), (pos[0]+size[0], pos[1]+size[1]), (255, 255, 255), cv2.FILLED)
     return cv_img
+
+from pyzbar import pyzbar
+class BarcodeScanner:
+    def __init__(self):
+        self.barcodes = []
+        self.barcode = ['',0,0,0,0]
+
+    def detectBarcode(self,frame):
+        self.barcodes = pyzbar.decode(frame)
+        self.barcode = self.getBarcodeData()
+
+    def getBarcodeData(self,i=0):
+        if len(self.barcodes) > i:
+            barcode = self.barcodes[i]
+            text = barcode.data.decode("utf-8")
+            (x, y, w, h) = barcode.rect
+            return [text,int(x+w/2),int(y+h/2),w,h]
+        else:
+            return ['',0,0,0,0]
+
+    def detectedBarcode(self,pattern):
+        for i,barcode in enumerate(self.barcodes):
+            text = barcode.data.decode("utf-8")
+            if text.find(pattern)>=0:
+                self.barcode = self.getBarcodeData(i)
+                # print(self.barcodes,self.barcode)
+                return True
+        self.barcode = ['',0,0,0,0]
+        return False
+
 
 if __name__ == '__main__':
     import sys
