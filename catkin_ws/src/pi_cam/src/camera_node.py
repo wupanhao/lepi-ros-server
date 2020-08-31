@@ -14,7 +14,7 @@ from camera_utils import ImageRector
 
 from pi_driver.srv import SetInt32,SetInt32Response
 from pi_driver.srv import GetStrings,GetStringsResponse,SetString,SetStringResponse
-from pi_cam.srv import GetFrame,GetFrameResponse
+from pi_cam.srv import GetFrame,GetFrameResponse,GetCompressedFrame,GetCompressedFrameResponse
 # from std_msgs.msg import Empty
 
 from camera_utils import UsbCamera
@@ -47,6 +47,7 @@ class CameraNode(object):
         # self.camera_info_msg = load_camera_info_3()
         # self.camera_info_msg_rect = load_camera_info_3()
         self.image_msg = None # Image()
+        self.compressed_msg = None # CompressedImage()
         self.last_publish = 0
         self.last_update = time.time()
         self.pub_raw = rospy.Publisher("~image_raw", Image, queue_size=1)
@@ -60,6 +61,7 @@ class CameraNode(object):
         rospy.Service('~camera_set_flip', SetInt32, self.srvCameraSetFlip)
         rospy.Service('~camera_set_rectify', SetInt32, self.srvCameraSetRectify)
         rospy.Service('~camera_get_frame', GetFrame, self.srvCameraGetFrame)
+        rospy.Service('~camera_get_compressed', GetCompressedFrame, self.srvCameraGetCompressedFrame)
         rospy.Service('~get_image_topics', GetStrings, self.srvGetImageTopics)
         rospy.Service('~list_cali_file', GetStrings, self.srvListCaliFile)
         rospy.Service('~load_cali_file', SetString, self.srvLoadCaliFile)
@@ -98,6 +100,10 @@ class CameraNode(object):
         if self.image_msg is None:
             return GetFrameResponse()
         return GetFrameResponse(self.image_msg)
+    def srvCameraGetCompressedFrame(self,params):
+        if self.compressed_msg is None:
+            return GetCompressedFrameResponse()
+        return GetCompressedFrameResponse(self.compressed_msg)
 
     def cbImg(self,cv_image):
         self.cv_image = cv_image
@@ -126,6 +132,7 @@ class CameraNode(object):
         msg.format = "jpeg"
         msg.data = np.array(cv2.imencode('.jpg', cv_image)[1]).tostring()
         # Publish new image
+        self.compressed_msg = msg
         self.pub_compressed.publish(msg)
 
     def srvGetImageTopics(self,params):

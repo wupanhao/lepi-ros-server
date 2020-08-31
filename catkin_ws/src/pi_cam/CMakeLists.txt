@@ -28,6 +28,7 @@ add_service_files(
   GetFaceDetections.srv
   GetLineDetection.srv
   GetFrame.srv
+  GetCompressedFrame.srv
   SetPid.srv
   SetRoi.srv
   SetColorThreshold.srv

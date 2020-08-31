@@ -9,7 +9,7 @@ from sensor_msgs.msg import Image,CompressedImage,CameraInfo
 import numpy as np
 from pi_cam.msg import ApriltagPose
 from pi_cam.srv import GetApriltagDetections,GetApriltagDetectionsResponse
-from scipy.spatial.transform import Rotation as R
+# from scipy.spatial.transform import Rotation as R
 import os
 
 from camera_utils import load_camera_info_3,bgr_from_jpg,jpg_from_bgr
@@ -79,14 +79,9 @@ class ApriltagDetectorNode(object):
         return self.toApriltagDetections(tags)
     def toApriltagDetections(self,tags):
         msg = GetApriltagDetectionsResponse()
-        for tag in tags:
-            if hasattr(R,'from_dcm'):
-              r = R.from_dcm(np.array(tag.pose_R))
-            else:
-              r = R.from_matrix(np.array(tag.pose_R))
-            offset = np.array(tag.pose_t)*100
-            euler = r.as_euler('xyz', degrees=True)
-            detection = ApriltagPose(id=tag.tag_id,pose_r=euler,pose_t=offset)
+        items = self.detector.toApriltagDetections(tags)
+        for item in items:
+            detection = ApriltagPose(id=item[0],pose_r=item[1],pose_t=item[2])
             msg.detections.append(detection)
         return msg
     def pubImage(self,image):

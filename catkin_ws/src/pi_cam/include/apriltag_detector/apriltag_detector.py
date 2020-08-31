@@ -35,6 +35,10 @@ class ApriltagDetector:
             self.camera_info_msg.K).reshape((3, 3))
         self.camera_params = (
             self.cameraMatrix[0, 0], self.cameraMatrix[1, 1], self.cameraMatrix[0, 2], self.cameraMatrix[1, 2])
+        if hasattr(R,'from_dcm'):
+            self.from_dcm_or_matrix = R.from_dcm
+        else:
+            self.from_dcm_or_matrix = R.from_matrix
 
     def detect(self, cv_image, tag_size=0.065):
         """
@@ -79,7 +83,15 @@ class ApriltagDetector:
             org=(tag.corners[0, 0].astype(int)+10,tag.corners[0, 1].astype(int)+10),
             fontFace=cv2.FONT_HERSHEY_SIMPLEX,
             fontScale=0.8,color=(0, 0, 255))
-
+    def toApriltagDetections(self,tags):
+        detections = []
+        for tag in tags:
+            r = self.from_dcm_or_matrix(np.array(tag.pose_R))
+            offset = np.array(tag.pose_t)*100
+            euler = r.as_euler('xyz', degrees=True)
+            detection = (tag.tag_id,euler,offset)
+            detections.append(detection)
+        return detections
 if __name__ == '__main__':
     import time
     detector = ApriltagDetector()
