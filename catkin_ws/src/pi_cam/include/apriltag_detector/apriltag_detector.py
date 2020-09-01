@@ -1,8 +1,8 @@
 #!coding:utf-8
 from scipy.spatial.transform import Rotation as R
 import rospkg
-from apriltags3 import Detector
-# from dt_apriltags import Detector
+# from apriltags3 import Detector
+from dt_apriltags import Detector
 from camera_utils import load_camera_info_3
 import cv2
 import numpy as np

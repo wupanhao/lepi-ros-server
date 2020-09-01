@@ -19,7 +19,6 @@ from pi_driver.srv import SetServoPosition , SetServoPositionResponse, GetServos
 #from pymouse import PyMouse
 #from pykeyboard import PyKeyboard
 
-
 class PiDriverNode:
     def __init__(self):
         self.node_name = rospy.get_name()
@@ -69,6 +68,7 @@ class PiDriverNode:
         rospy.Service('~servo_set_u16', SetServoParam, self.srvServoSetU16)
         rospy.Service('~servo_set_position', SetServoPosition, self.srvServoSetPosition)
         rospy.Service('~servos_get_info', GetServosInfo, self.srvServosGetInfo)
+        rospy.Service('~get_firmware_version', GetInt32, self.srvGetFirmwareVersion)
         self.i2c_driver = I2cDriver(self.pubButton)
         self.d51_driver = D51Driver(self.pubSensorChange)
         self.sub_motor_set_pulse = rospy.Subscriber(
@@ -77,6 +77,7 @@ class PiDriverNode:
             "~motor_set_speed", U8Int32, self.cbMotorSetSpeed, queue_size=1)
         self.sub_motor_set_angle = rospy.Subscriber(
             "~motor_set_angle", U8Int32, self.cbMotorSetAngle, queue_size=1)
+        
         rospy.loginfo("[%s] Initialized......" % (self.node_name))
 
     def pubButton(self, btn):
@@ -305,6 +306,9 @@ class PiDriverNode:
     def srvSensorSetMode(self,params):
         status = Lepi.sensor_set_mode(6-params.port,params.value)
         return SetInt32Response(params.port,params.value) 
+    def srvGetFirmwareVersion(self,params):
+        version = Lepi.system_get_version()
+        return GetInt32Response(version)
 if __name__ == '__main__':
     rospy.init_node('pi_driver_node', anonymous=False)
     node = PiDriverNode()
