@@ -9,7 +9,7 @@ try:
   LP_SPI = spidev.SpiDev()
   LP_SPI.open(0, 1)
 #   LP_SPI.max_speed_hz = 125000000,62500000,31200000,15600000,7800000,3900000,1953000,976000,488000,244000,122000,61000,30500,15200,7629
-  LP_SPI.max_speed_hz = 488000
+  LP_SPI.max_speed_hz = 61000
   LP_SPI.mode = 0b00
   LP_SPI.bits_per_word = 8
 except Exception as e:
