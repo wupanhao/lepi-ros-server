@@ -30,6 +30,7 @@ class FaceRecognizer(object):
         self.face_locations = []
         self.face_names = []
         self.face_data = []
+        self.add_label_success = False
         self.load_faces()
 
 
@@ -210,10 +211,14 @@ class FaceRecognizer(object):
                 file_path = os.path.join(self.data_dir, name+'.png')
                 print(file_path)
                 cv2.imwrite(file_path, frame)
-            return '成功添加"%s"的标记' % (name)
+            print('成功添加"%s"的标记' % (name))
+            self.add_label_success = True
+            return '标记成功'
         elif len(face_locations) > 1:
+            self.add_label_success = False
             return '标记"%s"失败，检测到多余人脸' % (name)
         else:
+            self.add_label_success = False
             return '标记"%s"失败，未检测到人脸' % (name)
 
     def remove_face_label(self, name):
