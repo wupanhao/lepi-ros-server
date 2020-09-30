@@ -14,6 +14,7 @@ class JoystickNode:
         rospy.loginfo("[%s] Initializing......" % (self.node_name))
         self.joy = MyJoy()
         self.json_state = json.dumps(self.joy.getState())
+        self.last_state = ''
         self.srv_get_button_value = rospy.Service(
             '~get_button_value', GetInt32, self.cbGetButtonValue)
         self.srv_get_axis_value = rospy.Service(
@@ -42,8 +43,10 @@ class JoystickNode:
 
     def cbPublishJoyState(self, channel):
         self.json_state = json.dumps(self.joy.getState())
-        print(self.json_state)
-        self.pub_joy_state.publish(String(self.json_state))
+        if(self.last_state != self.json_state):
+            self.last_state = self.json_state
+            print(self.json_state)
+            self.pub_joy_state.publish(String(self.json_state))
 
     def onShutdown(self):
         self.joy.active = False
