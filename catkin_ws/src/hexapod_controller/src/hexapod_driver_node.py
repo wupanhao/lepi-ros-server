@@ -42,16 +42,16 @@ class HexapodDriverNode:
         self.cbJointState(msg)
     def cbServoAngles(self,angles):
         positions = [int(angles[i]/200.0*1023) for i in range(len(angles))]
-        for i in [2,5,8,11,14,17]:
-            positions[i] = - positions[i]
-        servo_ids = [7, 8, 9, 10, 11, 12, 13, 14, 15, 4, 5, 6, 1, 2, 3, 16, 17, 18]
-        servos = [Servo(servo_ids[i],positions[i]+self.center,speed=self.speed) for i in range(len(angles))]
+        #for i in [2,5,8,11,14,17]:
+        #    positions[i] = - positions[i]
+        #servo_ids = [7, 8, 9, 10, 11, 12, 13, 14, 15, 4, 5, 6, 1, 2, 3, 16, 17, 18]
+        servos = [Servo(i,positions[i]+self.center,speed=self.speed) for i in range(len(angles))]
         if self.servos is not None:
             self.servos.set_positions_sync(servos)
 
     def cbServoPositions(self,positions):
-        servo_ids = [7, 8, 9, 10, 11, 12, 13, 14, 15, 4, 5, 6, 1, 2, 3, 16, 17, 18]
-        servos = [Servo(servo_ids[i],positions[i],speed=self.speed) for i in range(len(positions))]
+        #servo_ids = [7, 8, 9, 10, 11, 12, 13, 14, 15, 4, 5, 6, 1, 2, 3, 16, 17, 18]
+        servos = [Servo(i,positions[i],speed=self.speed) for i in range(len(positions))]
         if self.servos is not None:
             self.servos.set_positions_sync(servos)
 
