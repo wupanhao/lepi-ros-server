@@ -45,13 +45,13 @@ class HexapodDriverNode:
         #for i in [2,5,8,11,14,17]:
         #    positions[i] = - positions[i]
         #servo_ids = [7, 8, 9, 10, 11, 12, 13, 14, 15, 4, 5, 6, 1, 2, 3, 16, 17, 18]
-        servos = [Servo(i,positions[i]+self.center,speed=self.speed) for i in range(len(angles))]
+        servos = [Servo(i+1,positions[i]+self.center,speed=self.speed) for i in range(len(angles))]
         if self.servos is not None:
             self.servos.set_positions_sync(servos)
 
     def cbServoPositions(self,positions):
         #servo_ids = [7, 8, 9, 10, 11, 12, 13, 14, 15, 4, 5, 6, 1, 2, 3, 16, 17, 18]
-        servos = [Servo(i,positions[i],speed=self.speed) for i in range(len(positions))]
+        servos = [Servo(i+1,positions[i],speed=self.speed) for i in range(len(positions))]
         if self.servos is not None:
             self.servos.set_positions_sync(servos)
 
