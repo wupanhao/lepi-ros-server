@@ -5,6 +5,7 @@ devel
 install
 log
 /docker/demo_duck/kinetic
+catkin_ws/src/CMakeLists.txt
 *.whl
 *.png
 *.jpg

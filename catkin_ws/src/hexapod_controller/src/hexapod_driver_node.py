@@ -2,11 +2,13 @@
 import rospy
 import math
 from sensor_msgs.msg import JointState
+from std_msgs.msg import String
 from hexapod_driver import SServo,Servo
 from hexapod_controller.srv import GetOffsets,GetOffsetsResponse,SetOffsets,SetOffsetsResponse
 import time
 import yaml
 import os
+import threading
 
 class HexapodDriverNode:
     def __init__(self):
@@ -16,14 +18,22 @@ class HexapodDriverNode:
         self.center = 1023/2
         self.speed = 1000
         self.cali_file = os.path.expanduser('~')+ '/Lepi_Data/ros/hexapod_controller/calibrations.yaml'
+        self.pub_node_state = rospy.Publisher("/node_state", String, queue_size=1)
+        self.pub_node_state.publish(String('{"node":"%s","state":"%s"}' % (self.node_name,"started") ))
         self.loadCaliFile()
         self.attatchServos()
-        self.toCenter()
+        #self.toCenter()
         self.sub_joint_state = rospy.Subscriber("~joint_states", JointState, self.cbJointState, queue_size=1)
         self.sub_joint_angle = rospy.Subscriber("~joint_angles", JointState, self.cbJointAngle, queue_size=1)
         self.srv_get_offsets = rospy.Service("~get_offsets", GetOffsets, self.loadCaliFile)
         self.srv_set_offsets = rospy.Service("~set_offsets", SetOffsets, self.saveCaliFile)
+        self.controller = threading.Thread(target=self.launchController)
+        self.controller.start()
         rospy.loginfo("[%s] Initialized......" % (self.node_name))
+        #os.system('bash -c "source /home/pi/nodejs.sh && node /home/pi/workspace/lepi-gui/app/hexapod/controller.js"')
+
+    def launchController(self):
+        os.system('bash -c "source /home/pi/nodejs.sh && node /home/pi/workspace/lepi-gui/app/hexapod/controller.js"')
 
     def attatchServos(self,port = '/dev/ttyUSB0'):
         try:
@@ -85,6 +95,7 @@ class HexapodDriverNode:
         return res
 
     def onShutdown(self):
+        self.pub_node_state.publish(String('{"node":"%s","state":"%s"}' % (self.node_name,"stopped") ))
         rospy.loginfo("[%s] Shutdown." % (self.node_name))
 
 if __name__ == '__main__':
