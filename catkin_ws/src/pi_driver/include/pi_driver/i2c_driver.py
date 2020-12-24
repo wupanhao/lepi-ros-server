@@ -168,6 +168,11 @@ class I2cDriver:
         self.m031_addr = 0x15
         self.int_pin = 22  # GPIO25 40pin 第22号引脚
         self.bus = smbus.SMBus(1)
+        self.senserData = {
+            'acc':[0,0,0],
+            'gryo':[0,0,0],
+            'magn':[0,0,0],
+        }
         if btn_handler is not None:
             self.btn_handler = btn_handler
             GPIO.setmode(GPIO.BOARD)
@@ -193,18 +198,50 @@ class I2cDriver:
         if Button.has_key(btn):
             print(Button[btn])
 
+    def readSensorData(self,sensorType,byteLen=6):
+        maxTry = 5
+        while maxTry > 0:
+            try:
+                data = self.bus.read_i2c_block_data(self.m031_addr, sensorType, byteLen)
+                x = data[1] << 8 | data[0]
+                y = data[3] << 8 | data[2]
+                z = data[5] << 8 | data[4]
+                data = [x,y,z]
+                if sensorType == ReadAccSensor:
+                    self.senserData['acc'] = data
+                elif sensorType == ReadGyroSensor:
+                    self.senserData['gyro'] = data
+                elif sensorType == ReadMagnetometer:
+                    self.senserData['magn'] = data
+                return data
+            except Exception as e:
+                print(e)
+                maxTry = maxTry - 1
+        if sensorType == ReadAccSensor:
+            data = self.senserData['acc']
+        elif sensorType == ReadGyroSensor:
+            data = self.senserData['gyro']
+        elif sensorType == ReadMagnetometer:
+            data = self.senserData['magn']
+        else:
+            data = [0,0,0]
+        return data
+
+    def normalizeSensorData(self,data):
+        for i in range(3):
+            if data[i]>32768:
+                data[i] = data[i] - 65536
+        return data
+
     def readAccData(self):
         """
         读取加速度传感器
         Returns:
         x、y、z轴数据
         """
-        data = self.bus.read_i2c_block_data(self.m031_addr, ReadAccSensor, 6)
-        acc_x = data[1] << 8 | data[0]
-        acc_y = data[3] << 8 | data[2]
-        acc_z = data[5] << 8 | data[4]
-        print("Acc_X=: "+str(acc_x)+"    Acc_Y=: "+str(acc_y)+"   Acc_Z: "+str(acc_z))
-        return (acc_x, acc_y, acc_z)
+
+        #print("Acc_X=: "+str(acc_x)+"    Acc_Y=: "+str(acc_y)+"   Acc_Z: "+str(acc_z))
+        return self.normalizeSensorData(self.readSensorData(ReadAccSensor))
 
     def readGyroData(self):
         """
@@ -212,12 +249,8 @@ class I2cDriver:
         Returns:
         x、y、z轴数据
         """
-        data = self.bus.read_i2c_block_data(self.m031_addr, ReadGyroSensor, 6)
-        gyro_x = data[1] << 8 | data[0]
-        gyro_y = data[3] << 8 | data[2]
-        gyro_z = data[5] << 8 | data[4]
-        print("Gyro_X=: "+str(gyro_x)+"    Gyro_Y=: "+str(gyro_y)+"   Gyro_Z: "+str(gyro_z))
-        return (gyro_x, gyro_y, gyro_z)
+        #print("Gyro_X=: "+str(gyro_x)+"    Gyro_Y=: "+str(gyro_y)+"   Gyro_Z: "+str(gyro_z))
+        return self.normalizeSensorData(self.readSensorData(ReadGyroSensor))
 
     def readMagnData(self):
         """
@@ -225,13 +258,8 @@ class I2cDriver:
         Returns:
         x、y、z轴数据
         """
-        data = self.bus.read_i2c_block_data(
-            self.m031_addr, ReadMagnetometer, 6)
-        magn_x = data[1] << 8 | data[0]
-        magn_y = data[3] << 8 | data[2]
-        magn_z = data[5] << 8 | data[4]
-        print("Magn_X=: "+str(magn_x)+"    Magn_Y=: "+str(magn_y)+"   Magn_Z: "+str(magn_z))
-        return (magn_x, magn_y, magn_z)
+        #print("Magn_X=: "+str(magn_x)+"    Magn_Y=: "+str(magn_y)+"   Magn_Z: "+str(magn_z))
+        return self.normalizeSensorData(self.readSensorData(ReadMagnetometer))
 
     def readBatOcv(self):
         """
@@ -294,13 +322,13 @@ if __name__ == '__main__':
         return False
     driver = I2cDriver(test_print)
     while True:
-        print('acc:', driver.readAccSensor())
-        print('gyro:', driver.readGyroSensor())
-        print('magn:', driver.readMagnSensor())
+        print('acc:', driver.readAccData())
+        print('gyro:', driver.readGyroData())
+        print('magn:', driver.readMagnData())
         print('power:', driver.readBatOcv())
         driver.readVout()
         driver.readBat()
-        time.sleep(1)
+        #time.sleep(1)
 
 # while(1):
 #     print(bus.read_i2c_block_data(adress,0x83,6))
