@@ -409,9 +409,8 @@ class I2cDriver:
         # 横滚角 r
         roll = math.atan2(acc[0],-acc[2])
         # 方位角
-        mx = magn[0]*math.cos(roll) - magn[2]*math.sin(roll)
-        my = magn[0]*math.sin(pitch)*math.sin(roll)+magn[1]*math.cos(pitch) - magn[2]*math.sin(pitch)*math.cos(roll)
-        print(mx,my)
+        mx = magn[0]*math.cos(roll)
+        my = magn[0]*math.sin(pitch)*math.sin(roll)+magn[1]*math.cos(pitch)
         if mx == 0 and my == 0:
             yaw = 0
         else:

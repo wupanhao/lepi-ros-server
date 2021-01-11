@@ -13,7 +13,7 @@ from pi_driver.msg import ButtonEvent, Sensor3Axes, MotorInfo, SensorStatusChang
 from pi_driver.srv import SetInt32, GetInt32, SetInt32Response, GetInt32Response,\
     GetMotorsInfo, GetMotorsInfoResponse, SensorGet3Axes, SensorGet3AxesResponse,\
     GetPowerState, GetPowerStateResponse, GetSensorInfo, GetSensorInfoResponse
-from pi_driver.srv import SetString, SetStringResponse, GetString, GetStringResponse
+from pi_driver.srv import SetString, SetStringResponse, GetString, GetStringResponse, SetOffset, SetOffsetResponse
 from pi_driver.srv import SetServoPosition , SetServoPositionResponse, GetServosInfo, GetServosInfoResponse,SetServoParam,SetServoParamResponse
 
 #from pymouse import PyMouse
@@ -55,6 +55,14 @@ class PiDriverNode:
         rospy.Service('~sensors_get_info', GetMotorsInfo, self.srvSensorsGetInfo)
         rospy.Service('~sensor_get_3axes', SensorGet3Axes,
                       self.srvSensorGet3Axes)
+        rospy.Service('~sensor_get_offset_3axes', SensorGet3Axes,
+                      self.srvSensorGetOffset3Axes)
+        rospy.Service('~sensor_get_offset', SensorGet3Axes,
+                      self.srvSensorGetOffset)
+        rospy.Service('~sensor_set_offset', SetOffset,
+                      self.srvSensorSetOffset)         
+        rospy.Service('~sensor_estimate_pose', SensorGet3Axes,
+                      self.srvEstimatePose)                                   
         rospy.Service('~9axes_set_enable', SetInt32,
                       self.srvSensor9AxesSetEnable)
         rospy.Service('~get_power_state', GetPowerState, self.srvGetPowerState)
@@ -227,6 +235,48 @@ class PiDriverNode:
             data = self.i2c_driver.readMagnData()
         else:
             return SensorGet3AxesResponse()
+        return SensorGet3AxesResponse(Sensor3Axes(data[0], data[1], data[2]))
+
+    def srvSensorGetOffset3Axes(self, params):
+        # print(params)
+        if params.id == 1:
+            data = self.i2c_driver.readAccData(True)
+        elif params.id == 2:
+            data = self.i2c_driver.readGyroData(True)
+        elif params.id == 3:
+            data = self.i2c_driver.readMagnData(True)
+        else:
+            return SensorGet3AxesResponse()
+        return SensorGet3AxesResponse(Sensor3Axes(data[0], data[1], data[2]))
+
+    def srvSensorGetOffset(self, params):
+        # print(params)
+        if params.id == 1:
+            data = self.i2c_driver.offset['acc']
+        elif params.id == 2:
+            data = self.i2c_driver.offset['gyro']
+        elif params.id == 3:
+            data = self.i2c_driver.offset['magn']
+        else:
+            return SensorGet3AxesResponse()
+        return SensorGet3AxesResponse(Sensor3Axes(data[0], data[1], data[2]))
+
+    def srvSensorSetOffset(self, params):
+        # print(params)
+        data = params.data
+        data = [data.x,data.y,data.z]
+        if params.id == 1:
+            self.i2c_driver.offset['acc'] = data
+        elif params.id == 2:
+            self.i2c_driver.offset['gyro'] = data
+        elif params.id == 3:
+            self.i2c_driver.offset['magn'] = data
+        else:
+            return SetOffsetResponse()
+        return SetOffsetResponse(Sensor3Axes(data[0], data[1], data[2]))
+
+    def srvEstimatePose(self, params):
+        data = self.i2c_driver.estimatePose()
         return SensorGet3AxesResponse(Sensor3Axes(data[0], data[1], data[2]))
 
     def srvGetPowerState(self, params):
