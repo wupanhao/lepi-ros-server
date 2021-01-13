@@ -51,10 +51,12 @@ class HexapodDriverNode:
         msg.position = rads
         self.cbJointState(msg)
     def cbServoAngles(self,angles):
-        positions = [int(angles[i]/200.0*1023) for i in range(len(angles))]
         #for i in [2,5,8,11,14,17]:
         #    positions[i] = - positions[i]
         #servo_ids = [7, 8, 9, 10, 11, 12, 13, 14, 15, 4, 5, 6, 1, 2, 3, 16, 17, 18]
+        for i in range(6):
+            angles[i*3+2] = -angles[i*3+2]
+        positions = [int(angles[i]/200.0*1023) for i in range(len(angles))]
         servos = [Servo(i+1,positions[i]+self.center,speed=self.speed) for i in range(len(angles))]
         if self.servos is not None:
             self.servos.set_positions_sync(servos)
