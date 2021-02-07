@@ -1,0 +1,8 @@
+<launch>
+	<arg name="node_name" default="pi_driver_node"/>
+	<group ns="/ubiquityrobot">
+		<node name="$(arg node_name)" pkg="pi_driver" type="pi4_driver_node.py" output="screen" >
+			<rosparam file="/home/pi/Lepi_Data/.variable.yaml" command="load" ns="/variable" />
+		</node>
+	</group>
+</launch>

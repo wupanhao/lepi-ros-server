@@ -11,7 +11,7 @@ from pi_cam.msg import LineDetection
 import time
 from pi_driver.srv import SetInt32,SetInt32Response,GetStrings,GetStringsResponse
 from camera_utils import bgr_from_jpg,jpg_from_bgr
-from pi_driver import CarDriver
+# from pi_driver import CarDriver
 # from std_msgs.msg import UInt8,Int32
 class LineDetectorNode(object):
     def __init__(self):
@@ -25,7 +25,7 @@ class LineDetectorNode(object):
         self.size = (320,240)
         self.pid_enabled = False
         self.base_speed = 50
-        self.car = CarDriver()
+        # self.car = CarDriver()
         # self.config_file = os.path.dirname(os.path.abspath(__file__)) + "/default.yaml"
         self.image_msg = None
         self.lost_count = 0
@@ -37,7 +37,7 @@ class LineDetectorNode(object):
         self.set_color_srv = rospy.Service('~set_color_threshold', SetColorThreshold, self.cbSetColorThreshold)
         self.get_color_srv = rospy.Service('~get_color_threshold', GetColorThreshold, self.cbGetColorThreshold)
         self.set_color_list_srv = rospy.Service('~get_color_list', GetStrings, self.cbGetColorList)
-        self.pid_set_enable_srv = rospy.Service('~pid_set_enable', SetInt32, self.cbPidSetEnable)
+        # self.pid_set_enable_srv = rospy.Service('~pid_set_enable', SetInt32, self.cbPidSetEnable)
         # self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,queue_size=1)
         self.sub_image = rospy.Subscriber("~image_raw/compressed", CompressedImage, self.cbImg ,queue_size=1)
 
@@ -52,6 +52,7 @@ class LineDetectorNode(object):
         if self.pid_enabled:
             self.cbPid(self.line_msg)
         # self.pub_line_detection.publish(self.line_msg)
+    '''
     def cbPid(self,line_msg):
         center = line_msg.center
         if center[0] == 0:
@@ -71,6 +72,7 @@ class LineDetectorNode(object):
         left = speed*(1-bias)
         right = speed*(1+bias)
         self.car.setWheelsSpeed(left,right)
+    '''
     def detectLine(self,params):
         # start = time.time()
         # print(params)
@@ -142,6 +144,7 @@ class LineDetectorNode(object):
             return GetColorThresholdResponse()
     def cbGetColorList(self,params):
         return GetStringsResponse(self.detector.colors.keys())
+    '''
     def cbPidSetEnable(self,params):
         if params.port == 1:
             self.pid_enabled = True
@@ -151,6 +154,7 @@ class LineDetectorNode(object):
             self.base_speed = 0
             self.car.setWheelsSpeed(0,0)
         return SetInt32Response(params.port,params.value)
+    '''
     def pubImage(self,image):
         msg = CompressedImage()
         msg.header.stamp = rospy.Time.now()

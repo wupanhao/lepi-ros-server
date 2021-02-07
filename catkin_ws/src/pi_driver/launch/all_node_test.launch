@@ -1,0 +1,18 @@
+<launch>
+  <arg name="launch_prefix" default="" /> <!-- set to value="gdbserver localhost:10000" for remote debugging -->
+  <arg name="node_namespace" default="ubiquityrobot" />
+  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
+  <!-- <include file="$(find pi_driver)/launch/joystick_node.launch" /> -->
+
+  <include file="$(find pi_cam)/launch/camera_node.launch" />
+  <include file="$(find pi_cam)/launch/apriltag_detector_node.launch" />
+  <include file="$(find pi_cam)/launch/barcode_scanner_node.launch" />
+  <include file="$(find pi_cam)/launch/face_recognizer_node.launch" />
+  <include file="$(find pi_cam)/launch/line_detector_node.launch" />
+  <include file="$(find pi_cam)/launch/text_recognizer_node.launch" />
+  <include file="$(find pi_cam)/launch/ultra_face_inference_node.launch" />
+
+  <include file="$(find pi_ai)/launch/image_classifier_node.launch" />
+  <include file="$(find pi_ai)/launch/object_detector_node.launch" />
+
+</launch>
