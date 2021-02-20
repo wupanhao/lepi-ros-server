@@ -2,7 +2,7 @@
 
 import rospy
 # import thread
-from pi_driver import MyJoy
+from pi4_driver import MyJoy
 from pi_driver.srv import GetString, GetInt32, GetStringResponse, GetInt32Response
 from std_msgs.msg import String
 import json

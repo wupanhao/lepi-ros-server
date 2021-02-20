@@ -2,7 +2,7 @@
   <arg name="launch_prefix" default="" /> <!-- set to value="gdbserver localhost:10000" for remote debugging -->
   <arg name="node_namespace" default="ubiquityrobot" />
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
-  <!-- <include file="$(find pi_driver)/launch/joystick_node.launch" /> -->
+  <include file="$(find pi_driver)/launch/joystick_node.launch" />
 
   <include file="$(find pi_cam)/launch/camera_node.launch" />
   <include file="$(find pi_cam)/launch/apriltag_detector_node.launch" />

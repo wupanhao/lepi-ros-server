@@ -8,7 +8,7 @@ import rospkg
 import rospy
 import json
 
-from pi4_driver import I2cDriver
+from pi4_driver import I2cDriver, SServo, EEPROM
 from pi_driver.msg import ButtonEvent, Sensor3Axes, MotorInfo, SensorStatusChange, U8Int32, ServoInfo
 from pi_driver.srv import SetInt32, GetInt32, SetInt32Response, GetInt32Response,\
     GetMotorsInfo, GetMotorsInfoResponse, SensorGet3Axes, SensorGet3AxesResponse,\
@@ -82,6 +82,7 @@ class PiDriverNode:
         rospy.Service('~get_firmware_version', GetInt32,
                       self.srvGetFirmwareVersion)
         self.i2c_driver = I2cDriver()
+        self.servo = SServo('/dev/ttyAMA1')
         # self.d51_driver = D51Driver(self.pubSensorChange)
         self.sub_motor_set_pulse = rospy.Subscriber(
             "~motor_set_pulse", U8Int32, self.cbMotorSetPulse, queue_size=1)
@@ -262,7 +263,7 @@ class PiDriverNode:
 
     def srvGetPowerState(self, params):
         data = [0, 0, 0]
-        return GetPowerStateResponse(data[0], data[1], data[3])
+        return GetPowerStateResponse(data[0], data[1], data[2])
     '''
     def srvInputString(self, params):
         try:
@@ -296,7 +297,7 @@ class PiDriverNode:
         # print(params)
         rsp = GetServosInfoResponse()
         if len(params.ids) == 0:
-            ids = []
+            ids = self.servo.scan()
         else:
             ids = params.ids
         print(ids)
@@ -304,26 +305,39 @@ class PiDriverNode:
             info = ServoInfo()
             info.id = servo_id
             # print(servo_id)
-            info.min_position = 0
-            info.cur_position = 0
-            info.max_position = 0
+            info.min_position = self.servo.read_u16(
+                servo_id, EEPROM.MIN_POSITION_H)
+            info.cur_position = self.servo.read_u16(
+                servo_id, EEPROM.CURRENT_POSITION_H)
+            info.max_position = self.servo.read_u16(
+                servo_id, EEPROM.MAX_POSITION_H)
             rsp.servos.append(info)
         return rsp
 
     def srvServoSetPosition(self, params):
-        return SetServoPositionResponse()
+        status = self.servo.set_position(
+            params.id, params.position, params.ms, params.speed)
+        return SetServoPositionResponse(status)
 
     def srvServoSetU8(self, params):
-        return SetServoParamResponse()
+        if params.param_id == 0x99:
+            status = self.servo.reset(params.id)
+        else:
+            status = self.servo.write_u8(
+                params.id, params.param_id, params.value)
+        return SetServoParamResponse(status)
 
     def srvServoSetU16(self, params):
-        return SetServoParamResponse()
+        status = self.servo.write_u16(params.id, params.param_id, params.value)
+        return SetServoParamResponse(status)
 
     def srvServoGetU8(self, params):
-        return SetServoParamResponse()
+        status = self.servo.read_u8(params.id, params.param_id)
+        return SetServoParamResponse(status)
 
     def srvServoGetU16(self, params):
-        return SetServoParamResponse()
+        status = self.servo.read_u16(params.id, params.param_id)
+        return SetServoParamResponse(status)
 
     def srvSensorGetMode(self, params):
         status = 0

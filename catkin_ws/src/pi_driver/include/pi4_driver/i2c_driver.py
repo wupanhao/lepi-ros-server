@@ -49,24 +49,37 @@ class I2cDriver:
                                   callback=self.int_handler, bouncetime=20)
 
     def acc_set_enable(self, speed=100):
-        self.bus.write_byte_data(self.LSM6DSL, LSM6DSL_ACC_GYRO_CTRL1_XL, 0x60)
-        self.bus.write_byte_data(
-            self.LSM6DSL, LSM6DSL_ACC_GYRO_INT1_CTRL, 0x01)
+        if speed == 0:
+            self.bus.write_byte_data(
+                self.LSM6DSL, LSM6DSL_ACC_GYRO_CTRL1_XL, 0x00)
+        else:
+            self.bus.write_byte_data(
+                self.LSM6DSL, LSM6DSL_ACC_GYRO_CTRL1_XL, 0x60)
+            self.bus.write_byte_data(
+                self.LSM6DSL, LSM6DSL_ACC_GYRO_INT1_CTRL, 0x01)
 
     def gyro_set_enable(self, speed=100):
-        self.bus.write_byte_data(self.LSM6DSL, LSM6DSL_ACC_GYRO_CTRL2_G, 0x60)
-        self.bus.write_byte_data(
-            self.LSM6DSL, LSM6DSL_ACC_GYRO_INT1_CTRL, 0x02)
+        if speed == 0:
+            self.bus.write_byte_data(
+                self.LSM6DSL, LSM6DSL_ACC_GYRO_CTRL2_G, 0x00)
+        else:
+            self.bus.write_byte_data(
+                self.LSM6DSL, LSM6DSL_ACC_GYRO_CTRL2_G, 0x60)
+            self.bus.write_byte_data(
+                self.LSM6DSL, LSM6DSL_ACC_GYRO_INT1_CTRL, 0x02)
 
     def magn_set_enable(self, speed=100):
-        self.bus.write_byte_data(self.BMM150, BMM150_POWER_CONTROL, 0x01)
-        time.sleep(0.1)
-        self.bus.write_byte_data(self.BMM150, BMM150_CONTROL, 0x38)
+        if speed == 0:
+            self.bus.write_byte_data(self.BMM150, BMM150_CONTROL, 0x3E)
+        else:
+            self.bus.write_byte_data(self.BMM150, BMM150_POWER_CONTROL, 0x01)
+            time.sleep(0.1)
+            self.bus.write_byte_data(self.BMM150, BMM150_CONTROL, 0x38)
 
     def nineAxisSetEnable(self, value=100):
-        self.acc_set_enable()
-        self.gyro_set_enable()
-        self.magn_set_enable()
+        self.acc_set_enable(value)
+        self.gyro_set_enable(value)
+        self.magn_set_enable(value)
 
     def readSensorData(self, sensorType, byteLen=6):
         data = [0, 0, 0]
