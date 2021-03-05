@@ -38,15 +38,21 @@ class I2cDriver:
         self.offset = {
             "magn": [0, 0, 0]
         }
-        self.nineAxisSetEnable()
-        self.detectOffset()
+        try:
+            self.nineAxisSetEnable()
+            self.detectOffset()
+        except Exception as e:
+            print(e)
+            print("i2c sensor comunicatiton error")
         # self.detectOffset()
+        '''
         if btn_handler is not None:
             self.btn_handler = btn_handler
             GPIO.setmode(GPIO.BOARD)
             GPIO.setup(self.int_pin, GPIO.IN)
             GPIO.add_event_detect(self.int_pin, GPIO.BOTH,
                                   callback=self.int_handler, bouncetime=20)
+        '''
 
     def acc_set_enable(self, speed=100):
         if speed == 0:

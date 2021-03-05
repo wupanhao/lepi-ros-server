@@ -1,7 +1,30 @@
 <launch>
   <arg name="launch_prefix" default="" /> <!-- set to value="gdbserver localhost:10000" for remote debugging -->
   <arg name="node_namespace" default="ubiquityrobot" />
+  <arg name="camera_node" default="False" />
+  <arg name="apriltag_detector_node" default="False" />
+  <arg name="barcode_scanner_node" default="False" />
+  <arg name="face_recognizer_node" default="False" />
+  <arg name="ultra_face_inference_node" default="False" />
+  <arg name="line_detector_node" default="False" />
+  <arg name="text_recognizer_node" default="False" />
+  <arg name="image_classifier_node" default="False" />
+  <arg name="object_detector_node" default="False" />
+  <arg name="hexapod_driver_node" default="False" />
+  <arg name="joystick_node" default="False" />
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
   <!-- <include file="$(find pi_cam)/launch/web_video.launch" /> -->
   <include file="$(find pi_driver)/launch/pi4_driver_node.launch" />
+  <include file="$(find pi_cam)/launch/camera_node.launch" if="$(arg camera_node)"/>
+  <include file="$(find pi_cam)/launch/apriltag_detector_node.launch" if="$(arg apriltag_detector_node)"/>
+  <include file="$(find pi_cam)/launch/barcode_scanner_node.launch" if="$(arg barcode_scanner_node)"/>
+  <include file="$(find pi_cam)/launch/face_recognizer_node.launch" if="$(arg face_recognizer_node)"/>
+  <include file="$(find pi_cam)/launch/ultra_face_inference_node.launch" if="$(arg ultra_face_inference_node)"/>
+  <include file="$(find pi_cam)/launch/line_detector_node.launch" if="$(arg line_detector_node)"/>
+  <include file="$(find pi_cam)/launch/text_recognizer_node.launch" if="$(arg text_recognizer_node)"/>
+  <include file="$(find pi_ai)/launch/image_classifier_node.launch" if="$(arg image_classifier_node)"/>
+  <include file="$(find pi_ai)/launch/object_detector_node.launch" if="$(arg object_detector_node)"/>
+  <include file="$(find hexapod_controller)/launch/hexapod_driver_node.launch" if="$(arg hexapod_driver_node)"/>
+  <include file="$(find pi_driver)/launch/joystick_node.launch" if="$(arg joystick_node)"/>
+
 </launch>
