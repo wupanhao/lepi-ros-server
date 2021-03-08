@@ -3,7 +3,7 @@ from scipy.spatial.transform import Rotation as R
 import rospkg
 # from apriltags3 import Detector
 from dt_apriltags import Detector
-from camera_utils import load_camera_info_3
+from camera_utils import load_camera_info_3, cameraList
 import cv2
 import numpy as np
 import os
@@ -23,24 +23,29 @@ class ApriltagDetector:
         self.camera_info_msg = load_camera_info_3()
         # self.detector = Detector(
         # print(cur_dir + '/../../../../devel_isolated/apriltag/lib')
-        self.detector = Detector(searchpath=[cur_dir + '/../../../../devel_isolated/apriltag/lib'],
-        # self.detector = Detector(families='tag36h11',
-                                 nthreads=1,
-                                 quad_decimate=3.0,
-                                 quad_sigma=0.0,
-                                 refine_edges=1,
-                                 decode_sharpening=0.25,
-                                 debug=0)
+        # self.detector = Detector(searchpath=[cur_dir + '/../../../../devel_isolated/apriltag/lib'],
+        self.detector = Detector(
+            # self.detector = Detector(families='tag36h11',
+            nthreads=1,
+            quad_decimate=3.0,
+            quad_sigma=0.0,
+            refine_edges=1,
+            decode_sharpening=0.25,
+            debug=0)
         self.cameraMatrix = np.array(
             self.camera_info_msg.K).reshape((3, 3))
         self.camera_params = (
             self.cameraMatrix[0, 0], self.cameraMatrix[1, 1], self.cameraMatrix[0, 2], self.cameraMatrix[1, 2])
-        if hasattr(R,'from_dcm'):
+        self.image = None
+        self.detections = []
+        self.tag = None
+
+        if hasattr(R, 'from_dcm'):
             self.from_dcm_or_matrix = R.from_dcm
         else:
             self.from_dcm_or_matrix = R.from_matrix
 
-    def detect(self, cv_image, tag_size=0.065):
+    def detect(self, cv_image, label_tags=True, tag_size=0.065):
         """
         检测函数
         Keyword arguments:
@@ -70,28 +75,58 @@ class ApriltagDetector:
                 pose_err = 5.94095039944e-07
         """
         if len(cv_image.shape) == 3:
-            cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
-        tags = self.detector.detect(
-            cv_image, True, self.camera_params, tag_size)  # tag size in meter
-        return tags
+            image_gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
+        else:
+            image_gray = cv_image
+        self.tags = self.detector.detect(
+            image_gray, True, self.camera_params, tag_size)  # tag size in meter
+        if label_tags:
+            self.label_tags(cv_image, self.tags)
+        self.image = cv_image
+        self.detections = self.toApriltagDetections()
+        if len(self.detections) > 0:
+            self.tag = self.detections[0]
+        else:
+            self.tag = None
+        return self.tags
 
-    def label_tags(self,rect_image,tags):
-      for tag in tags:
-        for idx in range(len(tag.corners)):
-          cv2.line(rect_image, tuple(tag.corners[idx-1, :].astype(int)), tuple(tag.corners[idx, :].astype(int)), (0, 255, 0))
-          cv2.putText(rect_image, str(tag.tag_id),
-            org=(tag.corners[0, 0].astype(int)+10,tag.corners[0, 1].astype(int)+10),
-            fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-            fontScale=0.8,color=(0, 0, 255))
-    def toApriltagDetections(self,tags):
+    def label_tags(self, rect_image, tags=None):
+        if tags is None:
+            tags = self.tags
+        for tag in tags:
+            for idx in range(len(tag.corners)):
+                cv2.line(rect_image, tuple(
+                    tag.corners[idx-1, :].astype(int)), tuple(tag.corners[idx, :].astype(int)), (0, 255, 0))
+            cv2.putText(rect_image, str(tag.tag_id),
+                        org=(tag.corners[0, 0].astype(int)+10,
+                             tag.corners[0, 1].astype(int)+10),
+                        fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                        fontScale=0.8, color=(0, 0, 255))
+
+    def toApriltagDetections(self, tags=None):
+        if tags is None:
+            tags = self.tags
         detections = []
         for tag in tags:
             r = self.from_dcm_or_matrix(np.array(tag.pose_R))
             offset = np.array(tag.pose_t)*100
             euler = r.as_euler('xyz', degrees=True)
-            detection = (tag.tag_id,euler,offset)
+            detection = (tag.tag_id, euler, offset)
             detections.append(detection)
         return detections
+
+    def isDetected(self, id=None):
+        if id is None and len(self.detections) > 0:
+            return True
+        else:
+            for tag in self.detections:
+                if id == tag[0]:
+                    self.tag = tag
+                    return True
+        self.tag = None
+        return False
+
+
 if __name__ == '__main__':
     import time
     detector = ApriltagDetector()
@@ -100,15 +135,15 @@ if __name__ == '__main__':
     #     'wget https://april.eecs.umich.edu/media/apriltag/apriltagrobots_overlay.jpg -O /tmp/test.jpg')
     # test_image = cv2.imread('/tmp/test.jpg')
     # print(detector.detect(test_image))
-
-    cap = cv2.VideoCapture(0)
+    dev = cameraList()
+    cap = cv2.VideoCapture(dev[0])
     while True:
         # Grab a single frame of video
         ret, frame = cap.read()
         start = time.time()
         tags = detector.detect(frame)
         end = time.time()
-        detector.label_tags(frame,tags)
+        # detector.label_tags(frame, tags)
         print("detect %d frame in %.2f ms" %
               (1, (end - start)*1000))
         cv2.imshow("images", frame)
