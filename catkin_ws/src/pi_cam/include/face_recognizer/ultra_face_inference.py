@@ -11,8 +11,10 @@ image_std = 128.0
 iou_threshold = 0.3
 center_variance = 0.1
 size_variance = 0.2
-min_boxes = [[10.0, 16.0, 24.0], [32.0, 48.0], [64.0, 96.0], [128.0, 192.0, 256.0]]
+min_boxes = [[10.0, 16.0, 24.0], [32.0, 48.0],
+             [64.0, 96.0], [128.0, 192.0, 256.0]]
 strides = [8.0, 16.0, 32.0, 64.0]
+
 
 def define_img_size(image_size):
     shrinkage_list = []
@@ -23,7 +25,8 @@ def define_img_size(image_size):
 
     for i in range(0, len(image_size)):
         shrinkage_list.append(strides)
-    priors = generate_priors(feature_map_w_h_list, shrinkage_list, image_size, min_boxes)
+    priors = generate_priors(feature_map_w_h_list,
+                             shrinkage_list, image_size, min_boxes)
     return priors
 
 
@@ -99,7 +102,8 @@ def predict(width, height, confidences, boxes, prob_threshold, iou_threshold=0.3
         if probs.shape[0] == 0:
             continue
         subset_boxes = boxes[mask, :]
-        box_probs = np.concatenate([subset_boxes, probs.reshape(-1, 1)], axis=1)
+        box_probs = np.concatenate(
+            [subset_boxes, probs.reshape(-1, 1)], axis=1)
         box_probs = hard_nms(box_probs,
                              iou_threshold=iou_threshold,
                              top_k=top_k,
@@ -121,7 +125,8 @@ def convert_locations_to_boxes(locations, priors, center_variance,
     if len(priors.shape) + 1 == len(locations.shape):
         priors = np.expand_dims(priors, 0)
     return np.concatenate([
-        locations[..., :2] * center_variance * priors[..., 2:] + priors[..., :2],
+        locations[..., :2] * center_variance *
+        priors[..., 2:] + priors[..., :2],
         np.exp(locations[..., 2:] * size_variance) * priors[..., 2:]
     ], axis=len(locations.shape) - 1)
 
@@ -130,37 +135,81 @@ def center_form_to_corner_form(locations):
     return np.concatenate([locations[..., :2] - locations[..., 2:] / 2,
                            locations[..., :2] + locations[..., 2:] / 2], len(locations.shape) - 1)
 
+
 class UltraFaceInference:
     def __init__(self):
-        model_path =  os.path.expanduser('~')+ '/Lepi_Data/ros/ultra_face_inference/models/onnx/version-RFB-320_simplified.onnx'
+        model_path = os.path.expanduser(
+            '~') + '/Lepi_Data/ros/ultra_face_inference/models/onnx/version-RFB-320_simplified.onnx'
         self.net = cv2.dnn.readNetFromONNX(model_path)  # onnx version
         # net = cv2.dnn.readNetFromCaffe(args.caffe_prototxt_path, args.caffe_model_path)  # caffe model converted from onnx
-        self.setResize(160,120)
+        self.setResize(160, 120)
         self.threshold = 0.7
-    def detect(self,img_ori):
+        self.faceCount = 0
+
+    def detect(self, img_ori):
         time_time = time.time()
         rect = cv2.resize(img_ori, (self.resized_witdh, self.resized_height))
         rect = cv2.cvtColor(rect, cv2.COLOR_BGR2RGB)
-        self.net.setInput(cv2.dnn.blobFromImage(rect, 1 / image_std, (self.resized_witdh, self.resized_height), 127))
+        self.net.setInput(cv2.dnn.blobFromImage(
+            rect, 1 / image_std, (self.resized_witdh, self.resized_height), 127))
         boxes, scores = self.net.forward(["boxes", "scores"])
         boxes = np.expand_dims(np.reshape(boxes, (-1, 4)), axis=0)
         scores = np.expand_dims(np.reshape(scores, (-1, 2)), axis=0)
-        boxes = convert_locations_to_boxes(boxes, self.priors, center_variance, size_variance)
+        boxes = convert_locations_to_boxes(
+            boxes, self.priors, center_variance, size_variance)
         boxes = center_form_to_corner_form(boxes)
-        boxes, labels, probs = predict(img_ori.shape[1], img_ori.shape[0], scores, boxes, self.threshold)
-        return boxes, labels, probs
-    def drawBoxes(self,img_ori,boxes):
+        boxes, labels, probs = predict(
+            img_ori.shape[1], img_ori.shape[0], scores, boxes, self.threshold)
+        self.faceDetections = self.toFaceDetections(boxes, probs)
+        self.faceData = self.toFaceData(self.faceDetections)
         for i in range(boxes.shape[0]):
             box = boxes[i, :]
-            cv2.rectangle(img_ori, (box[0], box[1]), (box[2], box[3]), (0, 255, 0), 2)
+        return boxes, labels, probs
+
+    def drawBoxes(self, img_ori, boxes):
+        for i in range(boxes.shape[0]):
+            box = boxes[i, :]
+            cv2.rectangle(img_ori, (box[0], box[1]),
+                          (box[2], box[3]), (0, 255, 0), 2)
         # print("inference time: {} s".format(round(time.time() - time_time, 4)))
         return img_ori
-    def setThreshold(self,threshold):
-        self.threshold = threshold
-    def setResize(self,width,height):
+
+    def setThreshold(self, threshold):
+        if threshold > 1:
+            self.threshold = threshold / 100.0
+        else:
+            self.threshold = threshold
+
+    def setResize(self, width, height):
         self.resized_witdh = width
         self.resized_height = height
-        self.priors = define_img_size([self.resized_witdh,self.resized_height])
+        self.priors = define_img_size(
+            [self.resized_witdh, self.resized_height])
+
+    def toFaceDetections(self, face_locations=[], face_probs=[]):
+        detections = []
+        if len(face_probs) > 0 and len(face_probs) == len(face_locations):
+            for (left, top, right, bottom), prob in zip(face_locations, face_probs):
+                face_detection = (prob, [
+                    left, top, right, bottom])
+                detections.append(face_detection)
+        elif len(face_locations) > 0:
+            for (left, top, right, bottom) in face_locations:
+                face_detection = (1, [left, top, right, bottom])
+                detections.append(face_detection)
+        return detections
+
+    def toFaceData(self, faceDetections=[]):
+        data = []
+        for _, face in faceDetections:
+            x = (face[0]+face[2])/2
+            y = (face[1]+face[3])/2
+            w = face[2]-face[0]
+            h = face[3]-face[1]
+            data.append([x, y, w, h])
+        return data
+
+
 if __name__ == '__main__':
     # inference()
     detector = UltraFaceInference()
@@ -171,7 +220,7 @@ if __name__ == '__main__':
         ret, img_ori = cap.read()
         time_time = time.time()
         boxes, labels, probs = detector.detect(img_ori)
-        img_ori = detector.drawBoxes(img_ori,boxes)
+        img_ori = detector.drawBoxes(img_ori, boxes)
         print("inference time: {} s".format(round(time.time() - time_time, 4)))
         cv2.imshow("ultra_face_inference", img_ori)
         c = cv2.waitKey(2)

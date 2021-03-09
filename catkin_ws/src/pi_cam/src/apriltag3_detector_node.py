@@ -57,15 +57,15 @@ class ApriltagDetectorNode(object):
         rect_image = toImage(image_msg)
         resized_image = cv2.resize(rect_image, (640, 480))
         # image_gray = cv2.cvtColor(resized_image, cv2.COLOR_BGR2GRAY)
-        tags = self.detector.detect(
+        self.detector.detect(
             resized_image, label_tags=self.visualization)
         if self.visualization:
             resized_image = cv2.resize(resized_image, (480, 360))
             self.pubImage(resized_image)
 
-        return self.toApriltagDetections(tags)
+        return self.toApriltagDetections()
 
-    def toApriltagDetections(self, tags):
+    def toApriltagDetections(self):
         msg = GetApriltagDetectionsResponse()
         items = self.detector.detections
         for item in items:

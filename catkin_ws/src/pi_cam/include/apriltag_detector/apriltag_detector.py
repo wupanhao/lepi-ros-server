@@ -88,7 +88,7 @@ class ApriltagDetector:
             self.tag = self.detections[0]
         else:
             self.tag = None
-        return self.tags
+        return cv_image
 
     def label_tags(self, rect_image, tags=None):
         if tags is None:
@@ -136,7 +136,7 @@ if __name__ == '__main__':
     # test_image = cv2.imread('/tmp/test.jpg')
     # print(detector.detect(test_image))
     dev = cameraList()
-    cap = cv2.VideoCapture(dev[0])
+    cap = cv2.VideoCapture(dev[1])
     while True:
         # Grab a single frame of video
         ret, frame = cap.read()

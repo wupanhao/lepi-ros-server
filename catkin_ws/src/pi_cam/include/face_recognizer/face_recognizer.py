@@ -8,6 +8,7 @@ import time
 from camera_utils import putText
 import face_recognition
 
+
 class FaceRecognizer(object):
     """
     FaceRecognizer类, 用来检测和识别人脸
@@ -21,7 +22,8 @@ class FaceRecognizer(object):
 
     def __init__(self, scale=5, threshold=0.45, fontSize=18):
         super(FaceRecognizer, self).__init__()
-        self.data_dir = os.path.expanduser('~') + "/Lepi_Data/ros/face_recognizer/known_face"
+        self.data_dir = os.path.expanduser(
+            '~') + "/Lepi_Data/ros/face_recognizer/known_face"
         self.scale = scale
         # self.font = ImageFont.truetype(
         #     '/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf', fontSize)
@@ -32,7 +34,6 @@ class FaceRecognizer(object):
         self.face_data = []
         self.add_label_success = False
         self.load_faces()
-
 
     def detect(self, frame, scale=None):
         """
@@ -51,7 +52,7 @@ class FaceRecognizer(object):
         rgb_small_frame = small_frame[:, :, ::-1]
         self.face_locations = face_recognition.face_locations(rgb_small_frame)
         self.face_data = self.getFaceData(0)
-        return self.face_locations
+        return self.rect_faces(frame, self.face_locations)
 
     def recognize(self, frame, scale=None):
         """
@@ -92,19 +93,21 @@ class FaceRecognizer(object):
         self.face_locations = face_locations
         self.face_names = face_names
         self.face_data = self.getFaceData(0)
-        return face_locations, face_names
+        return self.label_faces(frame, self.face_locations, self.face_names)
+        # return face_locations, face_names
 
-    def getFaceData(self,index):
-        if len(self.face_locations)>index:
+    def getFaceData(self, index):
+        if len(self.face_locations) > index:
             (top, right, bottom, left) = self.face_locations[index]
             top *= self.scale
             right *= self.scale
             bottom *= self.scale
             left *= self.scale
-            return [int((right+left)/2),int((top+bottom)/2),int(right-left),int(bottom-top)]
+            return [int((right+left)/2), int((top+bottom)/2), int(right-left), int(bottom-top)]
         else:
-            return [0,0,0,0]
-    def detectedFaceLabel(self,name):
+            return [0, 0, 0, 0]
+
+    def detectedFaceLabel(self, name):
         if name in self.face_names:
             index = self.face_names.index(name)
             self.face_data = self.getFaceData(index)
@@ -112,6 +115,7 @@ class FaceRecognizer(object):
         else:
             self.face_data = []
             return False
+
     def rect_faces(self, frame, face_locations, scale=None):
         """
         把检测到的人脸用矩形框出来
@@ -238,6 +242,7 @@ class FaceRecognizer(object):
             print(e)
             return "删除出错"
 
+
 def add_faces():
     """
     测试函数，添加标签并识别
@@ -312,10 +317,11 @@ def test_recognize():
     cap.release()
     cv2.destroyAllWindows()
 
+
 if __name__ == '__main__':
     # test_recognize()
     test_detect()
     #fr = FaceRecognizer()
     #frame = cv2.imread('./吴畔昊.png')
-    #print(fr.detect(frame))
+    # print(fr.detect(frame))
     #print(fr.add_face_label(frame, 'panhao', save=True))
