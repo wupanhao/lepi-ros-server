@@ -156,7 +156,7 @@ class I2cDriver:
             for i in range(3):
                 offset['acc'][i] += acc[i]/100.0
                 offset['gyro'][i] += gyro[i]/100.0
-            print(offset)
+            # print(offset)
         offset['acc'][2] = 16384 + offset['acc'][2]
         self.offset = offset
 
@@ -236,7 +236,7 @@ class I2cDriver:
         mx = magn[0]*math.cos(roll) - magn[2]*math.sin(roll)
         my = magn[0]*math.sin(pitch)*math.sin(roll)+magn[1] * \
             math.cos(pitch) - magn[2]*math.sin(pitch)*math.cos(roll)
-        print(mx, my)
+        # print(mx, my)
         if mx == 0 and my == 0:
             yaw = 0
         else:

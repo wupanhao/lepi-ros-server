@@ -3,10 +3,10 @@ import time
 import math
 
 try:
-  import smbus
-  import RPi.GPIO as GPIO
+    import smbus
+    import RPi.GPIO as GPIO
 except Exception as e:
-  print(e)
+    print(e)
 ReadButtonState = 0x82
 
 ReadAccSensor = 0x83
@@ -170,12 +170,12 @@ class I2cDriver:
         self.int_pin = 22  # GPIO25 40pin 第22号引脚
         self.bus = smbus.SMBus(1)
         self.senserData = {
-            'acc':[0,0,0],
-            'gryo':[0,0,0],
-            'magn':[0,0,0],
+            'acc': [0, 0, 0],
+            'gryo': [0, 0, 0],
+            'magn': [0, 0, 0],
         }
         self.offset = {
-            "magn":[0,0,0]
+            "magn": [0, 0, 0]
         }
         self.nineAxisSetEnable()
         self.detectOffset()
@@ -184,7 +184,7 @@ class I2cDriver:
             GPIO.setmode(GPIO.BOARD)
             GPIO.setup(self.int_pin, GPIO.IN)
             GPIO.add_event_detect(self.int_pin, GPIO.BOTH,
-                                callback=self.int_handler, bouncetime=20)
+                                  callback=self.int_handler, bouncetime=20)
 
     def nineAxisSetEnable(self, value=0x47):
         """
@@ -204,16 +204,17 @@ class I2cDriver:
         if Button.has_key(btn):
             print(Button[btn])
 
-    def readSensorData(self,sensorType,byteLen=6):
+    def readSensorData(self, sensorType, byteLen=6):
         data = None
         maxTry = 5
         while maxTry > 0:
             try:
-                data = self.bus.read_i2c_block_data(self.m031_addr, sensorType, byteLen)
+                data = self.bus.read_i2c_block_data(
+                    self.m031_addr, sensorType, byteLen)
                 x = data[1] << 8 | data[0]
                 y = data[3] << 8 | data[2]
                 z = data[5] << 8 | data[4]
-                data = [x,y,z]
+                data = [x, y, z]
                 break
             except Exception as e:
                 print(e)
@@ -237,34 +238,34 @@ class I2cDriver:
                 self.senserData['magn'] = data
         return data
 
-    def readOffsetSensorData(self,sensorType):
+    def readOffsetSensorData(self, sensorType):
         data = self.readSensorData(sensorType)
         if sensorType == ReadAccSensor:
             offset = self.offset['acc']
-            self.getOffsetData(data,offset)
+            self.getOffsetData(data, offset)
         elif sensorType == ReadGyroSensor:
             offset = self.offset['gyro']
-            self.getOffsetData(data,offset)
+            self.getOffsetData(data, offset)
         elif sensorType == ReadMagnetometer:
             offset = self.offset['magn']
-            self.getOffsetData(data,offset)
+            self.getOffsetData(data, offset)
         return data
 
-    def normalizeSensorData(self,data):
+    def normalizeSensorData(self, data):
         for i in range(3):
-            if data[i]>32768:
+            if data[i] > 32768:
                 data[i] = data[i] - 65536
         return data
 
-    def normalizeMagnData(self,data):
+    def normalizeMagnData(self, data):
         for i in range(2):
-            if data[i]>4096:
+            if data[i] > 4096:
                 data[i] = data[i] - 8192
         if data[2] > 4096:
             data[2] -= 32768
         return data
 
-    def readAccData(self,use_offset=False):
+    def readAccData(self, use_offset=False):
         """
         读取加速度传感器
         Returns:
@@ -277,7 +278,7 @@ class I2cDriver:
         else:
             return self.readSensorData(ReadAccSensor)
 
-    def readGyroData(self,use_offset=False):
+    def readGyroData(self, use_offset=False):
         """
         读取陀螺仪传感器
         Returns:
@@ -289,7 +290,7 @@ class I2cDriver:
         else:
             return self.readSensorData(ReadGyroSensor)
 
-    def readMagnData(self,use_offset=False):
+    def readMagnData(self, use_offset=False):
         """
         读取地磁传感器
         Returns:
@@ -318,26 +319,26 @@ class I2cDriver:
         # print("剩余电量: "+str(n_power))
         charging = power[1] & 0xF0
         bat_power_ocv = (power[3] << 8 | power[2])*0.26855/1000+2.6
-        est_power = int( (bat_power_ocv-3.625)*200)
+        est_power = int((bat_power_ocv-3.625)*200)
         # est_power = power[0]
         if est_power > 100:
-           est_power = 100
+            est_power = 100
         elif est_power < 0:
-           est_power = 0
+            est_power = 0
         if(charging):
-            est_powerc=est_power&0x1F
-            if(est_powerc==0x1F):
-                est_power=100
-            elif(est_powerc==0x0F):
-                est_power=75
-            elif(est_powerc==0x07):
-                est_power=50
-            elif(est_powerc==0x03):
-                est_power=25
-            elif(est_powerc==0x01):
-                est_power==1
+            est_powerc = est_power & 0x1F
+            if(est_powerc == 0x1F):
+                est_power = 100
+            elif(est_powerc == 0x0F):
+                est_power = 75
+            elif(est_powerc == 0x07):
+                est_power = 50
+            elif(est_powerc == 0x03):
+                est_power = 25
+            elif(est_powerc == 0x01):
+                est_power == 1
             else:
-                #est_power=99;
+                # est_power=99;
                 pass
     # print("电池开路电压=:"+str(bat_power_ocv)+"v")
         return (charging, bat_power_ocv, n_power, est_power)
@@ -357,9 +358,9 @@ class I2cDriver:
 
     def detectOffset(self):
         offset = {
-            "acc":[0,0,0],
-            "gyro":[0,0,0],
-            "magn":self.offset['magn'],
+            "acc": [0, 0, 0],
+            "gyro": [0, 0, 0],
+            "magn": self.offset['magn'],
         }
         for i in range(100):
             acc = self.readAccData()
@@ -367,11 +368,11 @@ class I2cDriver:
             for i in range(3):
                 offset['acc'][i] += acc[i]/100.0
                 offset['gyro'][i] += gyro[i]/100.0
-            print(offset)
+            # print(offset)
         offset['acc'][2] = 16384 + offset['acc'][2]
         self.offset = offset
 
-    def getOffset(self,sensor_id=0):
+    def getOffset(self, sensor_id=0):
         if sensor_id == 1:
             return self.offset["acc"]
         elif sensor_id == 2:
@@ -379,9 +380,9 @@ class I2cDriver:
         elif sensor_id == 3:
             return self.offset['magn']
         else:
-            return [0,0,0]
+            return [0, 0, 0]
 
-    def setOffset(self,sensor_id=0,offset=[0,0,0]):
+    def setOffset(self, sensor_id=0, offset=[0, 0, 0]):
         if sensor_id == 1:
             self.offset["acc"] = offset
         elif sensor_id == 2:
@@ -390,7 +391,7 @@ class I2cDriver:
             self.offset['magn'] = offset
         return offset
 
-    def getOffsetData(self,data,offset):
+    def getOffsetData(self, data, offset):
         for i in range(3):
             data[i] = data[i] - offset[i]
 
@@ -407,16 +408,18 @@ class I2cDriver:
         else:
             pitch = math.asin(acc_y)
         # 横滚角 r
-        roll = math.atan2(acc[0],-acc[2])
+        roll = math.atan2(acc[0], -acc[2])
         # 方位角
         mx = magn[0]*math.cos(roll) - magn[2]*math.sin(roll)
-        my = magn[0]*math.sin(pitch)*math.sin(roll)+magn[1]*math.cos(pitch) - magn[2]*math.sin(pitch)*math.cos(roll)
-        print(mx,my)
+        my = magn[0]*math.sin(pitch)*math.sin(roll)+magn[1] * \
+            math.cos(pitch) - magn[2]*math.sin(pitch)*math.cos(roll)
+        # print(mx,my)
         if mx == 0 and my == 0:
             yaw = 0
         else:
-            yaw = math.pi + math.atan2(mx,my)
-        return [roll/math.pi*180,pitch/math.pi*180,yaw/math.pi*180]
+            yaw = math.pi + math.atan2(mx, my)
+        return [roll/math.pi*180, pitch/math.pi*180, yaw/math.pi*180]
+
 
 if __name__ == '__main__':
     def test_print(data):
@@ -431,7 +434,7 @@ if __name__ == '__main__':
         print('gyro:', driver.readGyroData(True))
         print('magn:', driver.readMagnData())
         print('magn:', driver.readMagnData(True))
-        print('pose:',driver.estimatePose())
+        print('pose:', driver.estimatePose())
 
         # print('power:', driver.readBatOcv())
         # driver.readVout()
@@ -449,4 +452,3 @@ if __name__ == '__main__':
 #     #time.sleep(1)
 #     print(bus.read_i2c_block_data(adress,0x8B,4))
 #     print(bus.read_byte_data(adress,0x8C))
-

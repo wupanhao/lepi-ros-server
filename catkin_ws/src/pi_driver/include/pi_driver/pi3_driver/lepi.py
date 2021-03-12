@@ -228,7 +228,10 @@ class Lepi(object):
         value
         """
         outArray = [MessageType, 0, 0, 0, 0, 0]
-        reply = self.spi.xfer2(outArray)
+        try:
+            reply = self.spi.xfer2(outArray)
+        except Exception as e:
+            reply = [0,0,0,0,0,0]
         # print(reply)
         cint32 = ctypes.c_int32((reply[5] << 24) | (
             reply[4] << 16) | (reply[3] << 8) | reply[2])

@@ -3,6 +3,7 @@ import serial
 import time
 
 header = [0x12, 0x4c]
+header = [0xff, 0xff]
 
 
 def chk_sum(data):
@@ -237,13 +238,25 @@ if __name__ == '__main__':
     import serial.tools.list_ports
     serial_ports = [i[0] for i in serial.tools.list_ports.comports()]
     print(serial_ports)
-    servo = SServo('/dev/ttyUSB0')
+    servo = SServo('/dev/ttyUSB1')
     # servo.send_hex([header[0],header[1], 0x01, 0x02, 0x01, 0xFB])
     # print(servo.read_hex())
     # while True:
     #     print(servo.read_hex())
     #     time.sleep(0.1)
     # exit(0)
+
+    # print(servo.read_u8(1, EEPROM.LOCK))
+    '''
+    # Change the id forever
+    def change
+    print(servo.read_u8(1, EEPROM.LOCK))
+    servo.write_u8(1, EEPROM.LOCK, 0)
+    time.sleep(0.1)
+    servo.set_id(1, 2)
+    time.sleep(0.1)
+    servo.write_u8(2, EEPROM.LOCK, 1)
+    '''
     print("正在扫描舵机,包头: "),
     print("0x%X 0x%X" % (header[0], header[1]))
     print("检测到舵机:"),
@@ -251,9 +264,10 @@ if __name__ == '__main__':
         if servo.ping(i):
             print(str(i)+' '),
     print("\n扫描结束")
+
     # print(i, servo.ping(i))
     # print(servo.get_info(i))
-    exit(0)
+    # exit(0)
     '''
     test_data = [header[0],header[1], 0XFE, 0X18, 0X83, 0X38, 0X04, 0X00, 0X00, 0X10, 0X03, 0XE8, 0X01, 0X02, 0X20,
         0X03, 0XE8, 0X02, 0X00, 0X30, 0X03, 0XE8, 0X03, 0X02, 0X20, 0X03, 0XE8, 0X02]
@@ -265,11 +279,11 @@ if __name__ == '__main__':
     while True:
         start = time.time()
         servo.set_positions_sync(
-            [Servo(2, 450, speed=1000), Servo(6, 450, speed=1000)])
+            [Servo(1, 450, speed=2000), Servo(2, 450, speed=1000)])
         print('transort costs %f ms' % ((time.time() - start)*1000))
         time.sleep(1.5)
         servo.set_positions_sync(
-            [Servo(2, 1450, speed=1000), Servo(6, 1450, speed=1000)])
+            [Servo(1, 1450, speed=2000), Servo(2, 1450, speed=1000)])
         time.sleep(1.5)
     exit(0)
     while True:
