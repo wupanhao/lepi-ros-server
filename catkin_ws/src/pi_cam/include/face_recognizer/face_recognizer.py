@@ -202,7 +202,8 @@ class FaceRecognizer(object):
         frame = cv2.resize(frame, (0, 0), fx=1.0/scale, fy=1.0/scale)
         rgb_frame = frame[:, :, ::-1]
         start = time.time()
-        face_locations = self.detect(frame, scale=1)
+        self.detect(frame, scale=1)
+        face_locations = self.face_locations
         end = time.time()
         print("Found %d faces in %.2f ms" %
               (len(face_locations), (end - start)*1000))

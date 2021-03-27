@@ -8,7 +8,7 @@ import rospkg
 import rospy
 import json
 
-from pi_driver import I2cDriver, SServo, EEPROM
+from pi_driver import I2cDriver, SServo, EEPROM, D51Driver
 from pi_driver.msg import ButtonEvent, Sensor3Axes, MotorInfo, SensorStatusChange, U8Int32, ServoInfo
 from pi_driver.srv import SetInt32, GetInt32, SetInt32Response, GetInt32Response,\
     GetMotorsInfo, GetMotorsInfoResponse, SensorGet3Axes, SensorGet3AxesResponse,\
@@ -32,10 +32,10 @@ class PiDriverNode:
             "~sensor_status_change", SensorStatusChange, queue_size=1)
         rospy.Service("~motor_set_type", SetInt32, self.srvMotorSetType)
         rospy.Service("~motor_get_type", GetInt32, self.srvMotorGetType)
-        rospy.Service("~motor_set_state", SetInt32, self.srvMotorSetState)
-        rospy.Service("~motor_get_state", GetInt32, self.srvMotorGetState)
-        rospy.Service("~motor_set_enable", SetInt32, self.srvMotorSetEnable)
-        rospy.Service("~motor_get_enable", GetInt32, self.srvMotorGetEnable)
+        # rospy.Service("~motor_set_state", SetInt32, self.srvMotorSetState)
+        # rospy.Service("~motor_get_state", GetInt32, self.srvMotorGetState)
+        # rospy.Service("~motor_set_enable", SetInt32, self.srvMotorSetEnable)
+        # rospy.Service("~motor_get_enable", GetInt32, self.srvMotorGetEnable)
         rospy.Service("~motor_set_speed", SetInt32, self.srvMotorSetSpeed)
         rospy.Service("~motor_set_rotate", SetInt32, self.srvMotorSetRotate)
         rospy.Service("~motor_get_speed", GetInt32, self.srvMotorGetSpeed)
@@ -52,7 +52,7 @@ class PiDriverNode:
         rospy.Service('~sensor_set_mode', SetInt32, self.srvSensorSetMode)
         rospy.Service('~sensor_get_value', GetInt32, self.srvSensorGetValue)
         rospy.Service('~sensor_set_value', SetInt32, self.srvSensorSetValue)
-        rospy.Service('~sensor_get_info', GetSensorInfo, self.srvSensorGetInfo)
+        # rospy.Service('~sensor_get_info', GetSensorInfo, self.srvSensorGetInfo)
         rospy.Service('~sensors_get_info', GetMotorsInfo,
                       self.srvSensorsGetInfo)
         rospy.Service('~sensor_get_3axes', SensorGet3Axes,
@@ -83,7 +83,7 @@ class PiDriverNode:
                       self.srvGetFirmwareVersion)
         self.i2c_driver = I2cDriver()
         self.servo = SServo('/dev/ttyAMA1')
-        # self.d51_driver = D51Driver(self.pubSensorChange)
+        self.d51_driver = D51Driver(onSensorChange=self.pubSensorChange)
         self.sub_motor_set_pulse = rospy.Subscriber(
             "~motor_set_pulse", U8Int32, self.cbMotorSetPulse, queue_size=1)
         self.sub_motor_set_speed = rospy.Subscriber(
@@ -115,56 +115,68 @@ class PiDriverNode:
         self.pub_sensor_status_change.publish(
             SensorStatusChange(6-port, sensor_id, status))
 
-    def cbMotorSetPulse(self, msg):
-        pass
+    def cbMotorSetPulse(self, params):
+        self.d51_driver.motor_set_pulse(params.port, params.value)
 
-    def cbMotorSetSpeed(self, msg):
-        pass
+    def cbMotorSetSpeed(self, params):
+        self.d51_driver.motor_set_speed(params.port, params.value)
 
-    def cbMotorSetAngle(self, msg):
-        pass
+    def cbMotorSetAngle(self, params):
+        self.d51_driver.motor_set_angle(params.port, params.value)
 
     def srvMotorSetType(self, params):
-        # print(params)
+        self.d51_driver.motor_set_type(params.port, params.value)
         return SetInt32Response(params.port, params.value)
 
     def srvMotorGetType(self, params):
         # print(params)
-        return GetInt32Response()
+        value = self.d51_driver.motor_get_type(params.port)
+        return GetInt32Response(value)
 
-    def srvMotorSetState(self, params):
-        return SetInt32Response(params.port, params.value)
+    # def srvMotorSetState(self, params):
+    #     return SetInt32Response(params.port, params.value)
 
-    def srvMotorGetState(self, params):
-        return GetInt32Response()
+    # def srvMotorGetState(self, params):
+    #     return GetInt32Response()
 
-    def srvMotorSetEnable(self, params):
-        return SetInt32Response(params.port, params.value)
+    # def srvMotorSetEnable(self, params):
+    #     return SetInt32Response(params.port, params.value)
 
-    def srvMotorGetEnable(self, params):
-        return GetInt32Response()
+    # def srvMotorGetEnable(self, params):
+    #     return GetInt32Response()
 
     def srvMotorSetSpeed(self, params):
+        self.d51_driver.motor_set_speed(params.port, params.value)
         return SetInt32Response(params.port, params.value)
 
     def srvMotorGetSpeed(self, params):
-        return GetInt32Response()
+        value = self.d51_driver.motor_get_speed(params.port)
+        return GetInt32Response(value)
 
     def srvMotorSetRotate(self, params):
-        # print(params)
+        position = self.d51_driver.motor_get_position(params.port)
+        self.d51_driver.motor_set_point(params.port, params.value*2+position)
         return SetInt32Response(params.port, params.value)
 
     def srvMotorGetPulse(self, params):
+        value = self.d51_driver.motor_get_pulse(params.port)
         return GetInt32Response()
 
     def srvMotorSetPosition(self, params):
+        self.d51_driver.motor_set_point(params.port, params.value)
         return SetInt32Response(params.port, params.value)
 
     def srvMotorSetCurrentPosition(self, params):
+        if params.port == 0:
+            for i in range(5):
+                self.d51_driver.motor_set_position(i+1, params.value)
+        else:
+            self.d51_driver.motor_set_position(params.port, params.value)
         return SetInt32Response(params.port, params.value)
 
     def srvMotorGetPosition(self, params):
-        return GetInt32Response()
+        value = self.d51_driver.motor_get_position(params.port)
+        return GetInt32Response(value)
 
     def srvMotorsGetInfo(self, params):
         # return GetMotorsInfoResponse()
@@ -172,7 +184,7 @@ class PiDriverNode:
         infos = GetMotorsInfoResponse()
         # print(MotorInfo())
         for i in [1, 2, 3, 4, 5]:
-            info = [0, 0, 0, 0]
+            info = self.d51_driver.motor_get_info(i)
             # print(info)
             infos.motors.append(MotorInfo(info[0], info[1], info[2], info[3]))
         return infos
@@ -183,22 +195,33 @@ class PiDriverNode:
         infos = GetMotorsInfoResponse()
         # print(MotorInfo())
         for i in [1, 2, 3, 4, 5]:
-            info = [0, 0, 0, 0]
+            info = self.d51_driver.sensor_get_info(i)
             # print(info)
             infos.motors.append(MotorInfo(info[0], info[1], info[2], info[3]))
         return infos
 
     def srvSensorGetType(self, params):
-        return GetInt32Response()
+        value = self.d51_driver.sensor_get_type(params.port)
+        return GetInt32Response(value)
 
     def srvSensorGetValue(self, params):
-        return GetInt32Response()
+        value = self.d51_driver.sensor_get_value(params.port)
+        return GetInt32Response(value)
 
     def srvSensorSetValue(self, params):
+        self.d51_driver.sensor_set_value(params.port, params.value)
         return SetInt32Response(params.port, params.value)
 
-    def srvSensorGetInfo(self, params):
-        return GetSensorInfoResponse(params.port, 0, 0)
+    # def srvSensorGetInfo(self, params):
+    #     return GetSensorInfoResponse(params.port, 0, 0)
+
+    def srvSensorGetMode(self, params):
+        value = self.d51_driver.sensor_get_mode(params.port)
+        return GetInt32Response(value)
+
+    def srvSensorSetMode(self, params):
+        self.d51_driver.sensor_set_mode(params.port, params.value)
+        return SetInt32Response(params.port, params.value)
 
     def srvSensor9AxesSetEnable(self, params):
         # print(params)
@@ -338,13 +361,6 @@ class PiDriverNode:
     def srvServoGetU16(self, params):
         status = self.servo.read_u16(params.id, params.param_id)
         return SetServoParamResponse(status)
-
-    def srvSensorGetMode(self, params):
-        status = 0
-        return GetInt32Response(status)
-
-    def srvSensorSetMode(self, params):
-        return SetInt32Response(params.port, params.value)
 
     def srvGetFirmwareVersion(self, params):
         return GetInt32Response()

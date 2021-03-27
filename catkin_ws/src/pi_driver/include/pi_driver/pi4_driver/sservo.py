@@ -1,5 +1,9 @@
+#!coding:utf-8
 import serial
 import time
+
+header = [0x12, 0x4c]
+# header = [0xff, 0xff]
 
 
 def chk_sum(data):
@@ -46,7 +50,7 @@ class SServo(object):
 
     def __init__(self, port, baud_rate=1000000):
         self.port = serial.Serial(port=port, baudrate=baud_rate, bytesize=8, parity=serial.PARITY_NONE,
-                                  stopbits=serial.STOPBITS_ONE, timeout=0.01)
+                                  stopbits=serial.STOPBITS_ONE, timeout=0.03)
 
     def send_cmd(self, cmd):
         self.port.write(cmd.encode('utf-8'))
@@ -76,25 +80,25 @@ class SServo(object):
         return array
 
     def ping(self, id):
-        data = [0xFF, 0xFF, id, 0x02, 0x01, 0]
+        data = [header[0], header[1], id, 0x02, 0x01, 0]
         data[-1] = chk_sum(data)
         self.send_hex(data)
-        res = self.read_hex()
-        print(res)
+        res = self.read_hex(6)
+        # print(res)
         if len(res) == 6 and res[2] == id:
             return True
         else:
             return False
 
     def reset(self, id):
-        data = [0xff, 0xff, id, 0x02, SERVO.RESET, 0]
+        data = [header[0], header[1], id, 0x02, SERVO.RESET, 0]
         data[-1] = chk_sum(data)
         # print('transfer:',data)
         self.send_hex(data)
         return len(self.read_hex())
 
     def get_position(self, id):
-        data = [0xff, 0xff, id, 0x04, 0x02, 0x38, 0x02, 0]
+        data = [header[0], header[1], id, 0x04, 0x02, 0x38, 0x02, 0]
         # data = [FF FF 01 09 03 2A 00 08 00 00 E8 03 D5]
         # data = [0xff,0xff ,0x01,0x09,0x03,0x2a,0x00,0x08,0x00,0x00,0xe8,0x03,0x00]
         # chk = chk_sum(data)
@@ -123,7 +127,7 @@ class SServo(object):
             ms = 0
         if(ms > 0x03ff):
             ms = 0x03ff
-        data = [0xff, 0xff, id, 0x09, 0x03, 0x2A, (position >> 8) & 0xFF, position & 0xFF, (
+        data = [header[0], header[1], id, 0x09, 0x03, 0x2A, (position >> 8) & 0xFF, position & 0xFF, (
             ms >> 8) & 0xFF, ms & 0xFF, (speed >> 8) & 0xFF, speed & 0xFF, 0]
         data[-1] = chk_sum(data)
         print(data)
@@ -135,7 +139,7 @@ class SServo(object):
         num = len(servos)
         if not num > 0:
             return
-        data = [0XFF, 0XFF, 0XFE, num*7+4, 0X83, 0x2A, 0x06]
+        data = [header[0], header[1], 0XFE, num*7+4, 0X83, 0x2A, 0x06]
         for servo in servos:
             data.extend([servo.id, (servo.position >> 8) & 0xFF, servo.position & 0xFF, (
                 servo.ms >> 8) & 0xFF, servo.ms & 0xFF, (servo.speed >> 8) & 0xFF, servo.speed & 0xFF])
@@ -151,14 +155,14 @@ class SServo(object):
         if not num > 0:
             return
         for servo in servos:
-            data = [0XFF, 0XFF, servo.id, 9, 0X04, 0x2A, (servo.position >> 8) & 0xFF, servo.position & 0xFF, (
+            data = [header[0], header[1], servo.id, 9, 0X04, 0x2A, (servo.position >> 8) & 0xFF, servo.position & 0xFF, (
                 servo.ms >> 8) & 0xFF, servo.ms & 0xFF, (servo.speed >> 8) & 0xFF, servo.speed & 0xFF, 0]
             # data.extend([servo.id,(servo.position >> 8) & 0xFF ,servo.position & 0xFF ,(servo.ms >> 8) & 0xFF ,servo.ms & 0xFF])
             data[-1] = chk_sum(data)
             print('transfer:', ''.join(format(x, '02x') for x in data))
             self.send_hex(data)
             print(self.read_hex())
-        data = [0XFF, 0XFF, 0XFE, 2, 0X05, 0x00]
+        data = [header[0], header[1], 0XFE, 2, 0X05, 0x00]
         data[-1] = chk_sum(data)
         time.sleep(2)
         print('transfer:', ''.join(format(x, '02x') for x in data))
@@ -174,7 +178,7 @@ class SServo(object):
         return devices
 
     def set_id(self, id_old, id_new):
-        data = [0xff, 0xff, id_old, 0x04,
+        data = [header[0], header[1], id_old, 0x04,
                 SERVO.WRITE_DATA, EEPROM.ID, id_new, 0]
         data[-1] = chk_sum(data)
         print('transfer:', ''.join(format(x, '02x') for x in data))
@@ -182,14 +186,15 @@ class SServo(object):
         return len(self.read_hex())
 
     def write_u8(self, id, param, value):
-        data = [0xff, 0xff, id, 0x04, SERVO.WRITE_DATA, param, value, 0]
+        data = [header[0], header[1], id, 0x04,
+                SERVO.WRITE_DATA, param, value, 0]
         data[-1] = chk_sum(data)
         print('transfer:', ''.join(format(x, '02x') for x in data))
         self.send_hex(data)
         return len(self.read_hex())
 
     def write_u16(self, id, param, value):
-        data = [0xff, 0xff, id, 0x05, SERVO.WRITE_DATA,
+        data = [header[0], header[1], id, 0x05, SERVO.WRITE_DATA,
                 param, (value >> 8) & 0xff, value & 0xff, 0]
         data[-1] = chk_sum(data)
         print('transfer:', ''.join(format(x, '02x') for x in data))
@@ -197,7 +202,8 @@ class SServo(object):
         return len(self.read_hex())
 
     def read_u8(self, id, param):
-        data = [0xff, 0xff, id, 0x04, SERVO.READ_DATA, param, 0x01, 0]
+        data = [header[0], header[1], id, 0x04,
+                SERVO.READ_DATA, param, 0x01, 0]
         data[-1] = chk_sum(data)
         print('transfer:', ''.join(format(x, '02x') for x in data))
         self.send_hex(data)
@@ -209,7 +215,8 @@ class SServo(object):
 
     def read_u16(self, id, param):
         # print(id,param)
-        data = [0xff, 0xff, id, 0x04, SERVO.READ_DATA, param, 0x02, 0]
+        data = [header[0], header[1], id, 0x04,
+                SERVO.READ_DATA, param, 0x02, 0]
         data[-1] = chk_sum(data)
         # print('transfer:' ,''.join(format(x, '02x') for x in data))
         self.send_hex(data)
@@ -232,18 +239,37 @@ if __name__ == '__main__':
     serial_ports = [i[0] for i in serial.tools.list_ports.comports()]
     print(serial_ports)
     servo = SServo('/dev/ttyAMA1')
-    # servo.send_hex([0xFF, 0xFF, 0x01, 0x02, 0x01, 0xFB])
+    # servo.send_hex([header[0],header[1], 0x01, 0x02, 0x01, 0xFB])
     # print(servo.read_hex())
     # while True:
     #     print(servo.read_hex())
     #     time.sleep(0.1)
     # exit(0)
-    for i in range(254):
-        print(i, servo.ping(i))
-        # print(servo.get_info(i))
-    # exit(0)
+
+    # print(servo.read_u8(1, EEPROM.LOCK))
     '''
-    test_data = [0XFF, 0XFF, 0XFE, 0X18, 0X83, 0X38, 0X04, 0X00, 0X00, 0X10, 0X03, 0XE8, 0X01, 0X02, 0X20,
+    # Change the id forever
+    def change
+    print(servo.read_u8(1, EEPROM.LOCK))
+    servo.write_u8(1, EEPROM.LOCK, 0)
+    time.sleep(0.1)
+    servo.set_id(1, 2)
+    time.sleep(0.1)
+    servo.write_u8(2, EEPROM.LOCK, 1)
+    '''
+    print("正在扫描舵机,包头: "),
+    print("0x%X 0x%X" % (header[0], header[1]))
+    print("检测到舵机:"),
+    for i in range(25):
+        if servo.ping(i):
+            print(str(i)+' '),
+    print("\n扫描结束")
+    exit(0)
+    '''
+    # print(i, servo.ping(i))
+    # print(servo.get_info(i))
+    # exit(0)
+    test_data = [header[0],header[1], 0XFE, 0X18, 0X83, 0X38, 0X04, 0X00, 0X00, 0X10, 0X03, 0XE8, 0X01, 0X02, 0X20,
         0X03, 0XE8, 0X02, 0X00, 0X30, 0X03, 0XE8, 0X03, 0X02, 0X20, 0X03, 0XE8, 0X02]
     print('transfer:' ,''.join(format(x, '02x') for x in test_data))
     servo.send_hex(test_data)
@@ -253,12 +279,13 @@ if __name__ == '__main__':
     while True:
         start = time.time()
         servo.set_positions_sync(
-            [Servo(2, 450, speed=1000), Servo(6, 450, speed=1000)])
-        print('transort costs %f ms' % ((time.time() - start)*1000))
+            [Servo(1, 100, speed=2000), Servo(2, 50, speed=1000)])
+        # print('transort costs %f ms' % ((time.time() - start)*1000))
         time.sleep(1.5)
         servo.set_positions_sync(
-            [Servo(2, 1450, speed=1000), Servo(6, 1450, speed=1000)])
+            [Servo(1, 1150, speed=2000), Servo(2, 450, speed=1000)])
         time.sleep(1.5)
+        break
     exit(0)
     while True:
         servo.set_position(1, 450, ms=1000)

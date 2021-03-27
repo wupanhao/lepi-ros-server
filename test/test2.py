@@ -3,7 +3,7 @@ import serial
 import time
 
 header = [0x12, 0x4c]
-header = [0xff, 0xff]
+#header = [0xff, 0xff]
 
 
 def chk_sum(data):
@@ -67,7 +67,7 @@ class SServo(object):
         # print(cmd)
         self.port.write(cmd)
         time.sleep(0.00001)
-        # self.port.flushInput()
+        self.port.flushInput()
 
     def read_hex(self, n=0):
         if(n > 0):
@@ -238,7 +238,7 @@ if __name__ == '__main__':
     import serial.tools.list_ports
     serial_ports = [i[0] for i in serial.tools.list_ports.comports()]
     print(serial_ports)
-    servo = SServo('/dev/ttyUSB1')
+    servo = SServo('/dev/ttyAMA1')
     # servo.send_hex([header[0],header[1], 0x01, 0x02, 0x01, 0xFB])
     # print(servo.read_hex())
     # while True:
@@ -264,11 +264,11 @@ if __name__ == '__main__':
         if servo.ping(i):
             print(str(i)+' '),
     print("\n扫描结束")
-
+    exit(0)
+    '''
     # print(i, servo.ping(i))
     # print(servo.get_info(i))
     # exit(0)
-    '''
     test_data = [header[0],header[1], 0XFE, 0X18, 0X83, 0X38, 0X04, 0X00, 0X00, 0X10, 0X03, 0XE8, 0X01, 0X02, 0X20,
         0X03, 0XE8, 0X02, 0X00, 0X30, 0X03, 0XE8, 0X03, 0X02, 0X20, 0X03, 0XE8, 0X02]
     print('transfer:' ,''.join(format(x, '02x') for x in test_data))
@@ -279,12 +279,13 @@ if __name__ == '__main__':
     while True:
         start = time.time()
         servo.set_positions_sync(
-            [Servo(1, 450, speed=2000), Servo(2, 450, speed=1000)])
-        print('transort costs %f ms' % ((time.time() - start)*1000))
+            [Servo(1, 100, speed=2000), Servo(2, 450, speed=1000)])
+        # print('transort costs %f ms' % ((time.time() - start)*1000))
         time.sleep(1.5)
         servo.set_positions_sync(
-            [Servo(1, 1450, speed=2000), Servo(2, 1450, speed=1000)])
+            [Servo(1, 1150, speed=2000), Servo(2, 450, speed=1000)])
         time.sleep(1.5)
+        # break
     exit(0)
     while True:
         servo.set_position(1, 450, ms=1000)

@@ -74,7 +74,7 @@ class UltraFaceInferenceNode(object):
 
     def toFaceDetectionMsg(self):
         msg = GetFaceDetectionsResponse()
-        for face in self.detector.detections:
+        for face in self.detector.faceDetections:
             msg.detections.append(FaceDetection(
                 "{}".format(round(face[0], 2)), face[1]))
         return msg

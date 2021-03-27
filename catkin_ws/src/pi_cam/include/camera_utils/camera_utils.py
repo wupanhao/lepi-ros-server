@@ -6,6 +6,8 @@ import numpy as np
 import os
 from PIL import Image, ImageFont, ImageDraw
 from cv_bridge import CvBridge
+from sensor_msgs.msg import CompressedImage
+import rospy
 
 # from cam_info_reader_node
 try:
@@ -117,11 +119,12 @@ def toImage(image_msg):
     return cv_image
 
 
-def toImageMsg():
+def toImageMsg(image):
     msg = CompressedImage()
     msg.header.stamp = rospy.Time.now()
     msg.format = "jpeg"
     msg.data = jpg_from_bgr(image)
+    return msg
 
 
 def cameraList(cam="Camera"):

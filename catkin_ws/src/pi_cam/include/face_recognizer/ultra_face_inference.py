@@ -145,6 +145,8 @@ class UltraFaceInference:
         self.setResize(160, 120)
         self.threshold = 0.7
         self.faceCount = 0
+        self.faceDetections = []
+        self.faceData = []
 
     def detect(self, img_ori):
         time_time = time.time()
