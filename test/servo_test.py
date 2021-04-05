@@ -48,12 +48,7 @@ class SServo(object):
     serial client
     """
 
-    def __init__(self, port = None, baud_rate=1000000):
-        if port is None:
-            import serial.tools.list_ports
-            serial_ports = [i[0] for i in serial.tools.list_ports.comports()]
-            print(serial_ports)
-            port = serial_ports[0]
+    def __init__(self, port, baud_rate=1000000):
         self.port = serial.Serial(port=port, baudrate=baud_rate, bytesize=8, parity=serial.PARITY_NONE,
                                   stopbits=serial.STOPBITS_ONE, timeout=0.01)
         self.port.flushInput()
@@ -256,7 +251,7 @@ if __name__ == '__main__':
     import serial.tools.list_ports
     serial_ports = [i[0] for i in serial.tools.list_ports.comports()]
     print(serial_ports)
-    servo = SServo(serial_ports[0])
+    servo = SServo('/dev/ttyUSB0')
     # servo.send_hex([header[0],header[1], 0x01, 0x02, 0x01, 0xFB])
     # print(servo.read_hex())
     # while True:

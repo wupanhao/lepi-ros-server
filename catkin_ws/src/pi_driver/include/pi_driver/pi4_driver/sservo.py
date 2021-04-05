@@ -48,9 +48,14 @@ class SServo(object):
     serial client
     """
 
-    def __init__(self, port, baud_rate=1000000):
+    def __init__(self, port=None, baud_rate=1000000):
+        if port is None:
+            import serial.tools.list_ports
+            serial_ports = [i[0] for i in serial.tools.list_ports.comports()]
+            print(serial_ports)
+            port = serial_ports[0]
         self.port = serial.Serial(port=port, baudrate=baud_rate, bytesize=8, parity=serial.PARITY_NONE,
-                                  stopbits=serial.STOPBITS_ONE, timeout=0.03)
+                                  stopbits=serial.STOPBITS_ONE, timeout=0.01)
 
     def send_cmd(self, cmd):
         self.port.write(cmd.encode('utf-8'))
@@ -130,8 +135,8 @@ class SServo(object):
         data = [header[0], header[1], id, 0x09, 0x03, 0x2A, (position >> 8) & 0xFF, position & 0xFF, (
             ms >> 8) & 0xFF, ms & 0xFF, (speed >> 8) & 0xFF, speed & 0xFF, 0]
         data[-1] = chk_sum(data)
-        print(data)
-        print('transfer:', ''.join(format(x, '02x') for x in data))
+        # print(data)
+        # print('transfer:', ''.join(format(x, '02x') for x in data))
         self.send_hex(data)
         return len(self.read_hex())
 
@@ -145,7 +150,7 @@ class SServo(object):
                 servo.ms >> 8) & 0xFF, servo.ms & 0xFF, (servo.speed >> 8) & 0xFF, servo.speed & 0xFF])
         data.append(0)
         data[-1] = chk_sum(data)
-        print('transfer:', ''.join(format(x, '02x') for x in data))
+        # print('transfer:', ''.join(format(x, '02x') for x in data))
         self.send_hex(data)
         return
         # return len(self.read_hex())
@@ -232,6 +237,16 @@ class SServo(object):
         info[1] = self.read_u16(id, EEPROM.CURRENT_POSITION_H)
         info[2] = self.read_u16(id, EEPROM.MAX_POSITION_H)
         return info
+
+    # Change the id forever
+    def change_id(self, old, new):
+        # print(self.read_u8(1, EEPROM.LOCK))
+        self.write_u8(old, EEPROM.LOCK, 0)
+        # time.sleep(0.1)
+        self.set_id(old, new)
+        self.write_u8(new, EEPROM.LOCK, 1)
+        time.sleep(0.01)
+        return self.ping(new)
 
 
 if __name__ == '__main__':

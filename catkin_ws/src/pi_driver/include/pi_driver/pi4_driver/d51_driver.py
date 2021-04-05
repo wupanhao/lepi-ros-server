@@ -64,11 +64,12 @@ class D51Driver(object):
     serial client
     """
 
-    def __init__(self, port='/dev/ttyACM0', baud_rate=9600, onSensorChange=None, debug_mode=False):
+    def __init__(self, port='/dev/ttyACM0', baud_rate=115200, onSensorChange=None, debug_mode=False):
         self.port = serial.Serial(port=port, baudrate=baud_rate, bytesize=8, parity=serial.PARITY_NONE,
                                   stopbits=serial.STOPBITS_ONE, timeout=0.001, dsrdtr=False)
-        threading._start_new_thread(self.start_listen_loop, ())
         self.onSensorChange = onSensorChange
+        if onSensorChange is not None:
+            threading._start_new_thread(self.start_listen_loop, ())
         self.debug_mode = debug_mode
         self.motor = {}
         self.sensor = {}
@@ -130,7 +131,7 @@ class D51Driver(object):
             try:
                 data = self.read_hex()
                 if len(data) == 0:
-                    time.sleep(0.005)
+                    time.sleep(0.002)
                 else:
                     self.on_data(data)
             except Exception as e:

@@ -3,7 +3,7 @@ import serial
 import time
 
 header = [0x12, 0x4c]
-#header = [0xff, 0xff]
+# header = [0xff, 0xff]
 
 
 def chk_sum(data):
@@ -64,7 +64,7 @@ class SServo(object):
         return response
 
     def send_hex(self, cmd):
-        # print(cmd)
+        print(cmd)
         self.port.write(cmd)
         time.sleep(0.00001)
         self.port.flushInput()
@@ -84,7 +84,8 @@ class SServo(object):
         data[-1] = chk_sum(data)
         self.send_hex(data)
         res = self.read_hex(6)
-        # print(res)
+        # res = []
+        print(res)
         if len(res) == 6 and res[2] == id:
             return True
         else:
@@ -260,7 +261,8 @@ if __name__ == '__main__':
     print("正在扫描舵机,包头: "),
     print("0x%X 0x%X" % (header[0], header[1]))
     print("检测到舵机:"),
-    for i in range(254):
+    for i in range(4):
+        time.sleep(0.2)
         if servo.ping(i):
             print(str(i)+' '),
     print("\n扫描结束")
@@ -279,12 +281,12 @@ if __name__ == '__main__':
     while True:
         start = time.time()
         servo.set_positions_sync(
-            [Servo(1, 100, speed=2000), Servo(2, 450, speed=1000)])
+            [Servo(1, 511, speed=2000)])
         # print('transort costs %f ms' % ((time.time() - start)*1000))
-        time.sleep(1.5)
+        time.sleep(2)
         servo.set_positions_sync(
-            [Servo(1, 1150, speed=2000), Servo(2, 450, speed=1000)])
-        time.sleep(1.5)
+            [Servo(1, 900, speed=2000)])
+        time.sleep(2)
         # break
     exit(0)
     while True:

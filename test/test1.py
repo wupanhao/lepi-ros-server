@@ -3,6 +3,7 @@ import serial
 import time
 
 header = [0xff, 0xff]
+# header = [0x12, 0x4c]
 
 
 def chk_sum(data):
@@ -63,10 +64,10 @@ class SServo(object):
         return response
 
     def send_hex(self, cmd):
-        # print(cmd)
+        print(cmd)
         self.port.write(cmd)
         time.sleep(0.00001)
-        # self.port.flushInput()
+        self.port.flushInput()
 
     def read_hex(self, n=0):
         if(n > 0):
@@ -83,7 +84,7 @@ class SServo(object):
         data[-1] = chk_sum(data)
         self.send_hex(data)
         res = self.read_hex(6)
-        # print(res)
+        print(res)
         if len(res) == 6 and res[2] == id:
             return True
         else:
@@ -237,7 +238,7 @@ if __name__ == '__main__':
     import serial.tools.list_ports
     serial_ports = [i[0] for i in serial.tools.list_ports.comports()]
     print(serial_ports)
-    servo = SServo('/dev/ttyUSB0')
+    servo = SServo('/dev/ttyAMA1')
     # servo.send_hex([header[0],header[1], 0x01, 0x02, 0x01, 0xFB])
     # print(servo.read_hex())
     # while True:
@@ -247,7 +248,7 @@ if __name__ == '__main__':
     print("正在扫描舵机,包头: "),
     print("0x%X 0x%X" % (header[0], header[1]))
     print("检测到舵机:"),
-    for i in range(254):
+    for i in range(25):
         if servo.ping(i):
             print(str(i)+' '),
     print("\n扫描结束")
