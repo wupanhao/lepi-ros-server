@@ -27,6 +27,9 @@ class Servo:
         self.ms = ms
         self.speed = speed
 
+    def __repr__(self):
+        return str({"id": self.id, "position": self.position})
+
 
 class EEPROM(object):
     ID = 0x05
@@ -150,7 +153,7 @@ class SServo(object):
                 servo.ms >> 8) & 0xFF, servo.ms & 0xFF, (servo.speed >> 8) & 0xFF, servo.speed & 0xFF])
         data.append(0)
         data[-1] = chk_sum(data)
-        # print('transfer:', ''.join(format(x, '02x') for x in data))
+        print('transfer:', ''.join(format(x, '02x') for x in data))
         self.send_hex(data)
         return
         # return len(self.read_hex())
@@ -253,7 +256,8 @@ if __name__ == '__main__':
     import serial.tools.list_ports
     serial_ports = [i[0] for i in serial.tools.list_ports.comports()]
     print(serial_ports)
-    servo = SServo('/dev/ttyAMA1')
+    # servo = SServo('/dev/ttyAMA1')
+    servo = SServo()
     # servo.send_hex([header[0],header[1], 0x01, 0x02, 0x01, 0xFB])
     # print(servo.read_hex())
     # while True:
@@ -279,7 +283,7 @@ if __name__ == '__main__':
         if servo.ping(i):
             print(str(i)+' '),
     print("\n扫描结束")
-    exit(0)
+    # exit(0)
     '''
     # print(i, servo.ping(i))
     # print(servo.get_info(i))
@@ -294,13 +298,13 @@ if __name__ == '__main__':
     while True:
         start = time.time()
         servo.set_positions_sync(
-            [Servo(1, 100, speed=2000), Servo(2, 50, speed=1000)])
+            [Servo(1, 400, speed=2000), Servo(2, 450, speed=1000)])
         # print('transort costs %f ms' % ((time.time() - start)*1000))
         time.sleep(1.5)
         servo.set_positions_sync(
-            [Servo(1, 1150, speed=2000), Servo(2, 450, speed=1000)])
+            [Servo(1, 600, speed=2000), Servo(2, 650, speed=1000)])
         time.sleep(1.5)
-        break
+        # break
     exit(0)
     while True:
         servo.set_position(1, 450, ms=1000)

@@ -3,7 +3,7 @@ import rospy
 import math
 from sensor_msgs.msg import JointState
 from std_msgs.msg import String
-from hexapod_driver import SServo, Servo
+from pi_driver import SServo, Servo
 from hexapod_controller.srv import GetOffsets, GetOffsetsResponse, SetOffsets, SetOffsetsResponse
 import time
 import yaml
