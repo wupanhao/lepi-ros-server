@@ -1,7 +1,7 @@
 <launch>
 	<arg name="node_name" default="hexapod_driver_node"/>
 	<group ns="/ubiquityrobot">
-		<node name="$(arg node_name)" pkg="hexapod_controller" type="$(arg node_name).py" output="screen" >
+		<node name="$(arg node_name)" pkg="hexapod_controller" type="hexapod_controller_node.py" output="screen" >
 			<remap from="$(arg node_name)/joint_states" to="hexapod_controller_node/joint_states" />
 		</node>
 	</group>

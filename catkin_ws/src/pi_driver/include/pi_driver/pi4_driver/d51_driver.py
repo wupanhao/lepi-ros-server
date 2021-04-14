@@ -32,6 +32,16 @@ def to_value(data):
         return 0
 
 
+class System:
+    def __init__(self):
+        self.version = 0
+        self.battery_level = 0
+        self.charge_state = 0
+
+    def __repr__(self):
+        return str({"version": self.version, "battery_level": self.battery_level, "charge_state": self.charge_state})
+
+
 class Motor:
     def __init__(self, port):
         self.port = port
@@ -71,6 +81,10 @@ class D51Driver(object):
         if onSensorChange is not None:
             threading._start_new_thread(self.start_listen_loop, ())
         self.debug_mode = debug_mode
+        self.system = System()
+        self._system_get_version()
+        self._system_get_power()
+        self._system_get_charge()
         self.motor = {}
         self.sensor = {}
         for i in range(5):
@@ -161,10 +175,23 @@ class D51Driver(object):
         length = frame[3]
         value = frame[4:4+length]
         # print(attr_id, length, value)
+        if attr_id < 0x10:
+            self.on_system(attr_id, value)
         if attr_id >= 0x10 and attr_id < 0x60:
             self.on_motor(attr_id, value)
         if attr_id >= 0x60 and attr_id < 0xb0:
             self.on_sensor(attr_id, value)
+
+    def on_system(self, attr_id, data):
+        attr = attr_id
+        value = to_int32(data)
+        if attr == 0:
+            self.system.version = value
+        elif attr == 1:
+            self.system.battery_level = value
+        elif attr == 2:
+            self.system.charge_state = value
+        print(self.system)
 
     def on_motor(self, attr_id, data):
         motor_id = attr_id >> 4
@@ -324,16 +351,41 @@ class D51Driver(object):
         if self.motor.has_key(port) and abs(angle) <= 90:
             self.motor_set_pulse(port, int(4500+angle*32))
 
+    def _system_get_version(self):
+        self.read_32(0x00)
+
+    def _system_get_power(self):
+        self.read_32(0x01)
+
+    def _system_get_charge(self):
+        self.read_32(0x02)
+
+    def system_get_version(self):
+        return self.system.version
+
+    def system_get_power(self):
+        return self.system.battery_level
+
+    def system_get_charge(self):
+        return self.system.charge_state
+
 
 if __name__ == '__main__':
     import serial.tools.list_ports
     import math
     import random
+
+    def pubSensorChange(port, sensor_id, status):
+        print(6-port, sensor_id, status)
+
     serial_ports = [i[0] for i in serial.tools.list_ports.comports()]
     print(serial_ports)
-    driver = D51Driver('/dev/ttyACM0', baud_rate=115200)
+    driver = D51Driver('/dev/ttyACM0', baud_rate=115200,
+                       onSensorChange=pubSensorChange)
     print(driver.port.is_open)
     count = 1
+    time.sleep(3)
+    exit()
     while True:
         pulse = int(65535*math.sin(count/500.0*math.pi))
         # pulse = random.randint(0, 9)

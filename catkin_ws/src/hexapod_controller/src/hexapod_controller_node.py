@@ -11,8 +11,12 @@ import os
 import threading
 import json
 import config
-from kinematics import tip_to_leg, ik, leg_ki, point_rotate, global_to_leg, path_to_angles
+from kinematics import tip_to_leg, ik, leg_ki, point_rotate, global_to_leg, path_to_angles, path_to_angles_with_translate_and_rotate
 from movement import path_generator, turn_left_generator, turn_right_generator
+
+
+def point_add(p1, p2):
+    return [p1[0]+p2[0], p1[1]+p2[1], p1[2]+p2[2]]
 
 
 class HexapodControllerNode:
@@ -26,9 +30,12 @@ class HexapodControllerNode:
         self.joyState = None
         self.servoState = None
         self.mode = 'move'
-        self.move_dir = None
         self.move_speed = 0
-        self.steps = None
+        self.move_dir = 0
+        self.turn_dir = 'none'
+        self.rotate = [0, 0, 0]
+        self.translate = [0, 0, 0]
+        self.steps = path_to_angles(path_generator(self.move_dir))
         self.cali_file = os.path.expanduser(
             '~') + '/Lepi_Data/ros/hexapod_controller/calibrations.yaml'
         self.pub_node_state = rospy.Publisher(
@@ -48,16 +55,19 @@ class HexapodControllerNode:
             "~get_offsets", GetOffsets, self.loadCaliFile)
         self.srv_set_offsets = rospy.Service(
             "~set_offsets", SetOffsets, self.saveCaliFile)
-        self.turn_steps = {
-            "left": path_to_angles(turn_left_generator()),
-            "right": path_to_angles(turn_right_generator()),
-        }
-        self.move_steps = []
-        start = time.time()
-        for i in range(360):
-            self.move_steps.append(path_to_angles(path_generator(i)))
-        end = time.time()
-        print('generate move_path costs ,', end-start)
+        # self.turn_steps = {
+        #     "left": path_to_angles(turn_left_generator()),
+        #     "right": path_to_angles(turn_right_generator()),
+        # }
+        # self.turn_steps = path_to_angles(turn_left_generator())
+
+        # self.move_steps = []
+        # start = time.time()
+        # for i in range(360):
+        #     self.move_steps.append(path_to_angles(path_generator(i)))
+        # end = time.time()
+        # print('generate move_path costs ,', end-start)
+
         self.loop = threading.Thread(target=self.start_move_loop)
         # reader.daemon = True
         self.loop.start()
@@ -66,6 +76,9 @@ class HexapodControllerNode:
         # self.test_position_xy()
         # self.test_rotate()
         # self.test_turn()
+        # self.static_position([40, 0, 0])
+        # time.sleep(2)
+        # self.translate_with_rotate([40, 0, 0], [0, 20, 0])
         rospy.loginfo("[%s] Initialized......" % (self.node_name))
         #os.system('bash -c "source /home/pi/nodejs.sh && node /home/pi/workspace/lepi-gui/app/hexapod/controller.js"')
 
@@ -132,7 +145,18 @@ class HexapodControllerNode:
         # print(msg)
         angles = [int(positions[i]/math.pi*180)
                   for i in range(len(positions))]
-        self.cbServoAngles(angles)
+        array = [0 for i in range(18)]
+        for i in range(18):
+            array[i] = angles[i] + self.offsets[i]
+            if i % 3 == 2:
+                array[i] = -array[i]
+        positions = [int(array[i]/200.0*1023)
+                     for i in range(len(array))]
+        servos = [Servo(i+1, positions[i]+self.center, speed=self.speed)
+                  for i in range(len(array))]
+        if self.servos is not None:
+            self.servos.set_positions_sync(servos)
+        # self.cbServoAngles(angles)
 
     def cbJointAngle(self, msg):
         angles = [int(i) for i in msg.position]
@@ -176,6 +200,20 @@ class HexapodControllerNode:
             # print(j, leg, angle)
         self.cbServoAngles(angles)
 
+    def translate_with_rotate(self, translate=[0, 0, 0], rotate=[0, 0, 0]):
+        angles = []
+        # position = [0, 0, 0]
+        position = config.defaultPosition
+        for j in range(6):
+            # pt = position[j]
+            pt = point_add(position[j], translate)
+            pt = point_rotate(pt, rotate)
+            leg = global_to_leg(j, pt)
+            angle = ik(leg)
+            angles.extend(angle)
+            # print(j, leg, angle)
+        self.cbServoAngles(angles)
+
     def static_position(self, position=[0, 0, 0]):
         angles = []
         for j in range(6):
@@ -184,6 +222,7 @@ class HexapodControllerNode:
             angles.extend(angle)
             # print(j, leg, angle)
         self.cbServoAngles(angles)
+        time.sleep(0.05)
 
     def test_move(self, dir=0):
         path = path_generator(dir)
@@ -255,14 +294,19 @@ class HexapodControllerNode:
             self.joyState = joy
         # print(joy)
 
-        # L1 = joy["Buttons"]["4"]
+        L1 = joy["Buttons"]["4"]
         R1 = joy["Buttons"]["5"]
+        if L1 == 1 and self.joyState["Buttons"]["4"] == 0:
+            self.translate = [0, 0, 0]
+            self.rotate = [0, 0, 0]
+            self.static_position()
+            self.move_speed = 0
+            self.try_to_get_move_solver(move_speed=0)
         if R1 == 1 and self.joyState["Buttons"]["5"] == 0:
             # change mode
             if self.mode == 'move':
                 self.mode = 'stand'
             else:
-                self.steps = None
                 self.mode = 'move'
             print(self.mode)
 
@@ -270,6 +314,8 @@ class HexapodControllerNode:
         left_y = -joy["Axes"]["1"]
         left_rad = math.atan2(left_y, left_x)
         left_dir = left_rad/math.pi*180
+        left_speed = abs(left_x) if abs(
+            left_x) > abs(left_y) else abs(left_y)
         right_x = joy["Axes"]["3"]
         right_y = -joy["Axes"]["4"]
         right_rad = math.atan2(right_y, right_x)
@@ -279,32 +325,50 @@ class HexapodControllerNode:
         if self.mode == 'move':
             if abs(right_x) > 1000:
                 self.turn_dir = 'right' if right_x > 0 else 'left'
-                self.move_speed = abs(right_x)
-                self.steps = self.turn_steps[self.turn_dir]
-            else:
-                self.move_speed = abs(left_x) if abs(
-                    left_x) > abs(left_y) else abs(left_y)
+                # self.steps = self.turn_steps[self.turn_dir]
+                # self.steps = self.turn_steps
+                # self.steps = path_to_angles_with_translate_and_rotate(
+                #     turn_left_generator(), self.translate, self.rotate)
+                self.try_to_get_turn_solver(move_speed=abs(right_x))
+                # self.move_speed = abs(right_x)
+            elif self.turn_dir != 'none':
+                self.turn_dir = 'none'
+                self.try_to_get_move_solver(move_speed=left_speed)
+            if left_speed > 1000:
                 move_dir = int(left_dir + 90)
                 if move_dir < 0:
                     move_dir = move_dir+360
                 if self.move_dir != move_dir:
+                    # if abs(self.move_dir - move_dir) > 45 and self.move_speed != 0:
+                    #     self.static_position()
                     self.move_dir = move_dir
-                    # self.steps = path_to_angles(path_generator(move_dir))
-                    self.steps = self.move_steps[move_dir]
+                    self.try_to_get_move_solver(move_speed=left_speed)
+                    # self.steps = path_to_angles_with_translate_and_rotate(
+                    #     path_generator(self.move_dir), self.translate, self.rotate)
+                    # self.steps = self.move_steps[self.move_dir]
+                # self.move_speed = left_speed
+            elif self.turn_dir == 'none':
+                self.move_speed = left_speed
 
         elif self.mode == 'stand':
             left_speed = abs(left_x) if abs(
                 left_x) > abs(left_y) else abs(left_y)
             right_speed = abs(right_x) if abs(
                 right_x) > abs(right_y) else abs(right_y)
+            rotate = [0, 0, 0]
+            translate = [0, 0, 0]
             if right_speed > 1000:
                 rotate_y = 10 * math.cos(right_rad) * right_speed/32767.0
                 rotate_x = 10 * math.sin(right_rad)*right_speed/32767.0
-                self.static_rotate([rotate_x, rotate_y, 0])
-            elif left_speed > 1000:
+                rotate = [rotate_x, rotate_y, 0]
+            if left_speed > 1000:
                 translate_x = 35*math.cos(left_rad)*left_speed/32767.0
                 translate_y = 35*math.sin(left_rad)*left_speed/32767.0
-                self.static_position([-translate_x, -translate_y, 0])
+                translate = [-translate_x, -translate_y, 0]
+            if right_speed > 1000 or left_speed > 1000:
+                self.translate = translate
+                self.rotate = rotate
+                self.translate_with_rotate(self.translate, self.rotate)
         # print('left_dir', left_dir, 'right_dir', right_dir)
 
     def start_move_loop(self):
@@ -313,20 +377,41 @@ class HexapodControllerNode:
         #     self.test_move(i*90)
         i = 0
         while self.alive:
-            if self.steps is None:
+            if self.move_speed == 0:
                 time.sleep(0.05)
                 continue
             while self.mode == 'move':
                 if self.move_speed > 1000:
-                    if i >= len(self.steps):
+                    if self.turn_dir == 'right':
+                        i = i - 1
+                    else:
+                        i = i + 1
+                    if abs(i) >= len(self.steps):
                         i = 0
                     angles = self.steps[i]
                     self.cbServoAngles(angles)
-                    i = i + 1
                     time.sleep(1000.0/(self.move_speed+1000))
                 else:
                     time.sleep(0.05)
                     break
+
+    def try_to_get_move_solver(self, move_speed=0):
+        try:
+            self.steps = path_to_angles_with_translate_and_rotate(
+                path_generator(self.move_dir), self.translate, self.rotate)
+            self.move_speed = move_speed
+        except Exception as e:
+            print(e)
+            self.move_speed = 0
+
+    def try_to_get_turn_solver(self, move_speed=0):
+        try:
+            self.steps = path_to_angles_with_translate_and_rotate(
+                turn_left_generator(), self.translate, self.rotate)
+            self.move_speed = move_speed
+        except Exception as e:
+            print(e)
+            self.move_speed = 0
 
 
 if __name__ == '__main__':

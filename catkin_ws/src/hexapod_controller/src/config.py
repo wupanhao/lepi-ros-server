@@ -25,7 +25,7 @@ OTHER_X = (kLegOtherX + (kLegJ1ToJ2 +
 OTHER_Y = (kLegOtherY + (kLegJ1ToJ2 +
                          (kLegJ2ToJ3*COS30)+kLegJ3ToTip*SIN15)*SIN45)
 
-# 0 30 15
+# 0 30 -15
 defaultPosition = (
     (OTHER_X, OTHER_Y, -STANDBY_Z),
     (MIDDLE_X, 0, -STANDBY_Z),
@@ -35,7 +35,7 @@ defaultPosition = (
     (-OTHER_X, OTHER_Y, -STANDBY_Z),
 )
 
-# 每只脚的相对坐标原点
+# 每只脚相对原点的坐标
 mountPosition = (
     (kLegOtherX, kLegOtherY, 0),
     (kLegMiddleX, 0, 0),

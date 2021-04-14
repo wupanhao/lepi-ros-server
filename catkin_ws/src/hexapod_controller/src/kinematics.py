@@ -23,11 +23,15 @@ def leg_ki(leg_index, angles):
     return [mount[0] + x, mount[1] + y, mount[2]+z]
 
 
-defaultPosition = []
-for i in range(6):
-    leg = leg_ki(i, (0, 0, 0))
-    defaultPosition.append(leg)
+# defaultPosition = []
+# for i in range(6):
+#     leg = leg_ki(i, (0, 0, 0))
+#     defaultPosition.append(leg)
 defaultPosition = config.defaultPosition
+
+
+def point_add(p1, p2):
+    return [p1[0]+p2[0], p1[1]+p2[1], p1[2]+p2[2]]
 
 
 def point_rotate_x(pt, angle):
@@ -150,6 +154,18 @@ def tip_to_leg(leg_index, co):
     return point_rotate_z(pt, angle)
 
 
+def tip_to_leg_with_translate_and_rotate(leg_index, co, translate=[0, 0, 0], rotate=[0, 0, 0]):
+    angle = defaultAngle[leg_index]
+    position = defaultPosition[leg_index]
+    pt = [position[0]+co[0]+translate[0], position[1] +
+          co[1]+translate[1], position[2]+co[2]+translate[2]]
+    pt = point_rotate(pt, rotate)
+    # print('target', pt)
+    pt = global_to_mount(leg_index, pt)
+    # print('mount', pt)
+    return point_rotate_z(pt, angle)
+
+
 def global_to_leg(leg_index, pt):
     angle = defaultAngle[leg_index]
     pt = global_to_mount(leg_index, pt)
@@ -176,12 +192,34 @@ def tips_to_angles(tips):
     return angles
 
 
+def tips_to_angles_with_translate_and_rotate(tips, translate=[0, 0, 0], rotate=[0, 0, 0]):
+    angles = []
+    for j in range(6):
+        leg = tip_to_leg_with_translate_and_rotate(
+            j, tips[j], translate, rotate)
+        # print(j, leg)
+        angle = ik(leg)
+        angles.extend(angle)
+    return angles
+
+
 def path_to_angles(path):
     steps = len(path[0])
     seqs = []
     for i in range(steps):
         # print(i, path)
         angles = tips_to_angles([path[j][i] for j in range(6)])
+        seqs.append(angles)
+    return seqs
+
+
+def path_to_angles_with_translate_and_rotate(path, translate=[0, 0, 0], rotate=[0, 0, 0]):
+    steps = len(path[0])
+    seqs = []
+    for i in range(steps):
+        # print(i, path)
+        angles = tips_to_angles_with_translate_and_rotate(
+            [path[j][i] for j in range(6)], translate, rotate)
         seqs.append(angles)
     return seqs
 

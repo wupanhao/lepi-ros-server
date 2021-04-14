@@ -1,5 +1,4 @@
 #!coding:utf-8
-import serial
 import time
 
 header = [0x12, 0x4c]
@@ -52,6 +51,7 @@ class SServo(object):
     """
 
     def __init__(self, port=None, baud_rate=1000000):
+        import serial
         if port is None:
             import serial.tools.list_ports
             serial_ports = [i[0] for i in serial.tools.list_ports.comports()]
@@ -153,7 +153,7 @@ class SServo(object):
                 servo.ms >> 8) & 0xFF, servo.ms & 0xFF, (servo.speed >> 8) & 0xFF, servo.speed & 0xFF])
         data.append(0)
         data[-1] = chk_sum(data)
-        print('transfer:', ''.join(format(x, '02x') for x in data))
+        # print('transfer:', ''.join(format(x, '02x') for x in data))
         self.send_hex(data)
         return
         # return len(self.read_hex())
@@ -176,6 +176,17 @@ class SServo(object):
         print('transfer:', ''.join(format(x, '02x') for x in data))
         self.send_hex(data)
         return len(self.read_hex())
+
+    def set_servo_angles(self, angles):
+        # angles = []
+        ids = []
+        for leg_index in range(4):
+            for axis_index in range(3):
+                id = leg_index*3+axis_index+1
+                ids.append(id)
+        servos = [Servo(ids[i], int(angles[i]/200.0*1023+1023/2), speed=2000)
+                  for i in range(12)]
+        self.set_positions_sync(servos)
 
     def scan(self):
         devices = []

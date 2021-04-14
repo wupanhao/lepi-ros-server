@@ -284,9 +284,6 @@ class PiDriverNode:
         data = self.i2c_driver.estimatePose()
         return SensorGet3AxesResponse(Sensor3Axes(data[0], data[1], data[2]))
 
-    def srvGetPowerState(self, params):
-        data = [0, 0, 0]
-        return GetPowerStateResponse(data[0], data[1], data[2])
     '''
     def srvInputString(self, params):
         try:
@@ -363,7 +360,14 @@ class PiDriverNode:
         return SetServoParamResponse(status)
 
     def srvGetFirmwareVersion(self, params):
-        return GetInt32Response()
+        self.d51_driver._system_get_version()
+        return GetInt32Response(self.d51_driver.system.version)
+
+    def srvGetPowerState(self, params):
+        # charging bat_power_ocv est_power
+        # self.d51_driver._system_get_power()
+        data = [0, 4.1, self.d51_driver.system.battery_level]
+        return GetPowerStateResponse(data[0], data[1], data[2])
 
 
 if __name__ == '__main__':

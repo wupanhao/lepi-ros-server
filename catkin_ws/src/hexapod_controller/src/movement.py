@@ -40,7 +40,7 @@ def any_direction_generator(radius, steps, direction=0, reverse=False):
     result.rotate(-int(steps/4))
     if reverse:
         result = deque(reversed(result))
-    print('result', result)
+    # print('result', result)
     return result
 
 
