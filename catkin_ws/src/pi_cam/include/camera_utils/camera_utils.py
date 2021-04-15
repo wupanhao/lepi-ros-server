@@ -137,7 +137,7 @@ def cameraList(cam="Camera"):
     arr = []
     for dev in [i.split(b"\n\t") for i in out.split(b"\n\n")]:
         # print(dev)
-        if len(dev) > 0 and ("Camera" in str(dev[0]) or "mmal" in str(dev[0])):
+        if len(dev) > 0 and ("bcm2835" not in str(dev[0]) or "mmal" in str(dev[0])):
             for item in dev[1:]:
                 cmd = ["/usr/bin/v4l2-ctl", "--list-formats", "-d", item]
                 out, err = Popen(cmd, stdout=PIPE, stderr=PIPE).communicate()
