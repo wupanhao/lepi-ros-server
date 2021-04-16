@@ -3,18 +3,18 @@ import time
 import ctypes
 import numpy as np
 try:
-  import spidev
-  import RPi.GPIO as GPIO
+    import spidev
+    import RPi.GPIO as GPIO
 
-  LP_SPI = spidev.SpiDev()
-  LP_SPI.open(0, 1)
+    LP_SPI = spidev.SpiDev()
+    LP_SPI.open(0, 1)
 #   LP_SPI.max_speed_hz = 125000000,62500000,31200000,15600000,7800000,3900000,1953000,976000,488000,244000,122000,61000,30500,15200,7629
-  LP_SPI.max_speed_hz = 61000
-  LP_SPI.mode = 0b00
-  LP_SPI.bits_per_word = 8
+    LP_SPI.max_speed_hz = 61000
+    LP_SPI.mode = 0b00
+    LP_SPI.bits_per_word = 8
 except Exception as e:
-  LP_SPI = {}
-  print(e)
+    LP_SPI = {}
+    print(e)
 
 NO_ADDR = 0
 
@@ -48,6 +48,7 @@ class Group(object):
 
     SERVO = 0x0b << 3
 
+
 class Motor(object):
     # A2 A1 A0 , Register Bit in Group
     TYPE = 0  # 0 for EV3 Motor
@@ -64,6 +65,7 @@ class Sensor(object):
     MODE = 1  # R/W do not support set work mode yet
     VALUE = 2  # R
 
+
 class SERVO(object):
     # A2 A1 A0 , Register Bit in Group
     LEN = 0  # R 0:No Sensor , 29:EV3 Color Sensor , 30:EV3 Ultrasonic Sensor
@@ -73,6 +75,7 @@ class SERVO(object):
     READ_DATA = 2
     WRITE_DATA = 3
     RESET = 6
+
 
 class EEPROM(object):
     ID = 0x05
@@ -88,6 +91,7 @@ class EEPROM(object):
     CURRENT_POSITION_H = 0x38
     CURRENT_POSITION_L = 0x39
 
+
 class System(object):
     SENSOR_STATUS = 0
     VERSION = 1
@@ -97,6 +101,7 @@ class System(object):
     SENSOR_4 = 0x01 << 19
     SENSOR_5 = 0x01 << 20
     Sensors = {1: SENSOR_1, 2: SENSOR_2, 3: SENSOR_3, 4: SENSOR_4, 5: SENSOR_5}
+
 
 class Message(object):
     @staticmethod
@@ -173,7 +178,7 @@ class Message(object):
 
     @staticmethod
     def GetServoRxLen():
-        return Command.READ | Group.SERVO  |  SERVO.LEN
+        return Command.READ | Group.SERVO | SERVO.LEN
 
     @staticmethod
     def GetServoRx():
@@ -187,11 +192,13 @@ class Message(object):
     def GetSystemVersion():
         return Command.READ | Group.SYSTEM | System.VERSION
 
+
 def chk_sum(data):
     data[-1] = 0
     # print(data)
-    check = ( ~(sum(data) & 0xFF) ) & 0xFF
+    check = (~(sum(data) & 0xFF)) & 0xFF
     return check
+
 
 class Lepi(object):
     """
@@ -216,6 +223,7 @@ class Lepi(object):
     Sensors = {1: Group.SENSOR_1, 2: Group.SENSOR_2,
                3: Group.SENSOR_3, 4: Group.SENSOR_4, 5: Group.SENSOR_5}
     spi = LP_SPI
+
     @classmethod
     def spi_read_32(self, MessageType):
         """
@@ -231,7 +239,7 @@ class Lepi(object):
         try:
             reply = self.spi.xfer2(outArray)
         except Exception as e:
-            reply = [0,0,0,0,0,0]
+            reply = [0, 0, 0, 0, 0, 0]
         # print(reply)
         cint32 = ctypes.c_int32((reply[5] << 24) | (
             reply[4] << 16) | (reply[3] << 8) | reply[2])
@@ -348,12 +356,18 @@ class Lepi(object):
             return self.spi_write_32(Message.SetCurrentPosition(
                 self.Motors[port]), position)
         elif port == 0:
-            self.spi_write_32(Message.SetCurrentPosition(self.Motors[1]), position)
-            self.spi_write_32(Message.SetCurrentPosition(self.Motors[2]), position)
-            self.spi_write_32(Message.SetCurrentPosition(self.Motors[3]), position)
-            self.spi_write_32(Message.SetCurrentPosition(self.Motors[4]), position)
-            self.spi_write_32(Message.SetCurrentPosition(self.Motors[5]), position)
+            self.spi_write_32(Message.SetCurrentPosition(
+                self.Motors[1]), position)
+            self.spi_write_32(Message.SetCurrentPosition(
+                self.Motors[2]), position)
+            self.spi_write_32(Message.SetCurrentPosition(
+                self.Motors[3]), position)
+            self.spi_write_32(Message.SetCurrentPosition(
+                self.Motors[4]), position)
+            self.spi_write_32(Message.SetCurrentPosition(
+                self.Motors[5]), position)
         return ERROR_PORT
+
     @classmethod
     def motor_set_target_position(self, port, position):
         if self.Motors.has_key(port):
@@ -405,9 +419,9 @@ class Lepi(object):
         return ERROR_PORT
 
     @classmethod
-    def sensor_set_mode(self, port,value):
+    def sensor_set_mode(self, port, value):
         if self.Sensors.has_key(port):
-            return self.spi_write_32(Message.SetSensorMode(self.Sensors[port]),value)
+            return self.spi_write_32(Message.SetSensorMode(self.Sensors[port]), value)
         return ERROR_PORT
 
     @classmethod
@@ -417,9 +431,9 @@ class Lepi(object):
         return ERROR_PORT
 
     @classmethod
-    def sensor_set_value(self, port,value):
+    def sensor_set_value(self, port, value):
         if self.Sensors.has_key(port):
-            return self.spi_write_32(Message.SetSensorValue(self.Sensors[port]),value)
+            return self.spi_write_32(Message.SetSensorValue(self.Sensors[port]), value)
         return ERROR_PORT
 
     @classmethod
@@ -427,6 +441,7 @@ class Lepi(object):
         if self.Sensors.has_key(port):
             return (port, self.sensor_get_type(port), self.sensor_get_mode(port), self.sensor_get_value(port))
         return ERROR_PORT
+
     @classmethod
     def system_get_sensor_status(self):
         status = self.spi_read_32(Message.GetSensorStatus())
@@ -449,8 +464,8 @@ class Lepi(object):
         return ERROR_PORT
 
     @classmethod
-    def servo_ping(self,id):
-        data = [Message.SetServoTx(),0xff,0xff,id,0x02,0x01,0]
+    def servo_ping(self, id):
+        data = [Message.SetServoTx(), 0xff, 0xff, id, 0x02, 0x01, 0]
         data[-1] = chk_sum(data[3:])
         # print('transfer:',data)
         for i in range(1):
@@ -459,25 +474,26 @@ class Lepi(object):
             l = Lepi.servo_rx_len()
             status = Lepi.servo_rx_data(l)
             # print('ping',id,l,status)
-            if(len(status) == 6 and status[2]==id):
+            if(len(status) == 6 and status[2] == id):
                 return True
         else:
             return False
 
     @classmethod
-    def servo_reset(self,id):
-        data = [Message.SetServoTx(),0xff,0xff,id,0x02,SERVO.RESET,0]
+    def servo_reset(self, id):
+        data = [Message.SetServoTx(), 0xff, 0xff, id, 0x02, SERVO.RESET, 0]
         data[-1] = chk_sum(data[3:])
         # print('transfer:',data)
         self.spi.xfer2(data)
         time.sleep(0.002)
         l = Lepi.servo_rx_len()
         status = Lepi.servo_rx_data(l)
-        print('servo_reset',id,status)
+        print('servo_reset', id, status)
 
     @classmethod
-    def servo_get_position(self,id):
-        data = [Message.SetServoTx(),0xff,0xff ,id ,0x04 ,0x02 ,0x38 ,0x02 ,0]
+    def servo_get_position(self, id):
+        data = [Message.SetServoTx(), 0xff, 0xff, id, 0x04,
+                0x02, 0x38, 0x02, 0]
         # data = [FF FF 01 09 03 2A 00 08 00 00 E8 03 D5]
         # data = [Message.SetServoTx(),0xff,0xff ,0x01,0x09,0x03,0x2a,0x00,0x08,0x00,0x00,0xe8,0x03,0x00]
         # chk = chk_sum(data)
@@ -489,37 +505,37 @@ class Lepi(object):
         l = Lepi.servo_rx_len()
         res = Lepi.servo_rx_data(l)
         if(len(res) == 8):
-            return (res[-3]<<8) + res[-2]
+            return (res[-3] << 8) + res[-2]
         else:
-            print('data error: receive ',res)
+            print('data error: receive ', res)
             return 0
 
-
     @classmethod
-    def servo_set_position(self,id,position,ms=0,speed=0):
+    def servo_set_position(self, id, position, ms=0, speed=0):
         # 0 <= min_position <= position <= max_position <= 0x03ff (200 degree)
         # 0 <= min_speed <= speed <= max_speed <= 0x03ff
-        if(position <0):
+        if(position < 0):
             position = 0
         if(position > 0x03ff):
             position = 0x03ff
-        if(speed <0):
+        if(speed < 0):
             speed = 0
         if(speed > 0x03ff):
             speed = 0x03ff
-        if(ms <0):
+        if(ms < 0):
             ms = 0
         if(ms > 0x03ff):
             ms = 0x03ff
-        data = [Message.SetServoTx(),0xff,0xff ,id ,0x09 ,0x03 ,0x2A ,(position >> 8) & 0xFF ,position & 0xFF ,(ms >> 8) & 0xFF ,ms & 0xFF,(speed >> 8) & 0xFF ,speed & 0xFF ,0]
+        data = [Message.SetServoTx(), 0xff, 0xff, id, 0x09, 0x03, 0x2A, (position >> 8) & 0xFF,
+                position & 0xFF, (ms >> 8) & 0xFF, ms & 0xFF, (speed >> 8) & 0xFF, speed & 0xFF, 0]
         data[-1] = chk_sum(data[3:])
         print(data)
-        print('transfer:' ,''.join(format(x, '02x') for x in data))
+        print('transfer:', ''.join(format(x, '02x') for x in data))
         self.spi.xfer2(data)
         time.sleep(0.002)
         l = Lepi.servo_rx_len()
         status = Lepi.servo_rx_data(l)
-        print('servo_set_position',id,position,ms,speed,status,l)
+        print('servo_set_position', id, position, ms, speed, status, l)
         return l
 
     @classmethod
@@ -529,10 +545,10 @@ class Lepi(object):
         return res
 
     @classmethod
-    def servo_rx_data(self,count):
-        if(count<2):
+    def servo_rx_data(self, count):
+        if(count < 2):
             return [0]
-        if(count>253):
+        if(count > 253):
             return [1]
         data = [0 for i in range(count+2)]
         data[0] = Message.GetServoRx()
@@ -553,59 +569,66 @@ class Lepi(object):
         return devices
 
     @classmethod
-    def servo_set_id(self,id_old,id_new):
-        data = [Message.SetServoTx(),0xff,0xff,id_old,0x04,SERVO.WRITE_DATA,EEPROM.ID,id_new,0]
+    def servo_set_id(self, id_old, id_new):
+        data = [Message.SetServoTx(), 0xff, 0xff, id_old, 0x04,
+                SERVO.WRITE_DATA, EEPROM.ID, id_new, 0]
         data[-1] = chk_sum(data[3:])
-        print('transfer:' ,''.join(format(x, '02x') for x in data))
+        print('transfer:', ''.join(format(x, '02x') for x in data))
         self.spi.xfer2(data)
         time.sleep(0.002)
         l = Lepi.servo_rx_len()
         status = Lepi.servo_rx_data(l)
-        print('set_id',id_old,id_new,status)
+        print('set_id', id_old, id_new, status)
         return l
 
     @classmethod
-    def servo_write_u8(self,id,param,value):
-        data = [Message.SetServoTx(),0xff,0xff,id,0x04,SERVO.WRITE_DATA,param,value,0]
+    def servo_write_u8(self, id, param, value):
+        data = [Message.SetServoTx(), 0xff, 0xff, id, 0x04,
+                SERVO.WRITE_DATA, param, value, 0]
         data[-1] = chk_sum(data[3:])
-        print('transfer:' ,''.join(format(x, '02x') for x in data))
+        print('transfer:', ''.join(format(x, '02x') for x in data))
         self.spi.xfer2(data)
         time.sleep(0.002)
         l = Lepi.servo_rx_len()
         status = Lepi.servo_rx_data(l)
-        print('servo_write_u8',id,param,value,status)
-        return l
-    @classmethod
-    def servo_write_u16(self,id,param,value):
-        data = [Message.SetServoTx(),0xff,0xff,id,0x05,SERVO.WRITE_DATA,param,(value >> 8) & 0xff,value & 0xff,0]
-        data[-1] = chk_sum(data[3:])
-        print('transfer:' ,''.join(format(x, '02x') for x in data))
-        self.spi.xfer2(data)
-        time.sleep(0.002)
-        l = Lepi.servo_rx_len()
-        status = Lepi.servo_rx_data(l)
-        print('servo_write_u16',id,param,value,status)
+        print('servo_write_u8', id, param, value, status)
         return l
 
     @classmethod
-    def servo_read_u8(self,id,param):
-        data = [Message.SetServoTx(),0xff,0xff,id,0x04,SERVO.READ_DATA,param,0x01,0]
+    def servo_write_u16(self, id, param, value):
+        data = [Message.SetServoTx(), 0xff, 0xff, id, 0x05, SERVO.WRITE_DATA,
+                param, (value >> 8) & 0xff, value & 0xff, 0]
         data[-1] = chk_sum(data[3:])
-        print('transfer:' ,''.join(format(x, '02x') for x in data))
+        print('transfer:', ''.join(format(x, '02x') for x in data))
+        self.spi.xfer2(data)
+        time.sleep(0.002)
+        l = Lepi.servo_rx_len()
+        status = Lepi.servo_rx_data(l)
+        print('servo_write_u16', id, param, value, status)
+        return l
+
+    @classmethod
+    def servo_read_u8(self, id, param):
+        data = [Message.SetServoTx(), 0xff, 0xff, id, 0x04,
+                SERVO.READ_DATA, param, 0x01, 0]
+        data[-1] = chk_sum(data[3:])
+        print('transfer:', ''.join(format(x, '02x') for x in data))
         self.spi.xfer2(data)
         time.sleep(0.002)
         l = Lepi.servo_rx_len()
         res = Lepi.servo_rx_data(l)
-        print('servo_read_u8',id,param,res)
-        if(len(res) == 7) :
-            return (res[-3]<<8) + res[-2]
+        print('servo_read_u8', id, param, res)
+        if(len(res) == 7):
+            return (res[-3] << 8) + res[-2]
         else:
-            print('data error: receive ',res)
+            print('data error: receive ', res)
             return 0
+
     @classmethod
-    def servo_read_u16(self,id,param):
+    def servo_read_u16(self, id, param):
         # print(id,param)
-        data = [Message.SetServoTx(),0xff,0xff,id,0x04,SERVO.READ_DATA,param,0x02,0]
+        data = [Message.SetServoTx(), 0xff, 0xff, id, 0x04,
+                SERVO.READ_DATA, param, 0x02, 0]
         data[-1] = chk_sum(data[3:])
         # print('transfer:' ,''.join(format(x, '02x') for x in data))
         self.spi.xfer2(data)
@@ -613,17 +636,18 @@ class Lepi(object):
         l = Lepi.servo_rx_len()
         res = Lepi.servo_rx_data(l)
         # print('servo_read_u16',id,param,res)
-        if(len(res) == 8) :
-            return (res[-3]<<8) + res[-2]
+        if(len(res) == 8):
+            return (res[-3] << 8) + res[-2]
         else:
-            print('data error: receive ',res)
+            print('data error: receive ', res)
             return 0
+
     @classmethod
-    def servo_get_info(self,servo_id):
-        info = [0,0,0]
-        info[0] = Lepi.servo_read_u16(servo_id,EEPROM.MIN_POSITION_H)
-        info[1] = Lepi.servo_read_u16(servo_id,EEPROM.CURRENT_POSITION_H)
-        info[2] = Lepi.servo_read_u16(servo_id,EEPROM.MAX_POSITION_H)
+    def servo_get_info(self, servo_id):
+        info = [0, 0, 0]
+        info[0] = Lepi.servo_read_u16(servo_id, EEPROM.MIN_POSITION_H)
+        info[1] = Lepi.servo_read_u16(servo_id, EEPROM.CURRENT_POSITION_H)
+        info[2] = Lepi.servo_read_u16(servo_id, EEPROM.MAX_POSITION_H)
         return info
 
     @classmethod
@@ -631,6 +655,7 @@ class Lepi(object):
         res = self.spi_read_32(Message.GetSystemVersion())
         # print('receive:',res)
         return res
+
 
 class D51Driver:
     """
@@ -662,6 +687,9 @@ class D51Driver:
         for k, v in System.Sensors.items():
             sensors.append(int(status & v != 0))
         return np.array(sensors)
+
+    def motor_set_speed(self, port, speed):
+        Lepi.motor_set_speed(port, speed)
 
     def defaultHandler(self, channel):
         """

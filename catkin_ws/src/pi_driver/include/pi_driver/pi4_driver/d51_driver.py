@@ -3,6 +3,7 @@ import serial
 import time
 import ctypes
 import threading
+from collections import deque
 
 header = [0x55, 0xaa]
 
@@ -30,6 +31,10 @@ def to_value(data):
         return to_int32(data[:4])
     else:
         return 0
+
+
+def remap_sensor_id(id):
+    return 6 - id
 
 
 class System:
@@ -76,10 +81,11 @@ class D51Driver(object):
 
     def __init__(self, port='/dev/ttyACM0', baud_rate=115200, onSensorChange=None, debug_mode=False):
         self.port = serial.Serial(port=port, baudrate=baud_rate, bytesize=8, parity=serial.PARITY_NONE,
-                                  stopbits=serial.STOPBITS_ONE, timeout=0.001, dsrdtr=False)
+                                  #   timeout=0.001,
+                                  stopbits=serial.STOPBITS_ONE, dsrdtr=False)
         self.onSensorChange = onSensorChange
         if onSensorChange is not None:
-            threading._start_new_thread(self.start_listen_loop, ())
+            threading._start_new_thread(self.start_listen_loop2, ())
         self.debug_mode = debug_mode
         self.system = System()
         self._system_get_version()
@@ -122,7 +128,7 @@ class D51Driver(object):
         array = []
         for i in response:
             array.append(ord(i))
-        return array
+        return array[0] if len(array) == 1 else array
 
     def write_32(self, id, value):
         data = [header[0], header[1], id, 0x04, (value & 0xFF), ((value >> 8) & 0xFF), ((
@@ -141,6 +147,7 @@ class D51Driver(object):
         # print(res)
 
     def start_listen_loop(self):
+        # 需要设置timeout
         while True:
             try:
                 data = self.read_hex()
@@ -152,13 +159,34 @@ class D51Driver(object):
                 print(e)
                 time.sleep(0.5)
 
+    def start_listen_loop2(self):
+        data = deque([0x00, 0x00])
+        while True:
+            try:
+                data.popleft()
+                data.append(self.read_hex(1))
+                if data[0] == header[0] and data[1] == header[1]:
+                    attr_id, length = self.read_hex(2)
+                    value = self.read_hex(length+1)
+                    # print(attr_id, value, length)
+                    self.on_frame(attr_id, value[:-1])
+                # elif header[0] not in data:
+                #     print('bad data', data)
+            except Exception as e:
+                print(e)
+                time.sleep(0.5)
+
     def on_data(self, data):
         l = len(data)
         if l < 6:
             return
         if data[0] == 0x55 and data[1] == 0xaa:
             if l >= data[3]+5:
-                self.on_frame(data[:data[3]+5])
+                frame = data[:data[3]+5]
+                attr_id = frame[2]
+                length = frame[3]
+                value = frame[4:4+length]
+                self.on_frame(attr_id, value)
                 if l >= data[3]+10:
                     self.on_data(data[data[3]+5:])
         elif 0x55 in data[1:]:
@@ -170,10 +198,7 @@ class D51Driver(object):
             pass
         # print(self.motor)
 
-    def on_frame(self, frame):
-        attr_id = frame[2]
-        length = frame[3]
-        value = frame[4:4+length]
+    def on_frame(self, attr_id, value):
         # print(attr_id, length, value)
         if attr_id < 0x10:
             self.on_system(attr_id, value)
@@ -210,12 +235,15 @@ class D51Driver(object):
 
     def on_sensor(self, attr_id, data):
         sensor_id = (attr_id >> 4)-5
+        sensor_id = remap_sensor_id(sensor_id)
         attr = attr_id & 0x0F
         value = to_int32(data[-4:])
         if attr == 0:
-            self.sensor[sensor_id].type = value
-            if self.onSensorChange is not None:
-                self.onSensorChange(sensor_id, value, int(value != 0)*2 - 1)
+            if self.sensor[sensor_id].type != value:
+                self.sensor[sensor_id].type = value
+                if self.onSensorChange is not None:
+                    self.onSensorChange(
+                        sensor_id, value, int(value != 0)*2 - 1)
             print(self.sensor[sensor_id])
         elif attr == 1:
             self.sensor[sensor_id].mode = value
@@ -252,6 +280,10 @@ class D51Driver(object):
             self.motor[id].pulse = value
             self.write_32((id << 4 | 0x01), int(value))
 
+    def _motor_set_pulse(self, id, value):
+        if self.motor.has_key(id):
+            self.write_32((id << 4 | 0x01), int(value))
+
     def _motor_get_pulse(self, id):
         self.read_32((id << 4 | 0x01))
 
@@ -267,18 +299,23 @@ class D51Driver(object):
         self.read_32((id << 4 | 0x02))
 
     def _sensor_get_type(self, id):
+        id = remap_sensor_id(id)
         self.read_32((id+5) << 4 | 0x00)
 
     def _sensor_get_mode(self, id):
+        id = remap_sensor_id(id)
         self.read_32(((id+5) << 4 | 0x01))
 
     def sensor_set_mode(self, id, value):
+        id = remap_sensor_id(id)
         self.write_32(((id+5) << 4 | 0x01), int(value))
 
     def _sensor_get_value(self, id):
+        id = remap_sensor_id(id)
         self.read_32(((id+5) << 4 | 0x02))
 
     def sensor_set_value(self, id, value):
+        id = remap_sensor_id(id)
         self.write_32(((id+5) << 4 | 0x02), int(value))
 
     def motor_get_type(self, port):
@@ -310,18 +347,21 @@ class D51Driver(object):
             return 0
 
     def sensor_get_type(self, port):
+        port = remap_sensor_id(port)
         if self.sensor.has_key(port):
             return self.sensor[port].type
         else:
             return 0
 
     def sensor_get_mode(self, port):
+        port = remap_sensor_id(port)
         if self.sensor.has_key(port):
             return self.sensor[port].mode
         else:
             return 0
 
     def sensor_get_value(self, port):
+        port = remap_sensor_id(port)
         if self.sensor.has_key(port):
             return self.sensor[port].value
         else:
@@ -334,6 +374,7 @@ class D51Driver(object):
             return (0, 0, 0, 0)
 
     def sensor_get_info(self, port):
+        port = remap_sensor_id(port)
         if self.sensor.has_key(port):
             return (port, self.sensor_get_type(port), self.sensor_get_mode(port), self.sensor_get_value(port))
         else:
@@ -376,7 +417,7 @@ if __name__ == '__main__':
     import random
 
     def pubSensorChange(port, sensor_id, status):
-        print(6-port, sensor_id, status)
+        print(port, sensor_id, status)
 
     serial_ports = [i[0] for i in serial.tools.list_ports.comports()]
     print(serial_ports)

@@ -111,9 +111,9 @@ class PiDriverNode:
     '''
 
     def pubSensorChange(self, port, sensor_id, status):
-        print(6-port, sensor_id, status)
+        print(port, sensor_id, status)
         self.pub_sensor_status_change.publish(
-            SensorStatusChange(6-port, sensor_id, status))
+            SensorStatusChange(port, sensor_id, status))
 
     def cbMotorSetPulse(self, params):
         self.d51_driver.motor_set_pulse(params.port, params.value)
@@ -126,6 +126,8 @@ class PiDriverNode:
 
     def srvMotorSetType(self, params):
         self.d51_driver.motor_set_type(params.port, params.value)
+        if params.value == 1:
+            self.d51_driver._motor_set_pulse(params.port, params.value)
         return SetInt32Response(params.port, params.value)
 
     def srvMotorGetType(self, params):
