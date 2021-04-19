@@ -268,7 +268,7 @@ class D51Driver(object):
             return []
 
     def motor_set_type(self, id, value):
-        if self.motor.has_key(id):
+        if id in self.motor:
             self.motor[id].type = value
             self.write_32((id << 4 | 0x00), int(value))
 
@@ -276,12 +276,12 @@ class D51Driver(object):
         self.read_32((id << 4 | 0x00))
 
     def motor_set_pulse(self, id, value):
-        if self.motor.has_key(id):
+        if id in self.motor:
             self.motor[id].pulse = value
             self.write_32((id << 4 | 0x01), int(value))
 
     def _motor_set_pulse(self, id, value):
-        if self.motor.has_key(id):
+        if id in self.motor:
             self.write_32((id << 4 | 0x01), int(value))
 
     def _motor_get_pulse(self, id):
@@ -291,7 +291,7 @@ class D51Driver(object):
         self.write_32((id << 4 | 0x03), int(value))
 
     def motor_set_position(self, id, value):
-        if self.motor.has_key(id):
+        if id in self.motor:
             self.motor[id].position = value
             self.write_32((id << 4 | 0x02), int(value))
 
@@ -319,63 +319,63 @@ class D51Driver(object):
         self.write_32(((id+5) << 4 | 0x02), int(value))
 
     def motor_get_type(self, port):
-        if self.motor.has_key(port):
+        if port in self.motor:
             return self.motor[port].type
         else:
             return 0
 
     def motor_get_pulse(self, port):
-        if self.motor.has_key(port):
+        if port in self.motor:
             return self.motor[port].pulse
         else:
             return 0
 
     def motor_get_speed(self, port):
-        if self.motor.has_key(port):
+        if port in self.motor:
             return int(self.motor[port].pulse/655.35)
         else:
             return 0
 
     def motor_set_speed(self, port, speed):
-        if self.motor.has_key(port):
+        if port in self.motor:
             self.motor_set_pulse(port, int(speed*655.35))
 
     def motor_get_position(self, port):
-        if self.motor.has_key(port):
+        if port in self.motor:
             return self.motor[port].position
         else:
             return 0
 
     def sensor_get_type(self, port):
-        port = remap_sensor_id(port)
-        if self.sensor.has_key(port):
+        # port = remap_sensor_id(port)
+        if port in self.sensor:
             return self.sensor[port].type
         else:
             return 0
 
     def sensor_get_mode(self, port):
-        port = remap_sensor_id(port)
-        if self.sensor.has_key(port):
+        # port = remap_sensor_id(port)
+        if port in self.sensor:
             return self.sensor[port].mode
         else:
             return 0
 
     def sensor_get_value(self, port):
-        port = remap_sensor_id(port)
-        if self.sensor.has_key(port):
+        # port = remap_sensor_id(port)
+        if port in self.sensor:
             return self.sensor[port].value
         else:
             return 0
 
     def motor_get_info(self, port):
-        if self.motor.has_key(port):
+        if port in self.motor:
             return (port, self.motor_get_type(port), self.motor_get_pulse(port), self.motor_get_position(port))
         else:
             return (0, 0, 0, 0)
 
     def sensor_get_info(self, port):
-        port = remap_sensor_id(port)
-        if self.sensor.has_key(port):
+        # port = remap_sensor_id(port)
+        if port in self.sensor:
             return (port, self.sensor_get_type(port), self.sensor_get_mode(port), self.sensor_get_value(port))
         else:
             return (0, 0, 0, 0)
@@ -389,7 +389,7 @@ class D51Driver(object):
         angle -- 角度 -90 到 90
         """
         # [0,180] => [-1550,-7450]
-        if self.motor.has_key(port) and abs(angle) <= 90:
+        if port in self.motor and abs(angle) <= 90:
             self.motor_set_pulse(port, int(4500+angle*32))
 
     def _system_get_version(self):

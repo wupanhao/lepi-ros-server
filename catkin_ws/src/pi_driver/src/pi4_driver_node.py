@@ -8,7 +8,7 @@ import rospkg
 import rospy
 import json
 
-from pi_driver import I2cDriver, SServo, EEPROM, D51Driver
+from pi_driver import I2cDriver, SServo, EEPROM, D51Driver, ButtonListener
 from pi_driver.msg import ButtonEvent, Sensor3Axes, MotorInfo, SensorStatusChange, U8Int32, ServoInfo
 from pi_driver.srv import SetInt32, GetInt32, SetInt32Response, GetInt32Response,\
     GetMotorsInfo, GetMotorsInfoResponse, SensorGet3Axes, SensorGet3AxesResponse,\
@@ -18,6 +18,20 @@ from pi_driver.srv import SetServoPosition, SetServoPositionResponse, GetServosI
 
 #from pymouse import PyMouse
 #from pykeyboard import PyKeyboard
+
+ButtonMap = {
+    # type==1
+    # button down
+    59: 77,  # F1 -> Menu 'M' 77
+    103: 38,  # 'ArrowUp': 38
+    60: 66,  # F2 -> Back 'B' 66
+    105: 37,  # 'ArrowLeft': 37
+    28: 13,  # 'Enter': 13
+    106: 39,  # 'ArrowRight': 39
+    61: 82,  # F3 -> Run 'R' 82
+    108: 40,  # 'ArrowDown': 40
+    1: 83,  # Esc -> Stop 'S' 83
+}
 
 
 class PiDriverNode:
@@ -30,6 +44,7 @@ class PiDriverNode:
             "~button_event", ButtonEvent, queue_size=1)
         self.pub_sensor_status_change = rospy.Publisher(
             "~sensor_status_change", SensorStatusChange, queue_size=1)
+        self.d51_driver = D51Driver(onSensorChange=self.pubSensorChange)
         rospy.Service("~motor_set_type", SetInt32, self.srvMotorSetType)
         rospy.Service("~motor_get_type", GetInt32, self.srvMotorGetType)
         # rospy.Service("~motor_set_state", SetInt32, self.srvMotorSetState)
@@ -83,7 +98,7 @@ class PiDriverNode:
                       self.srvGetFirmwareVersion)
         self.i2c_driver = I2cDriver()
         self.servo = SServo('/dev/ttyAMA1')
-        self.d51_driver = D51Driver(onSensorChange=self.pubSensorChange)
+        self.btnListener = ButtonListener(self.pubButton)
         self.sub_motor_set_pulse = rospy.Subscriber(
             "~motor_set_pulse", U8Int32, self.cbMotorSetPulse, queue_size=1)
         self.sub_motor_set_speed = rospy.Subscriber(
@@ -93,22 +108,20 @@ class PiDriverNode:
 
         rospy.loginfo("[%s] Initialized......" % (self.node_name))
 
-    '''
-    def pubButton(self, btn):
-        if ButtonMap.has_key(btn):
+    def pubButton(self, event):
+        if event.code in ButtonMap:
             e = ButtonEvent()
-            e.value = ButtonMap[btn]
-            if 0x81 <= btn and btn <= 0x89:
+            e.value = ButtonMap[event.code]
+            if event.value == 1:
                 e.type = 1  # down
-            elif 0x01 <= btn and btn <= 0x09:
+            elif event.value == 0:
                 e.type = 3  # up
-            elif 0x11 <= btn and btn <= 0x19:
+            elif event.value == 0:
                 e.type = 2  # short
-            elif 0x91 <= btn and btn <= 0xa9:
-                e.type = 4  # long
+            elif event.value == 2:
+                e.type = 4  # long,hold
             self.pub_button_event.publish(e)
             return True
-    '''
 
     def pubSensorChange(self, port, sensor_id, status):
         print(port, sensor_id, status)
@@ -207,6 +220,7 @@ class PiDriverNode:
         return GetInt32Response(value)
 
     def srvSensorGetValue(self, params):
+        # print(params)
         value = self.d51_driver.sensor_get_value(params.port)
         return GetInt32Response(value)
 

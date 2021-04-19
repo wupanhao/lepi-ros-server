@@ -32,6 +32,7 @@ class MyJoy(object):
         reader = threading.Thread(target=self.start_open_loop)
         # reader.daemon = True
         reader.start()
+
     def start_listen_loop(self):
         """
         start_listen_loop 函数, 按键监听循环
@@ -71,35 +72,27 @@ class MyJoy(object):
         """
         state = {'Axes': self.axes, 'Buttons': self.buttons}
         return state
-    def getAxisValue(self,id):
+
+    def getAxisValue(self, id):
         time.sleep(0.005)
-        if self.axes.has_key(id):
+        if id in self.axes:
             return self.axes[id]
         else:
             return 0
-    def getButtonState(self,id):
+
+    def getButtonState(self, id):
         time.sleep(0.005)
-        if self.buttons.has_key(id):
+        if id in self.buttons:
             return self.buttons[id]
         else:
             return 0
 
+
 if __name__ == '__main__':
-    from car import CarDriver3
     import threading
-    car = CarDriver3()
     joy = MyJoy(callback=None)
     # reader = threading.Thread(target=joy.start_open_loop)
     # reader.daemon = True
     # reader.start()
 
-    def setCarSpeed():
-        if joy.axes.has_key(1) and joy.axes.has_key(3):
-            speed = joy.axes[1]/32767.0
-            steer = joy.axes[3]/32767.0
-            car.setWheelsSpeed(speed*100, -steer*90)
-    # joy = MyJoy(callback=setCarSpeed)
-    while True:
-        setCarSpeed()
-        time.sleep(0.01)
-    joy.active = False
+    time.sleep(10)
