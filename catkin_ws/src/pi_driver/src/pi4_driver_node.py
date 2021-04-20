@@ -83,6 +83,8 @@ class PiDriverNode:
         rospy.Service('~9axes_set_enable', SetInt32,
                       self.srvSensor9AxesSetEnable)
         rospy.Service('~get_power_state', GetPowerState, self.srvGetPowerState)
+        rospy.Service('~system_poweroff', SetInt32,
+                      self.srvSystemPoweroff)
         # rospy.Service('~input_string', SetString, self.srvInputString)
         # rospy.Service('~input_char', SetInt32, self.srvInputChar)
         # rospy.Service('~mouse_click', SetString, self.cbMouseClick)
@@ -384,6 +386,10 @@ class PiDriverNode:
         # self.d51_driver._system_get_power()
         data = [0, 4.1, self.d51_driver.system.battery_level]
         return GetPowerStateResponse(data[0], data[1], data[2])
+
+    def srvSystemPoweroff(self, params):
+        self.d51_driver.system_poweroff()
+        return SetInt32Response()
 
 
 if __name__ == '__main__':

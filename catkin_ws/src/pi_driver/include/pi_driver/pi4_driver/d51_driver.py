@@ -410,6 +410,9 @@ class D51Driver(object):
     def system_get_charge(self):
         return self.system.charge_state
 
+    def system_poweroff(self):
+        self.write_32(0x03, 0xFF)
+
 
 if __name__ == '__main__':
     import serial.tools.list_ports
@@ -423,6 +426,7 @@ if __name__ == '__main__':
     print(serial_ports)
     driver = D51Driver('/dev/ttyACM0', baud_rate=115200,
                        onSensorChange=pubSensorChange)
+    driver.system_poweroff()
     print(driver.port.is_open)
     count = 1
     time.sleep(3)
