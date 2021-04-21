@@ -2,6 +2,7 @@ from .i2c_driver import *
 from .d51_driver import D51Driver
 from .sservo import *
 from .buttonListener import ButtonListener
+from pi_driver.srv import GetInt32, GetInt32Request
 
 
 class LepiDriverInterface:
@@ -62,6 +63,13 @@ class LepiDriverInterface:
 
 class LepiDriver:
     def __init__(self):
+        import rospy
+        try:
+            rospy.init_node("pi_driver_client")
+        except Exception as e:
+            pass
+        self.srv_sensor_get_value = rospy.ServiceProxy(
+            '/ubiquityrobot/pi_driver_node/sensor_get_value', GetInt32)
         self.d51_driver = D51Driver()
         self.i2c_driver = I2cDriver()
 
@@ -117,4 +125,6 @@ class LepiDriver:
         return self.i2c_driver.readMagnData(True)
 
     def sensor_get_value(self, port):
-        return self.d51_driver.sensor_get_value(port)
+        resp = self.srv_sensor_get_value(GetInt32Request(port))
+        return resp.value
+        # return self.d51_driver.sensor_get_value(port)

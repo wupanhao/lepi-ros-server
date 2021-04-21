@@ -2,11 +2,13 @@
 
 import rospy
 from pi_driver.srv import GetInt32, GetInt32Request
+from pi_driver.msg import U8Int32
 import time
 # init a node as usual
 rospy.init_node('ros_service_client')
-
-count = 500
+topic_name = '/ubiquityrobot/pi_driver_node/motor_set_speed'
+topic = rospy.Publisher(topic_name, U8Int32, queue_size=1)
+count = 5000
 
 
 def test_service():
@@ -52,7 +54,21 @@ def test_set_param():
           ((end-start)*1000, count))
 
 
+def test_set_publish():
+    start = time.time()
+    for i in range(count):
+        msg = U8Int32(1, i % 100)
+        # time.sleep(0.0001)
+        topic.publish(msg)
+    print(msg)
+    end = time.time()
+    print('time cost %f ms after %d times call ros topic publish' %
+          ((end-start)*1000, count))
+
+
 if __name__ == '__main__':
-    test_service()
-    test_get_param()
-    test_set_param()
+    test_set_publish()
+    # time.sleep(2)
+    # test_service()
+    # test_get_param()
+    # test_set_param()

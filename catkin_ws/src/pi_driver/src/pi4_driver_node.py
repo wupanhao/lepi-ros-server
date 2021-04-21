@@ -7,6 +7,7 @@
 import rospkg
 import rospy
 import json
+import os
 
 from pi_driver import I2cDriver, SServo, EEPROM, D51Driver, ButtonListener
 from pi_driver.msg import ButtonEvent, Sensor3Axes, MotorInfo, SensorStatusChange, U8Int32, ServoInfo
@@ -389,6 +390,7 @@ class PiDriverNode:
 
     def srvSystemPoweroff(self, params):
         self.d51_driver.system_poweroff()
+        os.system('bash -c "sleep 2 && sudo halt" &')
         return SetInt32Response()
 
 
