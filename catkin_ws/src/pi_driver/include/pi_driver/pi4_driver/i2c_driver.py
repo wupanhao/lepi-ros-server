@@ -95,7 +95,7 @@ class I2cDriver:
                 if sensorType == ReadMagnetometer:
                     data = self.bus.read_i2c_block_data(
                         self.BMM150, sensorType, byteLen)
-                    print(data[0], data[2], data[4])
+                    # print(data[0], data[2], data[4])
                     x = (data[1] << 8 | data[0]) >> 3
                     y = (data[3] << 8 | data[2]) >> 3
                     z = (data[5] << 8 | data[4]) >> 1

@@ -128,3 +128,6 @@ class LepiDriver:
         resp = self.srv_sensor_get_value(GetInt32Request(port))
         return resp.value
         # return self.d51_driver.sensor_get_value(port)
+
+    def estimatePose(self):
+        return self.i2c_driver.estimatePose()
