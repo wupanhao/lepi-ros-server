@@ -38,6 +38,7 @@ class ApriltagDetector:
             self.cameraMatrix[0, 0], self.cameraMatrix[1, 1], self.cameraMatrix[0, 2], self.cameraMatrix[1, 2])
         self.image = None
         self.detections = []
+        self.tags = []
         self.tag = None
 
         if hasattr(R, 'from_dcm'):
@@ -141,7 +142,7 @@ if __name__ == '__main__':
         # Grab a single frame of video
         ret, frame = cap.read()
         start = time.time()
-        tags = detector.detect(frame)
+        detector.detect(frame)
         end = time.time()
         # detector.label_tags(frame, tags)
         print("detect %d frame in %.2f ms" %

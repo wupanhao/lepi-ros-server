@@ -34,6 +34,7 @@ add_service_files(
   SetColorThreshold.srv
   GetColorThreshold.srv
   GetObjectDetections.srv
+  AddProc.srv
 )
 
 catkin_python_setup()
