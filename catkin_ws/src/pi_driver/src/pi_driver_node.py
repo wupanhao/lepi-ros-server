@@ -14,6 +14,6 @@ if __name__ == '__main__':
     rospy.init_node('pi_driver_node', anonymous=False)
     node = PiDriverNode()
     # print(node.srvMotorsGetInfo(None))
-    # rospy.on_shutdown(node.onShutdown)
+    rospy.on_shutdown(node.onShutdown)
     # thread.start_new_thread(camera_node.startCaptureRawCV, ())
     rospy.spin()

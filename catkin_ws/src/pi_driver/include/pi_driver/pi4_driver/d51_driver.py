@@ -83,6 +83,7 @@ class D51Driver(object):
         self.port = serial.Serial(port=port, baudrate=baud_rate, bytesize=8, parity=serial.PARITY_NONE,
                                   #   timeout=0.001,
                                   stopbits=serial.STOPBITS_ONE, dsrdtr=False)
+        self.active = True
         self.onSensorChange = onSensorChange
         if onSensorChange is not None:
             threading._start_new_thread(self.start_listen_loop2, ())
@@ -161,7 +162,7 @@ class D51Driver(object):
 
     def start_listen_loop2(self):
         data = deque([0x00, 0x00])
-        while True:
+        while self.active:
             try:
                 data.popleft()
                 data.append(self.read_hex(1))
@@ -215,7 +216,7 @@ class D51Driver(object):
         elif attr == 1:
             self.system.battery_level = value
         elif attr == 2:
-            self.system.charge_state = value
+            self.system.charge_state = value & 0x01
         print(self.system)
 
     def on_motor(self, attr_id, data):
@@ -289,6 +290,11 @@ class D51Driver(object):
 
     def motor_set_point(self, id, value):
         self.write_32((id << 4 | 0x03), int(value))
+
+    def motor_set_point_diff(self, id, value):
+        if id in self.motor:
+            position = self.motor[id].position + value
+            self.write_32((id << 4 | 0x03), int(position))
 
     def motor_set_position(self, id, value):
         if id in self.motor:

@@ -1,13 +1,9 @@
 import websocket
 import json
 
-from pi_driver import D51Driver
 from pi_driver import I2cDriver
 import time
 
-target_pitch = 54.0
-
-# lepi = D51Driver()
 driver = I2cDriver()
 
 try:

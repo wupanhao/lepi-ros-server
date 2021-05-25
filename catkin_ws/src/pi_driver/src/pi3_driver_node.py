@@ -14,10 +14,11 @@ from pi_driver.srv import SetInt32, GetInt32, SetInt32Response, GetInt32Response
     GetMotorsInfo, GetMotorsInfoResponse, SensorGet3Axes, SensorGet3AxesResponse,\
     GetPowerState, GetPowerStateResponse, GetSensorInfo, GetSensorInfoResponse
 from pi_driver.srv import SetString, SetStringResponse, GetString, GetStringResponse, SetOffset, SetOffsetResponse
-from pi_driver.srv import SetServoPosition , SetServoPositionResponse, GetServosInfo, GetServosInfoResponse,SetServoParam,SetServoParamResponse
+from pi_driver.srv import SetServoPosition, SetServoPositionResponse, GetServosInfo, GetServosInfoResponse, SetServoParam, SetServoParamResponse
 
 #from pymouse import PyMouse
 #from pykeyboard import PyKeyboard
+
 
 class PiDriverNode:
     def __init__(self):
@@ -52,7 +53,8 @@ class PiDriverNode:
         rospy.Service('~sensor_get_value', GetInt32, self.srvSensorGetValue)
         rospy.Service('~sensor_set_value', SetInt32, self.srvSensorSetValue)
         rospy.Service('~sensor_get_info', GetSensorInfo, self.srvSensorGetInfo)
-        rospy.Service('~sensors_get_info', GetMotorsInfo, self.srvSensorsGetInfo)
+        rospy.Service('~sensors_get_info', GetMotorsInfo,
+                      self.srvSensorsGetInfo)
         rospy.Service('~sensor_get_3axes', SensorGet3Axes,
                       self.srvSensorGet3Axes)
         rospy.Service('~sensor_get_offset_3axes', SensorGet3Axes,
@@ -60,9 +62,9 @@ class PiDriverNode:
         rospy.Service('~sensor_get_offset', SensorGet3Axes,
                       self.srvSensorGetOffset)
         rospy.Service('~sensor_set_offset', SetOffset,
-                      self.srvSensorSetOffset)         
+                      self.srvSensorSetOffset)
         rospy.Service('~sensor_estimate_pose', SensorGet3Axes,
-                      self.srvEstimatePose)                                   
+                      self.srvEstimatePose)
         rospy.Service('~9axes_set_enable', SetInt32,
                       self.srvSensor9AxesSetEnable)
         rospy.Service('~get_power_state', GetPowerState, self.srvGetPowerState)
@@ -74,9 +76,11 @@ class PiDriverNode:
         rospy.Service('~servo_get_u16', SetServoParam, self.srvServoGetU16)
         rospy.Service('~servo_set_u8', SetServoParam, self.srvServoSetU8)
         rospy.Service('~servo_set_u16', SetServoParam, self.srvServoSetU16)
-        rospy.Service('~servo_set_position', SetServoPosition, self.srvServoSetPosition)
+        rospy.Service('~servo_set_position', SetServoPosition,
+                      self.srvServoSetPosition)
         rospy.Service('~servos_get_info', GetServosInfo, self.srvServosGetInfo)
-        rospy.Service('~get_firmware_version', GetInt32, self.srvGetFirmwareVersion)
+        rospy.Service('~get_firmware_version', GetInt32,
+                      self.srvGetFirmwareVersion)
         self.i2c_driver = I2cDriver(self.pubButton)
         self.d51_driver = D51Driver(self.pubSensorChange)
         self.sub_motor_set_pulse = rospy.Subscriber(
@@ -85,7 +89,7 @@ class PiDriverNode:
             "~motor_set_speed", U8Int32, self.cbMotorSetSpeed, queue_size=1)
         self.sub_motor_set_angle = rospy.Subscriber(
             "~motor_set_angle", U8Int32, self.cbMotorSetAngle, queue_size=1)
-        
+
         rospy.loginfo("[%s] Initialized......" % (self.node_name))
 
     def pubButton(self, btn):
@@ -157,12 +161,15 @@ class PiDriverNode:
         # print(params)
         speed = Lepi.motor_get_speed(params.port)
         return GetInt32Response(speed)
+
     def srvMotorSetRotate(self, params):
         # print(params)
         cur_position = Lepi.motor_get_current_position(params.port)
         # print(cur_position,params.value*2+cur_position)
-        Lepi.motor_set_target_position(params.port, params.value*2+cur_position)
+        Lepi.motor_set_target_position(
+            params.port, params.value*2+cur_position)
         return SetInt32Response(params.port, params.value)
+
     def srvMotorGetPulse(self, params):
         value = Lepi.motor_get_pulse(params.port)
         return GetInt32Response(value)
@@ -171,6 +178,7 @@ class PiDriverNode:
         # print(params)
         Lepi.motor_set_target_position(params.port, params.value)
         return SetInt32Response(params.port, params.value)
+
     def srvMotorSetCurrentPosition(self, params):
         # print(params)
         Lepi.motor_set_current_position(params.port, params.value)
@@ -191,6 +199,7 @@ class PiDriverNode:
             # print(info)
             infos.motors.append(MotorInfo(info[0], info[1], info[2], info[3]))
         return infos
+
     def srvSensorsGetInfo(self, params):
         # return GetMotorsInfoResponse()
         # print(params)
@@ -201,6 +210,7 @@ class PiDriverNode:
             # print(info)
             infos.motors.append(MotorInfo(info[0], info[1], info[2], info[3]))
         return infos
+
     def srvSensorGetType(self, params):
         data = Lepi.sensor_get_type(6-params.port)
         return GetInt32Response(data)
@@ -209,9 +219,9 @@ class PiDriverNode:
         data = Lepi.sensor_get_value(6-params.port)
         return GetInt32Response(data)
 
-    def srvSensorSetValue(self,params):
-        data = Lepi.sensor_set_value(6-params.port,params.value)
-        return SetInt32Response(params.port,params.value)  
+    def srvSensorSetValue(self, params):
+        data = Lepi.sensor_set_value(6-params.port, params.value)
+        return SetInt32Response(params.port, params.value)
 
     def srvSensorGetInfo(self, params):
         sensor_id = Lepi.sensor_get_type(params.port)
@@ -264,7 +274,7 @@ class PiDriverNode:
     def srvSensorSetOffset(self, params):
         # print(params)
         data = params.data
-        data = [data.x,data.y,data.z]
+        data = [data.x, data.y, data.z]
         if params.id == 1:
             self.i2c_driver.offset['acc'] = data
         elif params.id == 2:
@@ -302,6 +312,7 @@ class PiDriverNode:
             self.keyboard.release_key(params.value)
         return SetInt32Response()
     '''
+
     def srvGetVariableList(self, params):
         variable_list = {}
         try:
@@ -322,43 +333,56 @@ class PiDriverNode:
             info = ServoInfo()
             info.id = servo_id
             # print(servo_id)
-            info.min_position = Lepi.servo_read_u16(servo_id,EEPROM.MIN_POSITION_H)
-            info.cur_position = Lepi.servo_read_u16(servo_id,EEPROM.CURRENT_POSITION_H)
-            info.max_position = Lepi.servo_read_u16(servo_id,EEPROM.MAX_POSITION_H)
+            info.min_position = Lepi.servo_read_u16(
+                servo_id, EEPROM.MIN_POSITION_H)
+            info.cur_position = Lepi.servo_read_u16(
+                servo_id, EEPROM.CURRENT_POSITION_H)
+            info.max_position = Lepi.servo_read_u16(
+                servo_id, EEPROM.MAX_POSITION_H)
             rsp.servos.append(info)
         return rsp
 
-    def srvServoSetPosition(self,params):
-        status = Lepi.servo_set_position(params.id,params.position,params.ms,params.speed)
+    def srvServoSetPosition(self, params):
+        status = Lepi.servo_set_position(
+            params.id, params.position, params.ms, params.speed)
         return SetServoPositionResponse(status)
 
-    def srvServoSetU8(self,params):
+    def srvServoSetU8(self, params):
         if params.param_id == 0x99:
             status = Lepi.servo_reset(params.id)
         else:
-            status = Lepi.servo_write_u8(params.id,params.param_id,params.value)
+            status = Lepi.servo_write_u8(
+                params.id, params.param_id, params.value)
         return SetServoParamResponse(status)
 
-    def srvServoSetU16(self,params):
-        status = Lepi.servo_write_u16(params.id,params.param_id,params.value)
+    def srvServoSetU16(self, params):
+        status = Lepi.servo_write_u16(params.id, params.param_id, params.value)
         return SetServoParamResponse(status)
 
-    def srvServoGetU8(self,params):
-        status = Lepi.servo_read_u8(params.id,params.param_id)
+    def srvServoGetU8(self, params):
+        status = Lepi.servo_read_u8(params.id, params.param_id)
         return SetServoParamResponse(status)
 
-    def srvServoGetU16(self,params):
-        status = Lepi.servo_read_u16(params.id,params.param_id)
+    def srvServoGetU16(self, params):
+        status = Lepi.servo_read_u16(params.id, params.param_id)
         return SetServoParamResponse(status)
-    def srvSensorGetMode(self,params):
+
+    def srvSensorGetMode(self, params):
         status = Lepi.sensor_get_mode(6-params.port)
-        return GetInt32Response(status) 
-    def srvSensorSetMode(self,params):
-        status = Lepi.sensor_set_mode(6-params.port,params.value)
-        return SetInt32Response(params.port,params.value) 
-    def srvGetFirmwareVersion(self,params):
+        return GetInt32Response(status)
+
+    def srvSensorSetMode(self, params):
+        status = Lepi.sensor_set_mode(6-params.port, params.value)
+        return SetInt32Response(params.port, params.value)
+
+    def srvGetFirmwareVersion(self, params):
         version = Lepi.system_get_version()
         return GetInt32Response(version)
+
+    def onShutdown(self):
+        rospy.loginfo("[%s] shutdown......" % (self.node_name))
+
+
 if __name__ == '__main__':
     rospy.init_node('pi_driver_node', anonymous=False)
     node = PiDriverNode()

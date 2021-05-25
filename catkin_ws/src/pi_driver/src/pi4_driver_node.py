@@ -385,7 +385,8 @@ class PiDriverNode:
     def srvGetPowerState(self, params):
         # charging bat_power_ocv est_power
         # self.d51_driver._system_get_power()
-        data = [0, 4.1, self.d51_driver.system.battery_level]
+        data = [self.d51_driver.system.charge_state,
+                4.1, self.d51_driver.system.battery_level]
         return GetPowerStateResponse(data[0], data[1], data[2])
 
     def srvSystemPoweroff(self, params):
@@ -393,11 +394,15 @@ class PiDriverNode:
         os.system('bash -c "sleep 2 && sudo halt" &')
         return SetInt32Response()
 
+    def onShutdown(self):
+        self.d51_driver.active = False
+        rospy.loginfo("[%s] shutdown......" % (self.node_name))
+
 
 if __name__ == '__main__':
     rospy.init_node('pi_driver_node', anonymous=False)
     node = PiDriverNode()
     # print(node.srvMotorsGetInfo(None))
-    # rospy.on_shutdown(node.onShutdown)
+    rospy.on_shutdown(node.onShutdown)
     # thread.start_new_thread(camera_node.startCaptureRawCV, ())
     rospy.spin()

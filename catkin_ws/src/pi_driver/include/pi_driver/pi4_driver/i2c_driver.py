@@ -13,6 +13,7 @@ from reg import *
 ReadAccSensor = LSM6DSL_ACC_GYRO_OUTX_L_XL
 ReadGyroSensor = LSM6DSL_ACC_GYRO_OUTX_L_G
 ReadMagnetometer = BMM150_DATA_X_LSB
+ReadTemp = LSM6DSL_ACC_GYRO_OUT_TEMP_L
 
 
 class I2cDriver:
@@ -218,6 +219,14 @@ class I2cDriver:
         else:
             return self.readSensorData(ReadMagnetometer)
 
+    def readTempData(self):
+        data = self.bus.read_i2c_block_data(self.LSM6DSL, ReadTemp, 2)
+        value = (data[1] << 8) | data[0]
+        if value > 32768:
+            value = value - 32768
+        temp = value/256.0 + 25
+        return temp
+
     def estimatePose(self):
         acc = self.readAccData(True)
         magn = self.readMagnData(True)
@@ -258,4 +267,6 @@ if __name__ == '__main__':
         print('magn:', driver.readMagnData())
         print('magn:', driver.readMagnData(True))
         print('pose:', driver.estimatePose())
+        print('temp:', driver.readTempData())
+
         time.sleep(0.5)
