@@ -8,7 +8,7 @@ import time
 rospy.init_node('ros_service_client')
 topic_name = '/ubiquityrobot/pi_driver_node/motor_set_speed'
 topic = rospy.Publisher(topic_name, U8Int32, queue_size=1)
-count = 5000
+count = 1000
 
 
 def test_service():
@@ -69,6 +69,6 @@ def test_set_publish():
 if __name__ == '__main__':
     test_set_publish()
     # time.sleep(2)
-    # test_service()
-    # test_get_param()
-    # test_set_param()
+    test_service()
+    test_get_param()
+    test_set_param()

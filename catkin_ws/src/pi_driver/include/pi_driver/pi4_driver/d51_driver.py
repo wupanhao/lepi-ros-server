@@ -42,9 +42,16 @@ class System:
         self.version = 0
         self.battery_level = 0
         self.charge_state = 0
+        self.battery_mV = 0
+        self.battery_mA = 0
+        self.vout1_mV = 0
+        self.vout1_mA = 0
+        self.vout2_mV = 0
+        self.vout2_mA = 0
 
     def __repr__(self):
-        return str({"version": self.version, "battery_level": self.battery_level, "charge_state": self.charge_state})
+        return str({"version": self.version, "battery_level": self.battery_level,
+                    "charge_state": self.charge_state, "battery_mV": self.battery_mV, "battery_mA": self.battery_mA, })
 
 
 class Motor:
@@ -92,6 +99,7 @@ class D51Driver(object):
         self._system_get_version()
         self._system_get_power()
         self._system_get_charge()
+        self.system_get_power_meas()
         self.motor = {}
         self.sensor = {}
         for i in range(5):
@@ -217,6 +225,15 @@ class D51Driver(object):
             self.system.battery_level = value
         elif attr == 2:
             self.system.charge_state = value & 0x01
+        elif attr == 4:
+            self.system.battery_mA = value & 0xFFFF
+            self.system.battery_mV = value >> 16
+        elif attr == 5:
+            self.system.vout1_mA = value & 0xFFFF
+            self.system.vout1_mV = value >> 16
+        elif attr == 6:
+            self.system.vout2_mA = value & 0xFFFF
+            self.system.vout2_mV = value >> 16
         print(self.system)
 
     def on_motor(self, attr_id, data):
@@ -417,7 +434,19 @@ class D51Driver(object):
         return self.system.charge_state
 
     def system_poweroff(self):
-        self.write_32(0x03, 0xFF)
+        self.write_32(0x04, 0xFF)
+
+    def system_get_power_meas(self):
+        self.read_32(0x04)
+        return [self.system.battery_mV, self.system.battery_mA, self.system.charge_state]
+
+    def system_get_vout1(self):
+        self.read_32(0x05)
+        return [self.system.vout1_mV, self.system.vout1_mA, self.system.charge_state]
+
+    def system_get_vout2(self):
+        self.read_32(0x06)
+        return [self.system.vout2_mV, self.system.vout2_mA, self.system.charge_state]
 
 
 if __name__ == '__main__':

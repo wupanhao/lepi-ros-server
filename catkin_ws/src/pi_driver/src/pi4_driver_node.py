@@ -86,6 +86,12 @@ class PiDriverNode:
         rospy.Service('~get_power_state', GetPowerState, self.srvGetPowerState)
         rospy.Service('~system_poweroff', SetInt32,
                       self.srvSystemPoweroff)
+        rospy.Service('~system_get_power_meas', SensorGet3Axes,
+                      self.srvSystemGetPowerMeas)
+        rospy.Service('~system_get_vout1', SensorGet3Axes,
+                      self.srvSystemGetVout1)
+        rospy.Service('~system_get_vout2', SensorGet3Axes,
+                      self.srvSystemGetVout2)
         # rospy.Service('~input_string', SetString, self.srvInputString)
         # rospy.Service('~input_char', SetInt32, self.srvInputChar)
         # rospy.Service('~mouse_click', SetString, self.cbMouseClick)
@@ -393,6 +399,18 @@ class PiDriverNode:
         self.d51_driver.system_poweroff()
         os.system('bash -c "sleep 2 && sudo halt" &')
         return SetInt32Response()
+
+    def srvSystemGetPowerMeas(self, params):
+        data = self.d51_driver.system_get_power_meas()
+        return SensorGet3AxesResponse(Sensor3Axes(data[0], data[1], data[2]))
+
+    def srvSystemGetVout1(self, params):
+        data = self.d51_driver.system_get_vout1()
+        return SensorGet3AxesResponse(Sensor3Axes(data[0], data[1], data[2]))
+
+    def srvSystemGetVout2(self, params):
+        data = self.d51_driver.system_get_vout2()
+        return SensorGet3AxesResponse(Sensor3Axes(data[0], data[1], data[2]))
 
     def onShutdown(self):
         self.d51_driver.active = False
