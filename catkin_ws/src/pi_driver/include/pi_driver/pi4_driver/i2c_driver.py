@@ -33,15 +33,16 @@ class I2cDriver:
         self.bus = smbus.SMBus(1)
         self.senserData = {
             'acc': [0, 0, 0],
-            'gryo': [0, 0, 0],
+            'gyro': [0, 0, 0],
             'magn': [0, 0, 0],
         }
         self.offset = {
+            'acc': [0, 0, 0],
+            'gyro': [0, 0, 0],
             "magn": [0, 0, 0]
         }
         try:
             self.nineAxisSetEnable()
-            self.detectOffset()
         except Exception as e:
             print(e)
             print("i2c sensor comunicatiton error")
@@ -86,7 +87,11 @@ class I2cDriver:
     def nineAxisSetEnable(self, value=100):
         self.acc_set_enable(value)
         self.gyro_set_enable(value)
-        self.magn_set_enable(value)
+        try:
+            self.magn_set_enable(value)
+        except Exception as e:
+            print(e)
+        # self.detectOffset()
 
     def readSensorData(self, sensorType, byteLen=6):
         data = [0, 0, 0]
@@ -158,7 +163,7 @@ class I2cDriver:
                 offset['acc'][i] += acc[i]/100.0
                 offset['gyro'][i] += gyro[i]/100.0
             # print(offset)
-        offset['acc'][2] = 16384 + offset['acc'][2]
+        offset['acc'][2] = 16384 - offset['acc'][2]
         self.offset = offset
 
     def getOffset(self, sensor_id=0):
@@ -229,9 +234,14 @@ class I2cDriver:
 
     def estimatePose(self):
         acc = self.readAccData(True)
-        magn = self.readMagnData(True)
-        acc_y = acc[1]/16384.0
-        acc_x = -acc[0]/16384.0
+        try:
+            magn = self.readMagnData(True)
+        except Exception as e:
+            print(e)
+            magn = [0, 0, 0]
+        g = math.sqrt(acc[0]*acc[0]+acc[1]*acc[1]+acc[2]*acc[2])
+        acc_y = acc[1]/g
+        acc_x = -acc[0]/g
         # 俯仰角 b
         if acc_y >= 1:
             pitch = math.pi/2
@@ -259,7 +269,9 @@ if __name__ == '__main__':
         return False
     # driver = I2cDriver(test_print)
     driver = I2cDriver()
+    print(driver.offset)
     while True:
+        # break
         print('acc:', driver.readAccData())
         print('acc:', driver.readAccData(True))
         print('gyro:', driver.readGyroData())
