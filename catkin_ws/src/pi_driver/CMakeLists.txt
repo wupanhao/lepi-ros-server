@@ -21,6 +21,9 @@ add_message_files(
   ServoInfo.msg
   Sensor3Axes.msg
   SensorStatusChange.msg
+  SensorValueChange.msg
+  NineAxisValue.msg
+  NineAxisValueChange.msg
   #ApriltagPose.msg
   #AprilTagDetection.msg
   #AprilTagDetectionArray.msg

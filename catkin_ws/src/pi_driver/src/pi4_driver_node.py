@@ -4,13 +4,16 @@
 # 去除Windows行号,^M 用ctrl+V ctrl+M键入
 # sed -i -e 's/^M//g' camera_info_node.py
 
-import rospkg
+# import rospkg
+import time
 import rospy
 import json
 import os
+import threading
 
 from pi_driver import I2cDriver, SServo, EEPROM, D51Driver, ButtonListener
-from pi_driver.msg import ButtonEvent, Sensor3Axes, MotorInfo, SensorStatusChange, U8Int32, ServoInfo
+from pi_driver.msg import ButtonEvent, Sensor3Axes, MotorInfo, SensorStatusChange, SensorValueChange, U8Int32, ServoInfo,\
+    NineAxisValue, NineAxisValueChange
 from pi_driver.srv import SetInt32, GetInt32, SetInt32Response, GetInt32Response,\
     GetMotorsInfo, GetMotorsInfoResponse, SensorGet3Axes, SensorGet3AxesResponse,\
     GetPowerState, GetPowerStateResponse, GetSensorInfo, GetSensorInfoResponse
@@ -39,12 +42,20 @@ class PiDriverNode:
     def __init__(self):
         self.node_name = rospy.get_name()
         rospy.loginfo("[%s] Initializing......" % (self.node_name))
+        self.is_shutdown = False
         #self.mouse = PyMouse()
         #self.keyboard = PyKeyboard()
+        self.update_frequence = 30
+        self.nine_axis_update_frequence = 30
+        self.frame_count = 0
         self.pub_button_event = rospy.Publisher(
             "~button_event", ButtonEvent, queue_size=1)
         self.pub_sensor_status_change = rospy.Publisher(
             "~sensor_status_change", SensorStatusChange, queue_size=1)
+        self.pub_sensor_value_change = rospy.Publisher(
+            "~sensor_value_change", SensorValueChange, queue_size=1)
+        self.pub_nine_axis_value_change = rospy.Publisher(
+            "~nine_axis_value_change", NineAxisValueChange, queue_size=1)
         self.d51_driver = D51Driver(onSensorChange=self.pubSensorChange)
         rospy.Service("~motor_set_type", SetInt32, self.srvMotorSetType)
         rospy.Service("~motor_get_type", GetInt32, self.srvMotorGetType)
@@ -114,8 +125,24 @@ class PiDriverNode:
             "~motor_set_speed", U8Int32, self.cbMotorSetSpeed, queue_size=1)
         self.sub_motor_set_angle = rospy.Subscriber(
             "~motor_set_angle", U8Int32, self.cbMotorSetAngle, queue_size=1)
+        rospy.Service('~set_update_frequence', SetInt32,
+                      self.srvSetUpdateFrequence)
+        reader = threading.Thread(target=self.start_update_loop)
+        # reader.daemon = True
+        reader.start()
 
+        rospy.Service('~set_nine_axis_update_frequence', SetInt32,
+                      self.srvSetNineAxisUpdateFrequence)
+        reader2 = threading.Thread(target=self.start_nine_axis_update_loop)
+        # reader.daemon = True
+        reader2.start()
+
+        rospy.Timer(rospy.Duration.from_sec(2.0), self.frame_counter)
         rospy.loginfo("[%s] Initialized......" % (self.node_name))
+
+    def frame_counter(self, channel=None):
+        print(self.d51_driver.frame_count - self.frame_count, 'frames')
+        self.frame_count = self.d51_driver.frame_count
 
     def pubButton(self, event):
         if event.code in ButtonMap:
@@ -413,9 +440,60 @@ class PiDriverNode:
         return SensorGet3AxesResponse(Sensor3Axes(data[0], data[1], data[2]))
 
     def onShutdown(self):
+        self.is_shutdown = True
         self.d51_driver.active = False
         rospy.loginfo("[%s] shutdown......" % (self.node_name))
 
+    def srvSetUpdateFrequence(self, params):
+        print(params)
+        if params.value not in [15, 30, 60, 100]:
+            return SetInt32Response()
+        else:
+            self.update_frequence = params.value
+            return SetInt32Response(0, params.value)
+
+    def start_update_loop(self):
+        # print(self.d51_driver.value_updated)
+        while not self.is_shutdown:
+            msg = SensorValueChange()
+            if sum(self.d51_driver.value_updated.values()) > 0:
+                for (k, v) in self.d51_driver.value_updated.items():
+                    if v and k <= 5:
+                        self.d51_driver.value_updated[k] = False
+                        msg.data.append(
+                            U8Int32(k, self.d51_driver.sensor_get_value(k)))
+                    elif v and k <= 10:
+                        self.d51_driver.value_updated[k] = False
+                        msg.data.append(
+                            U8Int32(k, self.d51_driver.motor_get_position(k-5)))
+                self.pub_sensor_value_change.publish(msg)
+            if self.update_frequence == 0:
+                time.sleep(1)
+            else:
+                time.sleep(1.0/self.update_frequence)
+
+    def srvSetNineAxisUpdateFrequence(self, params):
+        print(params)
+        if params.value not in [15, 30, 60, 100]:
+            return SetInt32Response()
+        else:
+            self.nine_axis_update_frequence = params.value
+            return SetInt32Response(0, params.value)
+
+    def start_nine_axis_update_loop(self):
+        # print(self.d51_driver.value_updated)
+        while not self.is_shutdown:
+            msg = NineAxisValueChange()
+            data = [self.i2c_driver.readAccData(True), self.i2c_driver.readGyroData(
+                True), self.i2c_driver.readMagnData(True)]
+            for i in range(3):
+                msg.data.append(NineAxisValue(
+                    i+1, data[i][0], data[i][1], data[i][2]))
+            self.pub_nine_axis_value_change.publish(msg)
+            if self.nine_axis_update_frequence == 0:
+                time.sleep(1)
+            else:
+                time.sleep(1.0/self.nine_axis_update_frequence)
 
 if __name__ == '__main__':
     rospy.init_node('pi_driver_node', anonymous=False)

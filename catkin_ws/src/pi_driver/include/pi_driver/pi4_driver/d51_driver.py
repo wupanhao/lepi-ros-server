@@ -40,7 +40,7 @@ def remap_sensor_id(id):
 class System:
     def __init__(self):
         self.version = 0
-        self.battery_level = 0
+        self.battery_level = 25
         self.charge_state = 0
         self.battery_mV = 0
         self.battery_mA = 0
@@ -102,6 +102,20 @@ class D51Driver(object):
         self.system_get_power_meas()
         self.motor = {}
         self.sensor = {}
+        self.frame_count = 0
+        # 1-5 for sensor data 6-10 for motor position
+        self.value_updated = {
+            1: False,
+            2: False,
+            3: False,
+            4: False,
+            5: False,
+            6: False,
+            7: False,
+            8: False,
+            9: False,
+            10: False,
+        }
         for i in range(5):
             self.motor[i+1] = Motor(i+1)
             self.sensor[i+1] = Sensor(i+1)
@@ -208,6 +222,7 @@ class D51Driver(object):
         # print(self.motor)
 
     def on_frame(self, attr_id, value):
+        self.frame_count = self.frame_count + 1
         # print(attr_id, length, value)
         if attr_id < 0x10:
             self.on_system(attr_id, value)
@@ -250,6 +265,8 @@ class D51Driver(object):
             self.motor[motor_id].setpoint = value
         if self.debug_mode:
             print(self.motor[motor_id])
+        if motor_id <= 5 and attr == 2:
+            self.value_updated[motor_id+5] = True
 
     def on_sensor(self, attr_id, data):
         sensor_id = (attr_id >> 4)-5
@@ -272,6 +289,8 @@ class D51Driver(object):
             self.sensor[sensor_id].mode = data[0] & 0x07
             self.sensor[sensor_id].value = to_value(
                 self.sensor[sensor_id].data)
+        if sensor_id <= 5 and attr == 2:
+            self.value_updated[sensor_id] = True
 
     def on_sensor_data(self, data):
         mode = data[0] & 0x07

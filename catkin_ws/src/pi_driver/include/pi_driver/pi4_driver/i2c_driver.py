@@ -271,7 +271,7 @@ if __name__ == '__main__':
     driver = I2cDriver()
     print(driver.offset)
     while True:
-        # break
+        break
         print('acc:', driver.readAccData())
         print('acc:', driver.readAccData(True))
         print('gyro:', driver.readGyroData())
@@ -280,5 +280,12 @@ if __name__ == '__main__':
         print('magn:', driver.readMagnData(True))
         print('pose:', driver.estimatePose())
         print('temp:', driver.readTempData())
-
+        time.sleep(0.5)
+    while True:
+        start = time.time()
+        for i in range(1000):
+            driver.readAccData()
+        end = time.time()
+        print("read %d acc data in %.2f ms" %
+            (1000, (end - start)*1000))
         time.sleep(0.5)
