@@ -40,7 +40,7 @@ def remap_sensor_id(id):
 class System:
     def __init__(self):
         self.version = 0
-        self.battery_level = 25
+        self.battery_level = 50
         self.charge_state = 0
         self.battery_mV = 0
         self.battery_mA = 0

@@ -48,6 +48,7 @@ add_service_files(
   SetOffset.srv
   GetStrings.srv
   #GetApriltagDetections.srv
+  GetCommandDetection.srv
 )
 
 generate_messages(

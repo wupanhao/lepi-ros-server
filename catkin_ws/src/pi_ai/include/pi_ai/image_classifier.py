@@ -5,7 +5,6 @@ import os
 import cv2
 import numpy as np
 import sys
-import importlib.util
 from camera_utils import putText3
 # from labels_map import detector_map
 from .load_runtime import load_tflite_model

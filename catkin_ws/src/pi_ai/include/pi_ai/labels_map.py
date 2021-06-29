@@ -1,3 +1,4 @@
+#!coding:utf-8
 detector_map = {
     'person': '人',
     'bicycle': '自行车',

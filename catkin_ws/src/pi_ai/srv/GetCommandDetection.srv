@@ -1,0 +1,5 @@
+string data
+----
+int32 confidence
+int32 grammar=0 
+string input

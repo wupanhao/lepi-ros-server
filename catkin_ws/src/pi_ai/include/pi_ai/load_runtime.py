@@ -1,5 +1,8 @@
-import importlib.util
-
+try:
+    import importlib.util
+except Exception as e:
+    print(e)
+    
 def load_tflite_model(model_path,use_TPU = False):
     # Import TensorFlow libraries
     # If tflite_runtime is installed, import interpreter from tflite_runtime, else import from regular tensorflow
