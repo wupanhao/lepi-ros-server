@@ -27,9 +27,15 @@ def to_value(data):
         return data[0]
     elif l == 2:
         return data[0] | (data[1] << 8)
-    elif l >= 4:
+    elif l >= 4 and l%4==0:
+        n = l/4
+        arr = []
+        for i in range(n):
+            arr.append(data[i*4:i*4+4])
+        print(arr)
         return to_int32(data[:4])
     else:
+        print(data)
         return 0
 
 
@@ -193,6 +199,7 @@ class D51Driver(object):
                     value = self.read_hex(length+1)
                     # print(attr_id, value, length)
                     self.on_frame(attr_id, value[:-1])
+                # print(data)
                 # elif header[0] not in data:
                 #     print('bad data', data)
             except Exception as e:
@@ -289,6 +296,7 @@ class D51Driver(object):
             self.sensor[sensor_id].mode = data[0] & 0x07
             self.sensor[sensor_id].value = to_value(
                 self.sensor[sensor_id].data)
+            # print(self.sensor[sensor_id].value)
         if sensor_id <= 5 and attr == 2:
             self.value_updated[sensor_id] = True
 
@@ -478,14 +486,16 @@ if __name__ == '__main__':
 
     serial_ports = [i[0] for i in serial.tools.list_ports.comports()]
     print(serial_ports)
-    driver = D51Driver('/dev/ttyACM0', baud_rate=115200,
+    driver = D51Driver('/dev/ttyACM0', baud_rate=1152000,
                        onSensorChange=pubSensorChange)
-    driver.system_poweroff()
+    # driver.system_poweroff()
     print(driver.port.is_open)
     count = 1
     time.sleep(3)
-    exit()
+    # exit()
     while True:
+        time.sleep(3)
+        continue
         pulse = int(65535*math.sin(count/500.0*math.pi))
         # pulse = random.randint(0, 9)
         # print(pulse)

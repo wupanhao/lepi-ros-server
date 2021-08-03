@@ -27,3 +27,4 @@ class BehaviorState(Enum):
     HOP = 2
     FINISHHOP = 3
     BAINIAN = 4
+    FREE = 5

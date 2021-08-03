@@ -278,11 +278,10 @@ def test_detect():
         # Grab a single frame of video
         ret, frame = cap.read()
         start = time.time()
-        face_locations = fr.detect(frame)
-        nframe = fr.rect_faces(frame, face_locations)
+        nframe = fr.detect(frame)
         end = time.time()
         print("labeled %d faces in %.2f ms" %
-              (len(face_locations), (end - start)*1000))
+              (len(fr.face_locations), (end - start)*1000))
         cv2.imshow("images", nframe)
         c = cv2.waitKey(4)
         if c == 27:

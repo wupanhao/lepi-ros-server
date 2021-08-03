@@ -26,8 +26,8 @@ class ApriltagDetector:
         # self.detector = Detector(searchpath=[cur_dir + '/../../../../devel_isolated/apriltag/lib'],
         self.detector = Detector(
             # self.detector = Detector(families='tag36h11',
-            nthreads=1,
-            quad_decimate=3.0,
+            nthreads=2,
+            quad_decimate=2.0,
             quad_sigma=0.0,
             refine_edges=1,
             decode_sharpening=0.25,
@@ -137,7 +137,7 @@ if __name__ == '__main__':
     # test_image = cv2.imread('/tmp/test.jpg')
     # print(detector.detect(test_image))
     dev = cameraList()
-    cap = cv2.VideoCapture(dev[1])
+    cap = cv2.VideoCapture(dev[0])
     while True:
         # Grab a single frame of video
         ret, frame = cap.read()

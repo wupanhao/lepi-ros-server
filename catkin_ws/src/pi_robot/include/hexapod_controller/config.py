@@ -27,6 +27,7 @@ class BehaviorState(Enum):
     TROT = 1
     HOP = 2
     FINISHHOP = 3
+    FREE = 4
 
 
 class Configuration:

@@ -45,8 +45,8 @@ class PiDriverNode:
         self.is_shutdown = False
         #self.mouse = PyMouse()
         #self.keyboard = PyKeyboard()
-        self.update_frequence = 30
-        self.nine_axis_update_frequence = 30
+        self.update_frequence = 15
+        self.nine_axis_update_frequence = 15
         self.frame_count = 0
         self.pub_button_event = rospy.Publisher(
             "~button_event", ButtonEvent, queue_size=1)
@@ -446,7 +446,7 @@ class PiDriverNode:
 
     def srvSetUpdateFrequence(self, params):
         print(params)
-        if params.value not in [15, 30, 60, 100]:
+        if params.value < 0 or params.value > 30:
             return SetInt32Response()
         else:
             self.update_frequence = params.value
@@ -455,6 +455,9 @@ class PiDriverNode:
     def start_update_loop(self):
         # print(self.d51_driver.value_updated)
         while not self.is_shutdown:
+            if self.update_frequence == 0:
+                time.sleep(1)
+                continue
             msg = SensorValueChange()
             if sum(self.d51_driver.value_updated.values()) > 0:
                 for (k, v) in self.d51_driver.value_updated.items():
@@ -467,14 +470,11 @@ class PiDriverNode:
                         msg.data.append(
                             U8Int32(k, self.d51_driver.motor_get_position(k-5)))
                 self.pub_sensor_value_change.publish(msg)
-            if self.update_frequence == 0:
-                time.sleep(1)
-            else:
-                time.sleep(1.0/self.update_frequence)
+            time.sleep(1.0/self.update_frequence)
 
     def srvSetNineAxisUpdateFrequence(self, params):
         print(params)
-        if params.value not in [15, 30, 60, 100]:
+        if params.value < 0 or params.value > 100:
             return SetInt32Response()
         else:
             self.nine_axis_update_frequence = params.value
@@ -483,6 +483,9 @@ class PiDriverNode:
     def start_nine_axis_update_loop(self):
         # print(self.d51_driver.value_updated)
         while not self.is_shutdown:
+            if self.nine_axis_update_frequence == 0:
+                time.sleep(1)
+                continue
             msg = NineAxisValueChange()
             data = [self.i2c_driver.readAccData(True), self.i2c_driver.readGyroData(
                 True), self.i2c_driver.readMagnData(True)]
@@ -490,10 +493,8 @@ class PiDriverNode:
                 msg.data.append(NineAxisValue(
                     i+1, data[i][0], data[i][1], data[i][2]))
             self.pub_nine_axis_value_change.publish(msg)
-            if self.nine_axis_update_frequence == 0:
-                time.sleep(1)
-            else:
-                time.sleep(1.0/self.nine_axis_update_frequence)
+            time.sleep(1.0/self.nine_axis_update_frequence)
+
 
 if __name__ == '__main__':
     rospy.init_node('pi_driver_node', anonymous=False)

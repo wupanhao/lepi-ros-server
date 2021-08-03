@@ -14,7 +14,7 @@ from hexapod_controller import Configuration, State, BehaviorState, Command
 import math
 import rospy
 import json
-from pi_driver.srv import SetString, SetStringResponse
+from pi_driver.srv import SetString, SetStringResponse, GetString, GetStringResponse
 
 
 BehaviorStateMap = {
@@ -23,6 +23,7 @@ BehaviorStateMap = {
     1: BehaviorState.TROT,
     2: BehaviorState.HOP,
     3: BehaviorState.FINISHHOP,
+    4: BehaviorState.FREE,
 }
 
 
@@ -54,6 +55,10 @@ class HexapodDriverNode:
         reader.start()
 
         rospy.Service('~set_command', SetString, self.cbSetCommand)
+        rospy.Service('~get_state', GetString, self.cbGetState)
+        rospy.Service('~set_servo_angles', SetString, self.cbSetServoAngles)
+        rospy.Service('~set_foot_locations', SetString,
+                      self.cbSetFootLocations)
         rospy.loginfo("[%s] Initialized." % (self.node_name))
 
     def loop(self):
@@ -69,6 +74,9 @@ class HexapodDriverNode:
             # Parse the udp joystick commands and then update the robot controller's parameters
             command = self.get_command()
 
+            if self.state.behavior_state == BehaviorState.FREE:
+                time.sleep(0.5)
+                continue
             # quat_orientation = np.array([1, 0, 0, 0])
             # self.state.quat_orientation = quat_orientation
             try:
@@ -114,6 +122,29 @@ class HexapodDriverNode:
 
     def get_command(self):
         return self.command
+
+    def cbGetState(self, params):
+        state = {
+            "servo_angles": self.hardware_interface.servo_angles,
+            "foot_locations": self.state.foot_locations.tolist()
+        }
+        return GetStringResponse(json.dumps(state))
+
+    def cbSetServoAngles(self, params):
+        joint_angles = json.loads(params.data)
+        self.hardware_interface.set_actuator_angles(
+            joint_angles)
+        return SetStringResponse()
+
+    def cbSetFootLocations(self, params):
+        foot_locations = np.array(json.loads(params.data))
+        print(foot_locations)
+        joint_states = self.controller.inverse_kinematics(
+            foot_locations, self.controller.config
+        )
+        self.hardware_interface.set_actuator_postions(
+            joint_states)
+        return SetStringResponse()
 
     def onShutdown(self):
         self.active = False

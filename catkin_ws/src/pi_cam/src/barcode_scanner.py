@@ -31,6 +31,6 @@ while True:
         break
 
 print("[INFO] cleaning up...")
-csv.close()
+#csv.close()
 cv2.destroyAllWindows()
 cap.release()

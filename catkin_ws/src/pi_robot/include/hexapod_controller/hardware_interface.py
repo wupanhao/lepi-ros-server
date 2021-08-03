@@ -12,17 +12,19 @@ class HardwareInterface:
         self.neutral_angle_degrees = neutral_angle_degrees
         # self.servo_states = [0 for i in range(12)]
         self.servo_ids = [i+1 for i in range(18)]
+        self.servo_angles = [0 for i in range(18)]
 
     def set_actuator_postions(self, joint_angles):
         angles = []
         servos = []
         for leg_index in range(6):
             for axis_index in range(3):
+                i = leg_index*3+axis_index
                 angle = joint_angles[axis_index][leg_index]/math.pi*180
+                self.servo_angles[ids[i]-1] = int(angle)
                 pos = angle+self.neutral_angle_degrees[axis_index][leg_index]
                 if axis_index == 2:
                     pos = -pos
-                i = leg_index*3+axis_index
                 angles.append(int(angle))
                 servos.append(
                     Servo(ids[i], int(pos/200.0*1023+1023/2), speed=2000))
