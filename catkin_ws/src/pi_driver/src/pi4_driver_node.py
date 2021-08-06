@@ -10,6 +10,7 @@ import rospy
 import json
 import os
 import threading
+import RPi.GPIO as GPIO
 
 from pi_driver import I2cDriver, SServo, EEPROM, D51Driver, ButtonListener
 from pi_driver.msg import ButtonEvent, Sensor3Axes, MotorInfo, SensorStatusChange, SensorValueChange, U8Int32, ServoInfo,\
@@ -19,7 +20,7 @@ from pi_driver.srv import SetInt32, GetInt32, SetInt32Response, GetInt32Response
     GetPowerState, GetPowerStateResponse, GetSensorInfo, GetSensorInfoResponse
 from pi_driver.srv import SetString, SetStringResponse, GetString, GetStringResponse, SetOffset, SetOffsetResponse
 from pi_driver.srv import SetServoPosition, SetServoPositionResponse, GetServosInfo, GetServosInfoResponse, SetServoParam, SetServoParamResponse
-
+from pi_driver import vcgencmd
 #from pymouse import PyMouse
 #from pykeyboard import PyKeyboard
 
@@ -45,9 +46,15 @@ class PiDriverNode:
         self.is_shutdown = False
         #self.mouse = PyMouse()
         #self.keyboard = PyKeyboard()
-        self.update_frequence = 15
-        self.nine_axis_update_frequence = 15
+        self.update_frequence = 0
+        self.nine_axis_update_frequence = 0
         self.frame_count = 0
+
+        self.fan_pin = 14  # 定义pwm输出引脚
+        GPIO.setmode(GPIO.BCM)  # 定义树莓派gpio引脚以BCM方式编号
+        GPIO.setup(self.fan_pin, GPIO.OUT)  # 使能gpio口为输出
+        # self.pwm = GPIO.PWM(pwm_pin,25000)   #定义pwm输出频率
+
         self.pub_button_event = rospy.Publisher(
             "~button_event", ButtonEvent, queue_size=1)
         self.pub_sensor_status_change = rospy.Publisher(
@@ -137,12 +144,19 @@ class PiDriverNode:
         # reader.daemon = True
         reader2.start()
 
-        rospy.Timer(rospy.Duration.from_sec(2.0), self.frame_counter)
+        rospy.Timer(rospy.Duration.from_sec(3.0), self.frame_counter)
         rospy.loginfo("[%s] Initialized......" % (self.node_name))
 
     def frame_counter(self, channel=None):
         print(self.d51_driver.frame_count - self.frame_count, 'frames')
         self.frame_count = self.d51_driver.frame_count
+        temp = vcgencmd.measure_temp()
+        if temp > 70:
+            GPIO.output(self.fan_pin, 1)
+            # self.pwm.start(100)
+        elif temp < 65:
+            GPIO.output(self.fan_pin, 0)
+            # self.pwm.start(0)
 
     def pubButton(self, event):
         if event.code in ButtonMap:

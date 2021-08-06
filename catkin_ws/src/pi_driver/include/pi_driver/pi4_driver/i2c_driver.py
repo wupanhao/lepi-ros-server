@@ -30,6 +30,8 @@ class I2cDriver:
         self.LSM6DSL = 0x6a
         self.BMM150 = 0x10
         self.int_pin = 22  # GPIO25 40pin 第22号引脚
+        self.lsm6dsl = True
+        self.bmm150 = True
         self.bus = smbus.SMBus(1)
         self.senserData = {
             'acc': [0, 0, 0],
@@ -85,16 +87,27 @@ class I2cDriver:
             self.bus.write_byte_data(self.BMM150, BMM150_CONTROL, 0x38)
 
     def nineAxisSetEnable(self, value=100):
-        self.acc_set_enable(value)
-        self.gyro_set_enable(value)
+        self.lsm6dsl = True
+        self.bmm150 = True
+        try:
+            self.acc_set_enable(value)
+            self.gyro_set_enable(value)
+        except Exception as e:
+            print(e)
+            self.lsm6dsl = False
         try:
             self.magn_set_enable(value)
         except Exception as e:
             print(e)
+            self.bmm150 = False
         # self.detectOffset()
 
     def readSensorData(self, sensorType, byteLen=6):
         data = [0, 0, 0]
+        if sensorType == ReadMagnetometer and self.bmm150 is False:
+            return data
+        elif self.lsm6dsl is False:
+            return data
         maxTry = 5
         while maxTry > 0:
             try:
@@ -121,10 +134,13 @@ class I2cDriver:
         if data is None:
             if sensorType == ReadAccSensor:
                 data = self.senserData['acc']
+                self.lsm6dsl = False
             elif sensorType == ReadGyroSensor:
                 data = self.senserData['gyro']
+                self.lsm6dsl = False
             elif sensorType == ReadMagnetometer:
                 data = self.senserData['magn']
+                self.bmm150 = False
         else:
             if sensorType == ReadAccSensor:
                 data = self.normalizeSensorData(data)

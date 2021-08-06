@@ -13,3 +13,4 @@ except Exception as e:
 
 from .button_subscriber import *
 from .joystick import *
+import vcgencmd
