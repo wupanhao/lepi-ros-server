@@ -2,7 +2,7 @@
 import time
 
 header = [0x12, 0x4c]
-header = [0xff, 0xff]
+# header = [0xff, 0xff]
 
 
 def chk_sum(data):

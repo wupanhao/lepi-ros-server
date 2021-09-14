@@ -27,7 +27,7 @@ def to_value(data):
         return data[0]
     elif l == 2:
         return data[0] | (data[1] << 8)
-    elif l >= 4 and l%4==0:
+    elif l >= 4 and l % 4 == 0:
         n = l/4
         arr = []
         for i in range(n):
@@ -474,6 +474,9 @@ class D51Driver(object):
     def system_get_vout2(self):
         self.read_32(0x06)
         return [self.system.vout2_mV, self.system.vout2_mA, self.system.charge_state]
+
+    def system_set_led(self, value):
+        self.write_32(0x07, value)
 
 
 if __name__ == '__main__':

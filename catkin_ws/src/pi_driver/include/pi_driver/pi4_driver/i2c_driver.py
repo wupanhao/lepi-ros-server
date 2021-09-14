@@ -8,7 +8,7 @@ try:
 except Exception as e:
     print(e)
 
-from reg import *
+from .reg import *
 
 ReadAccSensor = LSM6DSL_ACC_GYRO_OUTX_L_XL
 ReadGyroSensor = LSM6DSL_ACC_GYRO_OUTX_L_G

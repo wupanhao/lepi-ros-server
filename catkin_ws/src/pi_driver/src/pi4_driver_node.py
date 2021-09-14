@@ -110,6 +110,7 @@ class PiDriverNode:
                       self.srvSystemGetVout1)
         rospy.Service('~system_get_vout2', SensorGet3Axes,
                       self.srvSystemGetVout2)
+        rospy.Service('~system_set_led', SetInt32, self.srvSystemSetLed)
         # rospy.Service('~input_string', SetString, self.srvInputString)
         # rospy.Service('~input_char', SetInt32, self.srvInputChar)
         # rospy.Service('~mouse_click', SetString, self.cbMouseClick)
@@ -452,6 +453,10 @@ class PiDriverNode:
     def srvSystemGetVout2(self, params):
         data = self.d51_driver.system_get_vout2()
         return SensorGet3AxesResponse(Sensor3Axes(data[0], data[1], data[2]))
+
+    def srvSystemSetLed(self, params):
+        self.d51_driver.system_set_led(params.value)
+        return SetInt32Response(params.port, params.value)
 
     def onShutdown(self):
         self.is_shutdown = True
