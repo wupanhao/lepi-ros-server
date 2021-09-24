@@ -5,7 +5,7 @@ from config import BehaviorState, State, Command
 from controller import deadband, clipped_first_order_filter
 # from src.Utilities import deadband, clipped_first_order_filter
 
-from pi_driver import MyJoy
+from mjoy import MyJoy
 import threading
 
 MESSAGE_RATE = 20
