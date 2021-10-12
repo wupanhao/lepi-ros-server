@@ -1,3 +1,4 @@
+#!coding:utf-8
 from pupper.Kinematics import four_legs_inverse_kinematics
 from src.State import State
 from JoystickInterface import JoystickInterface
@@ -8,6 +9,60 @@ from flask import Flask, jsonify, request, json
 from flask_cors import CORS
 import numpy as np
 import math
+
+import os
+import sys
+import tty
+import termios
+
+
+def readchar():
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(sys.stdin.fileno())
+        ch = sys.stdin.read(1)
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    # print(ch, ord(ch))
+    return ord(ch)
+
+
+def readkey(getchar_fn=None):
+    getchar = getchar_fn or readchar
+    c1 = getchar()
+    if c1 == 0x03:
+        exit()
+    if c1 != 0x1b:
+        return c1
+    c2 = getchar()
+    c3 = getchar()
+    return c2*100+c3
+    # sys.stdin.flush()
+
+
+class KEY:
+    ArrowLeft = 9168
+    ArrowUp = 9165
+    ArrowRight = 9167
+    ArrowDown = 9166
+    Enter = 13
+    Memu = 7980  # KeyM (Menu)
+    Back = 7981  # KeyB (Back)
+    Run = 7982  # KeyR (Run)
+    Stop = 27  # KeyS (Stop or Home)
+
+
+'''
+Enter 13
+Up 9165
+Down 9166 
+Left 9168 
+Right 9167
+F1 7980
+F2 7981
+F3 7982
+'''
 
 
 def toConfig(angles):
@@ -49,6 +104,7 @@ def saveConfig(angles):
         print(e)
         return 1
 
+
 try:
     from pupper.HardwareConfig import NEUTRAL_ANGLE_DEGREES
 except Exception as e:
@@ -72,6 +128,19 @@ print(calibrations)
 config = Configuration()
 hardware_interface = HardwareInterface()
 
+
+def set_actuator_postions():
+    # stand = [0, 0, 0, 0, 44, 44, 44, 44, -48, -48, -48, -48]
+    stand = [0, 0, 0, 0, 45, 45, 45, 45, -45, -45, -45, -45]
+    #stand = [-12, 12, -12, 12, 61, 61, 61, 61, -70, -70, -70, -70]
+    rad = np.array(stand).reshape((3, 4))
+    rad = rad/180.0*math.pi
+    # print(rad)
+    hardware_interface.servo_params.neutral_angle_degrees = np.array(
+        toConfig(calibrations))
+    hardware_interface.set_actuator_postions(rad)
+
+
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 
@@ -81,10 +150,12 @@ def index():
     with open('./index.html', 'r') as f:
         return f.read()
 
+
 @app.route('/test')
 def test():
     with open('./test.html', 'r') as f:
         return f.read()
+
 
 @app.route('/get-calibrate')
 def get_calibrate():
@@ -94,30 +165,22 @@ def get_calibrate():
 @app.route('/set-calibrate')
 def set_calibrate():
     global calibrations
-    data = request.args.get('angles')
     try:
+        data = request.args.get('angles')
         array = json.loads(data)
         if type(array) == list and len(array) == 12:
             calibrations = array
+            set_actuator_postions()
+        return jsonify(calibrations)
     except Exception as e:
         print(e)
-
-    # stand = [0, 0, 0, 0, 44, 44, 44, 44, -48, -48, -48, -48]
-    stand = [0, 0, 0, 0, 45, 45, 45, 45, -45, -45, -45, -45]
-    #stand = [-12, 12, -12, 12, 61, 61, 61, 61, -70, -70, -70, -70]
-    rad = np.array(stand).reshape((3, 4))
-    rad = rad/180.0*math.pi
-    print(rad)
-    hardware_interface.servo_params.neutral_angle_degrees = np.array(
-        toConfig(calibrations))
-    hardware_interface.set_actuator_postions(rad)
-    return jsonify(calibrations)
 
 
 @app.route('/save-calibrate')
 def save_calibrate():
     status = saveConfig(calibrations)
     return jsonify({"status": status})
+
 
 @app.route('/set')
 def set():
@@ -144,8 +207,9 @@ def save():
     print(angles)
     return jsonify(angles)
 
+
 def main(use_imu=False):
-    global angles
+    global calibrations
     """Main program
     """
 
@@ -172,10 +236,38 @@ def main(use_imu=False):
     print("z clearance: ", config.z_clearance)
     print("x shift: ", config.x_shift)
 
+    n = 0
     # exit()
 
     # Wait until the activate button has been pressed
     while True:
+        while True:
+            os.system('clear')
+            if n < 0:
+                n = 0
+            elif n >= 12:
+                n = 11
+            print("准备较准%d号舵机\n左右键修改中心位置\n上下键修改id\n,确认键保存,返回键退出" % (n+1))
+            print("当前校准值: %d" % calibrations[n])
+            c = readkey()
+            if c == KEY.ArrowDown:
+                n = n+1
+                continue
+            elif c == KEY.ArrowUp and n > 0:
+                n = n-1
+                continue
+            elif c == KEY.ArrowLeft:
+                calibrations[n] = calibrations[n] - 1
+            elif c == KEY.ArrowRight:
+                calibrations[n] = calibrations[n] + 1
+            elif c == KEY.Back:
+                break
+            elif c == KEY.Enter:
+                saveConfig(calibrations)
+                print("保存成功")
+                if readkey() == KEY.Back:
+                    break
+            set_actuator_postions()
         print("Waiting for L1 to activate robot.")
         while True:
             # break
