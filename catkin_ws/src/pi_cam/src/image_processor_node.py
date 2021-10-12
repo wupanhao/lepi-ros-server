@@ -1,6 +1,8 @@
 #!/usr/bin/python
 #!coding:utf-8
 import cv2
+import json
+import numpy as np
 import rospy
 from sensor_msgs.msg import Image, CompressedImage
 from camera_utils import toImageMsg, toImage
@@ -21,6 +23,7 @@ class ImageProcessorNode(object):
 
         rospy.Service('~add_proc', AddProc, self.cbAddProc)
         rospy.Service('~exec_proc', GetString, self.cbExecProc)
+        rospy.Service('~hough_circles', GetString, self.cbHoughCircles)
 
         # self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,  queue_size=1)
         self.sub_image = rospy.Subscriber(
@@ -40,6 +43,20 @@ class ImageProcessorNode(object):
         img = self.processor.process(image)
         self.pubImage(img)
         return GetStringResponse('执行成功')
+
+    def cbHoughCircles(self, params):
+        args = json.loads(params.data)
+        image = toImage(self.image_msg)
+        img = self.processor.process(image)
+        circles = self.processor.houghCircles(img, args)
+        if circles is not None and len(circles[0]) > 0:
+            circles = np.uint16(np.around(circles))  # 把circles包含的圆心和半径的值变成整数
+            print(circles)
+            for i in circles[0, :]:
+                cv2.circle(image, (i[0], i[1]), i[2], (0, 0, 255), 2)
+                cv2.circle(image, (i[0], i[1]), 2, (255, 0, 0), 2)
+        self.pubImage(image)
+        return GetStringResponse(json.dumps(circles.tolist()))
 
     def pubImage(self, image):
         msg = toImageMsg(image)

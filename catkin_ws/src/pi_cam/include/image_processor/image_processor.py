@@ -119,6 +119,12 @@ class ImageProcessor:
         elif name == "clearProcess":
             self.steps = []
 
+    def houghCircles(self, gray, args):
+        circles = cv2.HoughCircles(
+            # gray, cv2.HOUGH_GRADIENT, dp=1, minDist=20, param1=50, param2=30, minRadius=0, maxRadius=0)
+            gray, cv2.HOUGH_GRADIENT, **args)
+        return circles
+
     def testArgs(self, **kwargs):
         print(kwargs)
 
@@ -149,10 +155,10 @@ def cannyTest():
 def test():
     import time
     processer = ImageProcessor()
-    proces = [Procedure(processer.cvtColor, {"code": cv2.COLOR_BGR2GRAY}),
+    proces = [Procedure("cvtColor", {"code": cv2.COLOR_BGR2GRAY}),
               #   Procedure(processer.threshold, {
               #             "thresh": 0, "maxVal": 255, "code": cv2.THRESH_BINARY}),
-              Procedure(processer.Canny, {"min": 30, "max": 120}),
+              Procedure("Canny", {"min": 30, "max": 120}),
               ]
     processer.steps.extend(proces)
 
@@ -172,10 +178,19 @@ def test():
         # processed = processer.erode(processed)
         # processed = processer.dilate(processed)
         processed = processer.process(frame)
+        circles = processer.houghCircles(processed, {
+                                         "dp": 1, "minDist": 20, "param1": 50, "param2": 30, "minRadius": 10, "maxRadius": 50})
+        if circles is not None and len(circles[0]) > 0:
+            circles = np.uint16(np.around(circles))  # 把circles包含的圆心和半径的值变成整数
+            print(circles)
+            for i in circles[0, :]:
+                cv2.circle(frame, (i[0], i[1]), i[2], (0, 0, 255), 2)
+                cv2.circle(frame, (i[0], i[1]), 2, (255, 0, 0), 2)
+        # cv2.imshow("circle image", frame)
         end = time.time()
         print("process %d frame in %.2f ms" %
               (1, (end - start)*1000))
-        cv2.imshow("images", processed)
+        cv2.imshow("images", frame)
         c = cv2.waitKey(4)
         if c == 27:
             break
