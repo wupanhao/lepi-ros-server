@@ -82,7 +82,23 @@ def main(use_imu=False):
                 print(e)
 
             print(hardware_interface.set_actuator_postions(state.joint_angles))
+            pub_joint_states(state.joint_angles)
             # time.sleep(2)
 
 
-main()
+def pub_joint_states(joint_angles):
+    angles = []
+    ids = []
+    for leg_index in range(6):
+        for axis_index in range(3):
+            angles.append(joint_angles[axis_index][leg_index])
+    joint_msg.position = angles
+    joint_states.publish(joint_msg)
+
+if __name__ == '__main__':
+    import rospy
+    from sensor_msgs.msg import JointState
+    rospy.init_node('hexapod_controller_node')
+    joint_states = rospy.Publisher('/joint_states', JointState)
+    joint_msg = JointState()
+    main()

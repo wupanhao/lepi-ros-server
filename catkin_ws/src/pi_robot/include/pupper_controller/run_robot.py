@@ -103,7 +103,30 @@ def main(use_imu=False):
             # print(angles)
             # print(angles, state.joint_angles)
             print(hardware_interface.set_actuator_postions(state.joint_angles))
+            pub_joint_states(state.joint_angles)
             # time.sleep(2)
 
 
-main()
+def pub_joint_states(joint_angles):
+    angles = []
+    ids = []
+    for leg_index in range(4):
+        for axis_index in range(3):
+            angles.append(joint_angles[axis_index][leg_index])
+    joint_msg.position = angles
+    joint_states.publish(joint_msg)
+
+
+if __name__ == '__main__':
+    import rospy
+    from sensor_msgs.msg import JointState
+    rospy.init_node('joystick_controller_node')
+    joint_states = rospy.Publisher('/joint_states', JointState)
+    joint_msg = JointState()
+    joint_msg.name = ["shoulder_joint_rf", "elbow_joint_rf", "wrist_joint_rf",
+                      "shoulder_joint_lf", "elbow_joint_lf", "wrist_joint_lf",
+                      "shoulder_joint_rb", "elbow_joint_rb", "wrist_joint_rb",
+                      "shoulder_joint_lb", "elbow_joint_lb", "wrist_joint_lb",
+                      ]
+    main()
+
