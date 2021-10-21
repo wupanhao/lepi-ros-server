@@ -49,7 +49,7 @@ class PiDriverNode:
         self.update_frequence = 0
         self.nine_axis_update_frequence = 0
         self.frame_count = 0
-
+        self.watch_dog = 0
         self.fan_pin = 14  # 定义pwm输出引脚
         GPIO.setmode(GPIO.BCM)  # 定义树莓派gpio引脚以BCM方式编号
         GPIO.setup(self.fan_pin, GPIO.OUT)  # 使能gpio口为输出
@@ -149,8 +149,14 @@ class PiDriverNode:
         rospy.loginfo("[%s] Initialized......" % (self.node_name))
 
     def frame_counter(self, channel=None):
-        print(self.d51_driver.frame_count - self.frame_count, 'frames')
+        print(self.watch_dog,self.d51_driver.frame_count -
+              self.frame_count, 'frames')
         self.frame_count = self.d51_driver.frame_count
+        if self.watch_dog >= 0:
+            self.watch_dog = self.watch_dog + 1
+            if self.watch_dog >= 20:
+                self.watch_dog = 0
+                os.system('sudo killall electron ; sleep 2 ; bash /home/pi/start.sh')
         temp = vcgencmd.measure_temp()
         if temp > 70:
             GPIO.output(self.fan_pin, 1)
@@ -433,6 +439,7 @@ class PiDriverNode:
     def srvGetPowerState(self, params):
         # charging bat_power_ocv est_power
         # self.d51_driver._system_get_power()
+        self.watch_dog = -100
         data = [self.d51_driver.system.charge_state,
                 4.1, self.d51_driver.system.battery_level]
         return GetPowerStateResponse(data[0], data[1], data[2])
