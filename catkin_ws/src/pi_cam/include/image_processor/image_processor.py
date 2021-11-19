@@ -119,7 +119,11 @@ class ImageProcessor:
         elif name == "clearProcess":
             self.steps = []
 
-    def houghCircles(self, gray, args):
+    def houghCircles(self, image, args):
+        if len(image.shape) == 3:
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        else:
+            gray = image
         circles = cv2.HoughCircles(
             # gray, cv2.HOUGH_GRADIENT, dp=1, minDist=20, param1=50, param2=30, minRadius=0, maxRadius=0)
             gray, cv2.HOUGH_GRADIENT, **args)

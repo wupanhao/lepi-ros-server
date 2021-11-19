@@ -55,9 +55,11 @@ class ImageProcessorNode(object):
             for i in circles[0, :]:
                 cv2.circle(image, (i[0], i[1]), i[2], (0, 0, 255), 2)
                 cv2.circle(image, (i[0], i[1]), 2, (255, 0, 0), 2)
-        self.pubImage(image)
-        return GetStringResponse(json.dumps(circles.tolist()))
-
+            self.pubImage(image)
+            return GetStringResponse(json.dumps(circles.tolist()))
+        else:
+            self.pubImage(image)
+            return GetStringResponse(json.dumps([[]]))
     def pubImage(self, image):
         msg = toImageMsg(image)
         self.pub_detections.publish(msg)

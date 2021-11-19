@@ -115,6 +115,9 @@ class JoystickInterface:
 
         dpadx = axes[6]/32767.0
         dpady = -axes[7]/32767.0
+        if len(buttons) >= 17:
+            dpadx = buttons[16]-buttons[15]
+            dpady = buttons[13]-buttons[14]
 
         msg = {
             "ly": left_y,
