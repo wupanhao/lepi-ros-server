@@ -27,13 +27,13 @@ class JoystickNode:
         rospy.loginfo("[%s] Initialized......" % (self.node_name))
 
     def cbGetButtonValue(self, msg):
-        if self.joy.buttons.has_key(msg.port):
+        if self.joy.buttons.__contains__(msg.port):
             return GetInt32Response(self.joy.buttons[msg.port])
         else:
             return GetInt32Response()
 
     def cbGetAxisValue(self, msg):
-        if self.joy.axes.has_key(msg.port):
+        if self.joy.axes.__contains__(msg.port):
             return GetInt32Response(self.joy.axes[msg.port])
         else:
             return GetInt32Response()

@@ -76,8 +76,11 @@ class LineDetectorNode(object):
     def detectLine(self,params):
         # start = time.time()
         # print(params)
-        color = params.color.decode('utf-8')
-        if not self.detector.colors.has_key(color):
+        if not isinstance(params.color, str):
+            color = params.color.decode('utf-8')
+        else:
+            color = params.color
+        if color not in self.detector.colors:
             return GetLineDetectionResponse()
         image_msg = self.image_msg
         if image_msg == None:
@@ -126,8 +129,12 @@ class LineDetectorNode(object):
         # return self.line_msg
     def cbSetColorThreshold(self,params):
         print(params)
+        if not isinstance(params.color, str):
+            color = params.color.decode('utf-8')
+        else:
+            color = params.color
         try:
-            self.detector.colors[params.color.decode('utf-8')] = [{"min":[params.low_h,params.low_s,params.low_v],
+            self.detector.colors[color] = [{"min": [params.low_h, params.low_s, params.low_v],
                                                     "max":[params.high_h,params.high_s,params.high_v]}]
             return SetColorThresholdResponse("设置成功")
         except Exception as e:
@@ -135,8 +142,12 @@ class LineDetectorNode(object):
             print(e)
             return SetColorThresholdResponse("设置失败,请检查参数")
     def cbGetColorThreshold(self,params):
+        if not isinstance(params.color, str):
+            color = params.color.decode('utf-8')
+        else:
+            color = params.color
         try:
-            threshold = self.detector.colors[params.color.decode('utf-8')]
+            threshold = self.detector.colors[color]
             return GetColorThresholdResponse(str(threshold))
         except Exception as e:
             print(self.node_name)

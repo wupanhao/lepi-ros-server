@@ -1,6 +1,6 @@
 #!coding:utf-8
 import cv2
-# from PIL import Image, ImageFont, ImageDraw
+from PIL import Image
 import numpy as np
 import os
 import time
@@ -49,7 +49,7 @@ class FaceRecognizer(object):
         # Resize frame of video to 1/self.scale size for faster face recognition processing
         small_frame = cv2.resize(frame, (0, 0), fx=1.0/scale, fy=1.0/scale)
         # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
-        rgb_small_frame = small_frame[:, :, ::-1]
+        rgb_small_frame = cv2.cvtColor(small_frame,cv2.COLOR_BGR2RGB)
         self.face_locations = face_recognition.face_locations(rgb_small_frame)
         self.face_data = self.getFaceData(0)
         return self.rect_faces(frame, self.face_locations)
@@ -73,12 +73,14 @@ class FaceRecognizer(object):
         face_encodings = face_recognition.face_encodings(
             rgb_small_frame, face_locations)
         face_names = []
-        known_face_encodings = self.known_faces.values()
-        known_face_names = self.known_faces.keys()
+        # python 3.9 默认生成dict_values 手动转成list进行比较
+        known_face_encodings = list(self.known_faces.values())
+        known_face_names = list(self.known_faces.keys())
         for face_encoding in face_encodings:
             name = "未知"
             if len(known_face_encodings) > 0:
                 # matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
+                # print(known_face_encodings, face_encoding)
                 face_distances = face_recognition.face_distance(
                     known_face_encodings, face_encoding)
                 best_match_index = np.argmin(face_distances)
@@ -234,7 +236,7 @@ class FaceRecognizer(object):
         Returns:
         无
         """
-        if self.known_faces.has_key(name):
+        if self.known_faces.__contains__(name):
             self.known_faces.pop(name)
         try:
             os.system('rm '+os.path.join(self.data_dir, name+".*"))

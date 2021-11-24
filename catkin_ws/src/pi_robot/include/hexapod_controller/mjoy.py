@@ -55,7 +55,7 @@ if __name__ == '__main__':
 	reader.daemon = True
 	reader.start()	
 	def setCarSpeed():
-		if joy.axes.has_key(1) and joy.axes.has_key(3):
+		if joy.axes.__contains__(1) and joy.axes.__contains__(3):
 			speed = joy.axes[1]/32767.0
 			steer = joy.axes[3]/32767.0
 			car.setWheelsSpeed(speed*100,-steer*90)	

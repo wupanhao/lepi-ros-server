@@ -201,7 +201,7 @@ class I2cDriver:
             if self.btn_handler(btn):
                 return
         print(btn)
-        if Button.has_key(btn):
+        if Button.__contains__(btn):
             print(Button[btn])
 
     def readSensorData(self, sensorType, byteLen=6):
@@ -314,7 +314,7 @@ class I2cDriver:
         power = self.bus.read_i2c_block_data(self.m031_addr, ReadBatOcv, 4)
         # print(power[0])
         n_power = 0
-        if PowerMap.has_key(power[0]):
+        if PowerMap.__contains__(power[0]):
             n_power = PowerMap[power[0]]
         # print("剩余电量: "+str(n_power))
         charging = power[1] & 0xF0

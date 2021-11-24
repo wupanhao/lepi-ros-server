@@ -1,6 +1,6 @@
 import numpy as np
-from HardwareConfig import MICROS_PER_RAD, NEUTRAL_ANGLE_DEGREES, PS4_COLOR, PS4_DEACTIVATED_COLOR
 from enum import Enum
+from .HardwareConfig import MICROS_PER_RAD, NEUTRAL_ANGLE_DEGREES, PS4_COLOR, PS4_DEACTIVATED_COLOR
 
 # TODO: put these somewhere else
 

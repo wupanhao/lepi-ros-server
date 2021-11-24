@@ -109,19 +109,19 @@ class Lepi(object):
 		LP_SPI.xfer2(outArray)
 	@classmethod
 	def motor_enable(self,port):
-		if self.Motors.has_key(port):
+		if self.Motors.__contains__(port):
 			self.spi_write_32(Message.SetMortorEnable(port),1)
 		else:
 			print('wrong motor number')
 	@classmethod
 	def motor_disable(self,port):
-		if self.Motors.has_key(port):
+		if self.Motors.__contains__(port):
 			self.spi_write_32(Message.SetMortorEnable(port),0)
 		else:
 			print('wrong motor number')
 	@classmethod
 	def motor_set_speed(self,port,speed):
-		if self.Motors.has_key(port):
+		if self.Motors.__contains__(port):
 			self.spi_write_32(Message.SetMortorSpeed(port),speed)
 		else:
 			print('wrong motor number')

@@ -93,7 +93,7 @@ class PiDriverNode:
         rospy.loginfo("[%s] Initialized......" % (self.node_name))
 
     def pubButton(self, btn):
-        if ButtonMap.has_key(btn):
+        if ButtonMap.__contains__(btn):
             e = ButtonEvent()
             e.value = ButtonMap[btn]
             if 0x81 <= btn and btn <= 0x89:

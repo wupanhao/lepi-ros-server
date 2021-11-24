@@ -1,1 +1,1 @@
-from line_detector import *
+from .line_detector import *
