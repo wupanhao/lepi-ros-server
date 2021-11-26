@@ -1,3 +1,4 @@
+#!coding:utf-8
 import numpy as np
 import time
 from src.IMU import IMU
@@ -9,7 +10,17 @@ from pupper.Config import Configuration
 from pupper.Kinematics import four_legs_inverse_kinematics
 from dances import bainian
 
-import math
+import signal
+
+# 自定义信号处理函数
+def my_handler(signum, frame):
+    print("进程终止")
+    exit()
+
+# 设置相应信号处理的handler
+signal.signal(signal.SIGINT, my_handler)
+signal.signal(signal.SIGTERM, my_handler)
+
 # Create config
 config = Configuration()
 
@@ -81,7 +92,7 @@ def main(use_imu=False):
             if command.bainian_event == 1:
                 command.bainian_event = 0
                 for angles in bainian:
-                    joint_angles = toConfig(angles)/180.0*math.pi
+                    joint_angles = toConfig(angles)/180.0*np.pi
                     hardware_interface.set_actuator_postions(
                         joint_angles)
                     time.sleep(0.5)
@@ -99,7 +110,7 @@ def main(use_imu=False):
             angles = []
             for leg in state.joint_angles:
                 for i in leg:
-                    angles.append(int(i/math.pi*180))
+                    angles.append(int(i/np.pi*180))
             # print(angles)
             # print(angles, state.joint_angles)
             print(hardware_interface.set_actuator_postions(state.joint_angles))

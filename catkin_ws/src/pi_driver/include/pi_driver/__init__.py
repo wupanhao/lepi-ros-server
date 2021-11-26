@@ -12,6 +12,7 @@ except Exception as e:
     print(e)
 
 from .button_subscriber import *
+from .button_subscriber2 import *
 from .joystick import *
 import sys
 sys.path.append('.')

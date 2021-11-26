@@ -70,6 +70,8 @@ class LepiDriver:
             pass
         self.srv_sensor_get_value = rospy.ServiceProxy(
             '/ubiquityrobot/pi_driver_node/sensor_get_value', GetInt32)
+        self.srv_motor_get_position = rospy.ServiceProxy(
+            '/ubiquityrobot/pi_driver_node/motor_get_position', GetInt32)
         self.d51_driver = D51Driver()
         self.i2c_driver = I2cDriver()
 
@@ -91,10 +93,14 @@ class LepiDriver:
         self.d51_driver.motor_set_speed(port, value)
 
     def motor_get_position(self, port):
-        return self.d51_driver.motor_get_position(port)
+        resp = self.srv_motor_get_position(GetInt32Request(port))
+        return resp.value
 
     def motor_set_position(self, port, value):
         self.d51_driver.motor_set_position(port, value)
+
+    def motor_set_point(self, port, value):
+        self.d51_driver.motor_set_point(port, value)
 
     def servo_set_position(self, port, value):
         # self.d51_driver.servo_set_position(port, value)
@@ -128,6 +134,9 @@ class LepiDriver:
         resp = self.srv_sensor_get_value(GetInt32Request(port))
         return resp.value
         # return self.d51_driver.sensor_get_value(port)
+
+    def sensor_set_mode(self, port, value):
+        self.d51_driver.sensor_set_mode(port, value)
 
     def estimatePose(self):
         return self.i2c_driver.estimatePose()

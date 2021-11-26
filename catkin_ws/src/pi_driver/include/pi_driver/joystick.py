@@ -3,6 +3,9 @@ import struct
 import time
 # import thread
 import threading
+# import signal
+
+
 BUTTON = 129
 AXIS = 130
 
@@ -30,8 +33,17 @@ class MyJoy(object):
         self.infile_path = "/dev/input/js0"
         # thread.start_new_thread(self.start_open_loop, ())
         reader = threading.Thread(target=self.start_open_loop)
-        # reader.daemon = True
+        reader.daemon = True
         reader.start()
+        # 设置相应信号处理的handler
+        # signal.signal(signal.SIGINT, self.my_handler)
+        # signal.signal(signal.SIGTERM, self.my_handler)
+
+    # 自定义信号处理函数
+    def my_handler(self, signum, frame):
+        self.active = False
+        print("进程终止")
+        # exit()
 
     def start_listen_loop(self):
         """
@@ -40,7 +52,7 @@ class MyJoy(object):
         EVENT_SIZE = struct.calcsize("LhBB")
         file = open(self.infile_path, "rb")
         event = file.read(EVENT_SIZE)
-        while event:
+        while self.active and event:
             # print(struct.unpack("LhBB", event))
             (tv_msec,  value, event_type,
                 number) = struct.unpack("LhBB", event)

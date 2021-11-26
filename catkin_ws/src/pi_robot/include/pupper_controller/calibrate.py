@@ -8,8 +8,6 @@ import time
 from flask import Flask, jsonify, request, json
 from flask_cors import CORS
 import numpy as np
-import math
-
 import os
 import sys
 import tty
@@ -134,7 +132,7 @@ def set_actuator_postions():
     stand = [0, 0, 0, 0, 45, 45, 45, 45, -45, -45, -45, -45]
     #stand = [-12, 12, -12, 12, 61, 61, 61, 61, -70, -70, -70, -70]
     rad = np.array(stand).reshape((3, 4))
-    rad = rad/180.0*math.pi
+    rad = rad/180.0*np.pi
     # print(rad)
     hardware_interface.servo_params.neutral_angle_degrees = np.array(
         toConfig(calibrations))

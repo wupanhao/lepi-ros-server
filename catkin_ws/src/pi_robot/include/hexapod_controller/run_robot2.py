@@ -1,3 +1,4 @@
+#!coding:utf-8
 import numpy as np
 import time
 # from src.IMU import IMU
@@ -9,6 +10,17 @@ from kinematics import Solver
 from controller import Controller
 from config import Configuration, State
 
+import signal
+
+# 自定义信号处理函数
+def my_handler(signum, frame):
+    print("进程终止")
+    exit()
+
+
+# 设置相应信号处理的handler
+signal.signal(signal.SIGINT, my_handler)
+signal.signal(signal.SIGTERM, my_handler)
 
 def main(use_imu=False):
     """Main program

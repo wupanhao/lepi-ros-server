@@ -9,8 +9,6 @@ import time
 from flask import Flask, jsonify, request, json
 from flask_cors import CORS
 import numpy as np
-import math
-
 import os
 import sys
 import tty
@@ -265,7 +263,7 @@ def main(use_imu=False):
             angles = []
             for leg in state.joint_angles:
                 for i in leg:
-                    angles.append(int(i/math.pi*180))
+                    angles.append(int(i/np.pi*180))
             # print(angles)
             # print(angles, state.joint_angles)
             print(hardware_interface.set_actuator_postions(state.joint_angles))
