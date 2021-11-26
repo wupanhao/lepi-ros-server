@@ -36,6 +36,8 @@ class UsbCamera(object):
                 self.active = False
                 time.sleep(0.5)
             self._reader = threading.Thread(target=self.continuous_capture)
+            if hasattr(self._reader,'is_alive'):
+                self._reader.isAlive = self._reader.is_alive
             if self.cap is not None:
                 self.cap.release()
                 self.cap = None

@@ -98,17 +98,18 @@ class D51Driver(object):
                                   stopbits=serial.STOPBITS_ONE, dsrdtr=False)
         self.active = True
         self.onSensorChange = onSensorChange
+        self.frame_count = 0
+        self.motor = {}
+        self.sensor = {}
+        self.debug_mode = debug_mode
         if onSensorChange is not None:
             threading._start_new_thread(self.start_listen_loop2, ())
-        self.debug_mode = debug_mode
         self.system = System()
         self._system_get_version()
         self._system_get_power()
         self._system_get_charge()
         self.system_get_power_meas()
-        self.motor = {}
-        self.sensor = {}
-        self.frame_count = 0
+
         # 1-5 for sensor data 6-10 for motor position
         self.value_updated = {
             1: False,
@@ -156,7 +157,7 @@ class D51Driver(object):
             response = self.port.readline()
         array = []
         for i in response:
-            array.append(ord(i))
+            array.append(ord(i) if isinstance(i,str) else i)
         return array[0] if len(array) == 1 else array
 
     def write_32(self, id, value):

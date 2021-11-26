@@ -274,7 +274,7 @@ class Lepi(object):
         Keyword arguments:
         port -- 端口号
         """
-        if self.Motors.has_key(port):
+        if self.Motors.__contains__(port):
             return self.spi_read_32(Message.GetMotorType(self.Motors[port]))
         return ERROR_PORT
 
@@ -287,14 +287,14 @@ class Lepi(object):
         port -- 端口号
         value -- 0代表电机 1代表舵机
         """
-        if self.Motors.has_key(port):
+        if self.Motors.__contains__(port):
             # print(port,value)
             return self.spi_write_32(Message.SetMotorType(self.Motors[port]), value)
         return ERROR_PORT
 
     @classmethod
     def motor_get_state(self, port):
-        if self.Motors.has_key(port):
+        if self.Motors.__contains__(port):
             return self.spi_read_32(Message.GetMotorState(self.Motors[port]))
         return ERROR_PORT
 
@@ -307,19 +307,19 @@ class Lepi(object):
         port -- 端口号
         value -- 电机状态
         """
-        if self.Motors.has_key(port):
+        if self.Motors.__contains__(port):
             return self.spi_write_32(Message.SetMotorState(self.Motors[port]), value)
         return ERROR_PORT
 
     @classmethod
     def motor_set_enable(self, port, value):
-        if self.Motors.has_key(port):
+        if self.Motors.__contains__(port):
             return self.spi_write_32(Message.SetMortorEnable(self.Motors[port]), value)
         return ERROR_PORT
 
     @classmethod
     def motor_get_enable(self, port):
-        if self.Motors.has_key(port):
+        if self.Motors.__contains__(port):
             return self.spi_read_32(Message.GetMotorEnable(self.Motors[port]))
         return ERROR_PORT
 
@@ -332,27 +332,27 @@ class Lepi(object):
         port -- 端口号
         speed -- 速度 -100 到 100
         """
-        if self.Motors.has_key(port):
+        if self.Motors.__contains__(port):
             self.spi_write_32(Message.SetMortorSpeed(
                 self.Motors[port]), int(speed*655.35))
         return ERROR_PORT
 
     @classmethod
     def motor_set_pulse(self, port, speed):
-        if self.Motors.has_key(port):
+        if self.Motors.__contains__(port):
             self.spi_write_32(Message.SetMortorSpeed(
                 self.Motors[port]), speed)
         return ERROR_PORT
 
     @classmethod
     def motor_get_current_position(self, port):
-        if self.Motors.has_key(port):
+        if self.Motors.__contains__(port):
             return self.spi_read_32(Message.GetCurrentPosition(self.Motors[port]))
         return ERROR_PORT
 
     @classmethod
     def motor_set_current_position(self, port, position):
-        if self.Motors.has_key(port):
+        if self.Motors.__contains__(port):
             return self.spi_write_32(Message.SetCurrentPosition(
                 self.Motors[port]), position)
         elif port == 0:
@@ -370,75 +370,75 @@ class Lepi(object):
 
     @classmethod
     def motor_set_target_position(self, port, position):
-        if self.Motors.has_key(port):
+        if self.Motors.__contains__(port):
             return self.spi_write_32(Message.SetTargetPosition(
                 self.Motors[port]), position)
         return ERROR_PORT
 
     @classmethod
     def motor_get_target_position(self, port):
-        if self.Motors.has_key(port):
+        if self.Motors.__contains__(port):
             self.spi_read_32(Message.GetTargetPosition(self.Motors[port]))
         return ERROR_PORT
 
     @classmethod
     def motor_get_speed(self, port):
-        if self.Motors.has_key(port):
+        if self.Motors.__contains__(port):
             return int(self.spi_read_32(Message.GetMotorSpeed(self.Motors[port]))/655.35)
         return ERROR_PORT
 
     @classmethod
     def motor_get_pulse(self, port):
-        if self.Motors.has_key(port):
+        if self.Motors.__contains__(port):
             return int(self.spi_read_32(Message.GetMotorSpeed(self.Motors[port])))
         return ERROR_PORT
 
     @classmethod
     def motor_get_info(self, port):
-        if self.Motors.has_key(port):
+        if self.Motors.__contains__(port):
             return (port, self.motor_get_type(port), self.motor_get_pulse(port), self.motor_get_current_position(port))
         return ERROR_PORT
 
     @classmethod
     def motor_set_info(self, port, enable, speed):
-        if self.Motors.has_key(port):
+        if self.Motors.__contains__(port):
             self.motor_set_type(port, enable)
             self.motor_set_speed(port, speed)
         return ERROR_PORT
 
     @classmethod
     def sensor_get_type(self, port):
-        if self.Sensors.has_key(port):
+        if self.Sensors.__contains__(port):
             return self.spi_read_32(Message.GetSensorType(self.Sensors[port]))
         return ERROR_PORT
 
     @classmethod
     def sensor_get_mode(self, port):
-        if self.Sensors.has_key(port):
+        if self.Sensors.__contains__(port):
             return self.spi_read_32(Message.GetSensorMode(self.Sensors[port]))
         return ERROR_PORT
 
     @classmethod
     def sensor_set_mode(self, port, value):
-        if self.Sensors.has_key(port):
+        if self.Sensors.__contains__(port):
             return self.spi_write_32(Message.SetSensorMode(self.Sensors[port]), value)
         return ERROR_PORT
 
     @classmethod
     def sensor_get_value(self, port):
-        if self.Sensors.has_key(port):
+        if self.Sensors.__contains__(port):
             return self.spi_read_32(Message.GetSensorValue(self.Sensors[port]))
         return ERROR_PORT
 
     @classmethod
     def sensor_set_value(self, port, value):
-        if self.Sensors.has_key(port):
+        if self.Sensors.__contains__(port):
             return self.spi_write_32(Message.SetSensorValue(self.Sensors[port]), value)
         return ERROR_PORT
 
     @classmethod
     def sensor_get_info(self, port):
-        if self.Sensors.has_key(port):
+        if self.Sensors.__contains__(port):
             return (port, self.sensor_get_type(port), self.sensor_get_mode(port), self.sensor_get_value(port))
         return ERROR_PORT
 
@@ -458,7 +458,7 @@ class Lepi(object):
         angle -- 角度 -90 到 90
         """
         # [0,180] => [-1550,-7450]
-        if self.Motors.has_key(port) and abs(angle) <= 90:
+        if self.Motors.__contains__(port) and abs(angle) <= 90:
             self.spi_write_32(Message.SetMortorSpeed(
                 self.Motors[port]), int(4500+angle*32))
         return ERROR_PORT

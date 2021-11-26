@@ -1,6 +1,6 @@
 # import pigpio
 import serial.tools.list_ports
-from Config import ServoParams, PWMParams
+from .Config import ServoParams, PWMParams
 
 #!coding:utf-8
 import serial

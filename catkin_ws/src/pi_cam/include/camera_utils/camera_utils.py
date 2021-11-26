@@ -80,9 +80,11 @@ def putText(frame, text, pos, color, font=defaultFont):
     Returns:
     cv_img: image 叠加了文本的新图片(不改变原图)
     """
+    if not isinstance(text, str):
+        text = text.decode('utf-8')
     pil_image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
     draw = ImageDraw.Draw(pil_image)
-    draw.text(pos, text.decode('utf-8'), font=font, fill=color)
+    draw.text(pos, text, font=font, fill=color)
     cv_img = cv2.cvtColor(np.asarray(pil_image), cv2.COLOR_RGB2BGR)
     return cv_img
 
