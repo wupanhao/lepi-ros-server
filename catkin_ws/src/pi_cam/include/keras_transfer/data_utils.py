@@ -8,10 +8,6 @@ from tensorflow.keras.preprocessing.image import load_img, img_to_array
 import tensorflow.keras.backend as K
 import cv2
 
-import sys  # 引用sys模块进来，并不是进行sys的第一次加载
-reload(sys)  # 重新加载sys
-sys.setdefaultencoding('utf8')  # 调用setdefaultencoding函数
-
 
 def get_labels(data_dir):
     """

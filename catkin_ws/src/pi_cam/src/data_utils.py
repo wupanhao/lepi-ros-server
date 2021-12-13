@@ -6,11 +6,9 @@ import pickle
 # from tensorflow.keras.applications.vgg16 import preprocess_input
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
 import tensorflow.keras.backend as K
+from tensorflow.keras.utils import to_categorical
 import cv2
 
-import sys   #引用sys模块进来，并不是进行sys的第一次加载  
-reload(sys)  #重新加载sys  
-sys.setdefaultencoding('utf8')  ##调用setdefaultencoding函数
 
 def get_labels(data_dir):
     labels = []
@@ -78,9 +76,8 @@ def load_label_name():
         dirs = np.array(pickle.load(f))
     return dirs
 def prepress_labels(labels):
-    from keras.utils import np_utils
     # one-hot编码 把类别id转换为表示当前类别的向量，比如0 1 2 =》 [[1 0 0] [0 1 0] [0 0 1]]
-    labels = np_utils.to_categorical(labels) 
+    labels = to_categorical(labels) 
     return labels
 
 if __name__ == '__main__':
