@@ -29,7 +29,11 @@ class MyJoy(object):
         self.active = True
         self.callback = callback
         self.axes = {}
+        for i in range(8):
+            self.axes[i] = 0
         self.buttons = {}
+        for i in range(17):
+            self.buttons[i] = 0
         self.infile_path = "/dev/input/js0"
         # thread.start_new_thread(self.start_open_loop, ())
         reader = threading.Thread(target=self.start_open_loop)

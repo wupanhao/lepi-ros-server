@@ -2,10 +2,8 @@
 import tensorflow as tf
 from tensorflow import keras
 import os
-import h5py
 from data_utils import get_labels, prepress_labels, load_img_from_dir
 from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing.image import load_img, img_to_array
 import tensorflow.python.keras.backend as K
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.models import Model
@@ -13,7 +11,6 @@ from tensorflow.keras.layers import GlobalAveragePooling2D, Dense
 from tensorflow.keras.optimizers import SGD
 import cv2
 import numpy as np
-import pickle
 
 class AccuracyLogger(keras.callbacks.Callback):
     """

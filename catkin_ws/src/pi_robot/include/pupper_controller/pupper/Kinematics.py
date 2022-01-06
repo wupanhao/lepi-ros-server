@@ -112,7 +112,9 @@ def four_legs_inverse_kinematics(r_body_foot, config):
     """
     alpha = np.zeros((3, 4))
     for i in range(4):
+        # 腿和身体连接点相对于身体中心的偏差
         body_offset = config.LEG_ORIGINS[:, i]
+        # 计算每只脚相对于连接点的相对坐标
         alpha[:, i] = leg_explicit_inverse_kinematics(
             r_body_foot[:, i] - body_offset, i, config
         )

@@ -53,7 +53,7 @@ def load_camera_info_3(cali_file="default.yaml"):
     cali_file = os.path.expanduser(
         '~')+"/Lepi_Data/ros/camera/calibrations/" + cali_file
     with open(cali_file, 'r') as stream:
-        calib_data = yaml.load(stream)
+        calib_data = yaml.safe_load(stream)
         cam_info = CameraInfo()
         cam_info.width = calib_data['image_width']
         cam_info.height = calib_data['image_height']
@@ -74,13 +74,13 @@ def putText(frame, text, pos, color, font=defaultFont):
     将文本显示在图片上
     Keyword arguments:
     frame: image 原图
-    text：str 想要显示的文本
-    pos：(x,y) 指定显示的初始坐标(左上角顶点)
+    text: str 想要显示的文本
+    pos: (x,y) 指定显示的初始坐标(左上角顶点)
     color: [r,g,b] 指定文本颜色的r、g、b值
     Returns:
     cv_img: image 叠加了文本的新图片(不改变原图)
     """
-    if not isinstance(text, str):
+    if hasattr(text, 'decode'):
         text = text.decode('utf-8')
     pil_image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
     draw = ImageDraw.Draw(pil_image)

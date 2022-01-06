@@ -51,6 +51,8 @@ class PiDriverNode:
         self.frame_count = 0
         self.watch_dog = 0
         self.fan_pin = 14  # 定义pwm输出引脚
+        self.high_temp = 70  # 定义pwm输出引脚
+        self.low_temp = 65  # 定义pwm输出引脚
         GPIO.setmode(GPIO.BCM)  # 定义树莓派gpio引脚以BCM方式编号
         GPIO.setup(self.fan_pin, GPIO.OUT)  # 使能gpio口为输出
         # self.pwm = GPIO.PWM(pwm_pin,25000)   #定义pwm输出频率
@@ -111,6 +113,7 @@ class PiDriverNode:
         rospy.Service('~system_get_vout2', SensorGet3Axes,
                       self.srvSystemGetVout2)
         rospy.Service('~system_set_led', SetInt32, self.srvSystemSetLed)
+        rospy.Service('~system_set_fan_temp', SetInt32, self.srvSystemSetFanTemp)
         # rospy.Service('~input_string', SetString, self.srvInputString)
         # rospy.Service('~input_char', SetInt32, self.srvInputChar)
         # rospy.Service('~mouse_click', SetString, self.cbMouseClick)
@@ -158,10 +161,10 @@ class PiDriverNode:
                 self.watch_dog = 0
                 os.system('sudo killall electron ; sleep 2 ; bash /home/pi/start.sh')
         temp = vcgencmd.measure_temp()
-        if temp > 70:
+        if temp > self.high_temp:
             GPIO.output(self.fan_pin, 1)
             # self.pwm.start(100)
-        elif temp < 65:
+        elif temp < self.low_temp:
             GPIO.output(self.fan_pin, 0)
             # self.pwm.start(0)
 
@@ -521,7 +524,10 @@ class PiDriverNode:
             self.pub_nine_axis_value_change.publish(msg)
             time.sleep(1.0/self.nine_axis_update_frequence)
 
-
+    def srvSystemSetFanTemp(self,params):
+        self.low_temp = params.port
+        self.high_temp = params.value
+        return SetInt32Response(params.port, params.value)
 if __name__ == '__main__':
     rospy.init_node('pi_driver_node', anonymous=False)
     node = PiDriverNode()
