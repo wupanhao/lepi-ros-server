@@ -12,10 +12,13 @@
   <arg name="line_detector_node" default="False" />
   <arg name="text_recognizer_node" default="False" />
   <arg name="image_processor_node" default="False" />
-  
+
   <arg name="image_classifier_node" default="False" />
   <arg name="object_detector_node" default="False" />
   <arg name="smart_audio_node" default="False" />
+  <arg name="hand_detector_node" default="False" />
+  <arg name="pose_estimator_node" default="False" />
+
 
   <arg name="hexapod_driver_node" default="False" />
   <arg name="pupper_driver_node" default="False" />
@@ -37,6 +40,9 @@
   <include file="$(find pi_ai)/launch/image_classifier_node.launch" if="$(arg image_classifier_node)"/>
   <include file="$(find pi_ai)/launch/object_detector_node.launch" if="$(arg object_detector_node)"/>
   <include file="$(find pi_ai)/launch/smart_audio_node.launch" if="$(arg smart_audio_node)"/>
+  <include file="$(find pi_ai)/launch/hand_detector_node.launch" if="$(arg hand_detector_node)"/>
+  <include file="$(find pi_ai)/launch/pose_estimator_node.launch" if="$(arg pose_estimator_node)"/>
+
 
   <include file="$(find pi_robot)/launch/hexapod_driver_node.launch" if="$(arg hexapod_driver_node)"/>
   <include file="$(find pi_robot)/launch/pupper_driver_node.launch" if="$(arg pupper_driver_node)"/>

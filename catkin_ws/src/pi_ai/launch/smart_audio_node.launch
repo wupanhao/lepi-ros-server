@@ -1,7 +1,7 @@
 <launch>
-	<arg name="node_name" default="smart_audio_node"/>
-	<group  ns="/ubiquityrobot">
-		<node name="$(arg node_name)" pkg="pi_ai" type="$(arg node_name).py" output="screen" >
-		</node>
-	</group>
+    <arg name="node_name" default="smart_audio_node"/>
+    <group  ns="/ubiquityrobot">
+        <node name="$(arg node_name)" pkg="pi_ai" type="$(arg node_name).py" output="screen" >
+        </node>
+    </group>
 </launch>

@@ -36,6 +36,7 @@ class EEPROM(object):
     MIN_POSITION_L = 0x0a
     MAX_POSITION_H = 0x0b
     MAX_POSITION_L = 0x0c
+    OFFSET = 0x1f
     TARGET_POSITION_H = 0x2a
     TARGET_POSITION_L = 0x2b
     SPEED_H = 0x2e
@@ -279,6 +280,36 @@ class SServo(object):
                 self.set_position(i, 1023/2, ms=500)
         print("\n扫描结束")
         return servos
+
+    def set_offset(self, id, value):
+        if value < 0:
+            value = abs(value) | 0x0800
+        # print(self.read_u8(1, EEPROM.LOCK))
+        self.write_u8(id, EEPROM.LOCK, 0)
+        time.sleep(0.1)
+        self.write_u16(id, EEPROM.OFFSET, value)
+        time.sleep(0.1)
+        self.write_u8(id, EEPROM.LOCK, 1)
+        time.sleep(0.2)
+        return self.read_u16(id, EEPROM.OFFSET)
+
+    def get_offset(self, id):
+        value = self.read_u16(id, EEPROM.OFFSET)
+        if value & 0x0800 == 0x0800:
+            value = - (value - 0x0800)
+        return value
+
+    def toggle_force(self, id):
+        data = [header[0], header[1], id, 0x02, 0x88, 0]
+        data[-1] = chk_sum(data)
+        # print('transfer:', ''.join(format(x, '02x') for x in data))
+        self.send_hex(data)
+
+    def toggle_movable(self, id):
+        data = [header[0], header[1], id, 0x02, 0x89, 0]
+        data[-1] = chk_sum(data)
+        # print('transfer:', ''.join(format(x, '02x') for x in data))
+        self.send_hex(data)
 
 
 if __name__ == '__main__':
