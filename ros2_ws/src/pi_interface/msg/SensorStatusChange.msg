@@ -1,0 +1,3 @@
+int32 port
+int32 id
+int32 status

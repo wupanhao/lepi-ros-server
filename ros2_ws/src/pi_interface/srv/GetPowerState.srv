@@ -1,0 +1,5 @@
+---
+#(charging,bat_power_ocv,n_power,est_power)
+int32  charging
+float64 bat_power_ocv
+int32 est_power

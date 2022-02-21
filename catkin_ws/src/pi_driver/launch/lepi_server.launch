@@ -34,7 +34,7 @@
   <include file="$(find pi_cam)/launch/face_recognizer_node.launch" if="$(arg face_recognizer_node)"/>
   <include file="$(find pi_cam)/launch/ultra_face_inference_node.launch" if="$(arg ultra_face_inference_node)"/>
   <include file="$(find pi_cam)/launch/line_detector_node.launch" if="$(arg line_detector_node)"/>
-  <include file="$(find pi_cam)/launch/text_recognizer_node.launch" if="$(arg text_recognizer_node)"/>
+  <include file="$(find pi_ai)/launch/text_recognizer_node.launch" if="$(arg text_recognizer_node)"/>
   <include file="$(find pi_cam)/launch/image_processor_node.launch" if="$(arg image_processor_node)"/>
 
   <include file="$(find pi_ai)/launch/image_classifier_node.launch" if="$(arg image_classifier_node)"/>
