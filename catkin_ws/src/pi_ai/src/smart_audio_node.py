@@ -1,122 +1,58 @@
 #!/usr/bin/python3
 #!coding:utf-8
 import os
-import threading
-import re
-import sys
-import time
 import rospy
-from pi_driver.srv import SetString, SetStringResponse
-from pi_driver.srv import GetCommandDetection, GetCommandDetectionResponse
-from std_msgs.msg import String
+import paddlehub as hub
+from pathlib import Path
+from pi_driver.srv import GetString, GetStringResponse
 
 root_dir = os.path.expanduser(
     '~')+'/Lepi_Data/ros/smart_audio_node'
-sys.path.append(root_dir)
-if True:
-    import snowboydecoder
 
 
 class SmartAudioNode(object):
     def __init__(self):
         self.node_name = rospy.get_name()
         rospy.loginfo("[%s] Initializing......" % (self.node_name))
-        self.bin_dir = root_dir
-        # self.pub_detections = rospy.Publisher("~image_text", CompressedImage, queue_size=1)
-        self.hotwordDetect = False
-
-        keyword_model = self.bin_dir+'/resources/models/snowboy.umdl'
-        self.detector = snowboydecoder.HotwordDetector(
-            keyword_model, sensitivity=0.5)
-        self.pubHotwordDetect = rospy.Publisher(
-            '~hotword_detect', String, queue_size=1)
-        rospy.Service('~tts_offline', SetString, self.cbTTSOffline)
-        rospy.Service('~toggle_hotword_detect', SetString,
-                      self.cbToggleHotwordDetect)
-        rospy.Service('~detect_command', GetCommandDetection,
+        self.asr_model = hub.Module(
+            name='u2_conformer_aishell',
+            version='1.0.0')
+        self.tts_model = hub.Module(
+            name='fastspeech2_baker',
+            version='1.0.0')
+        self.tts_model.output_dir = Path(root_dir)
+        rospy.Service('~tts_offline', GetString, self.cbTTSOffline)
+        rospy.Service('~detect_command', GetString,
                       self.cbDetectCommand)
-
-
-        reader = threading.Thread(target=self.startHotwordDetect)
-        # reader.daemon = True
-        reader.start()
-
         rospy.loginfo("[%s] Initialized." % (self.node_name))
 
     def cbTTSOffline(self, params):
         data = params.data
         try:
-            cmd = 'bash -c "cd %s && LD_LIBRARY_PATH=./  ./tts_offline %s && aplay ./tts_sample.wav"' % (
-                self.bin_dir, data)
-            print(cmd)
+            self.tts_model.generate([data])
+            cmd = 'aplay %s' % os.path.join(root_dir, '1.wav')
             os.system(cmd)
         except Exception as e:
             print(e)
-        return SetStringResponse(data)
+        return GetStringResponse(data)
 
     def cbDetectCommand(self, params):
         print(params)
-        data = params.data
         try:
-            cmd = 'bash -c "cd %s && LD_LIBRARY_PATH=./  ./asr_offline %s "' % (
-                self.bin_dir, data)
-            if self.detector._running:
-                self.detector.terminate()
-            p = os.popen(cmd)
-            res = p.read()
-            result = re.findall(
-                r"Result: \[ confidence=(\d+) grammar=(\d+) input=(.+) \]", res, re.S)
-            print(cmd, res, result)
-            if len(result) == 1 and len(result[0]) == 3:
-                result = result[0]
-                return GetCommandDetectionResponse(int(result[0]), int(result[1]), result[2])
+            length = int(params.data)
+            if length > 0 and length < 20:
+                pass
+            else:
+                length = 5
+            file = os.path.join(root_dir, 'record.wav')
+            os.system(
+                'arecord -r 16000 -f S16_LE  -d %d %s' % (length,file))
+            text = self.asr_model.speech_recognize(file)
+            print(text)
+            return GetStringResponse(text)
         except Exception as e:
             print(e)
-        return GetCommandDetectionResponse(0, 0, '')
-
-    def cbToggleHotwordDetect(self, params):
-        if params.data == 'open':
-            if self.detector._running:
-                return SetStringResponse('正在运行')
-            else:
-                self.hotwordDetect = True
-                while not self.detector._running:
-                    time.sleep(0.03)
-                return SetStringResponse('已启动')
-
-        elif params.data == 'close':
-            if self.detector._running:
-                # self.detector.terminate()
-                self.hotwordDetect = False
-                while self.detector._running:
-                    time.sleep(0.03)
-                return SetStringResponse('已停止')
-            else:
-                return SetStringResponse('没有运行')
-        else:
-            print(params.data)
-            return SetStringResponse(params.data)
-
-    def startHotwordDetect(self):
-        while True:
-            if self.hotwordDetect:
-                print('starting')
-                self.detector.start(
-                    detected_callback=self.cbPublishHotwordDetect, interrupt_check=self.interrupt_check, sleep_time=0.03)
-            else:
-                if self.detector._running:
-                    self.detector.terminate()
-                    print('terminated')
-            time.sleep(0.1)
-
-    def interrupt_check(self):
-        return self.hotwordDetect == False
-
-    def cbPublishHotwordDetect(self, params=None):
-        # self.detector.terminate()
-        print('hotword detected')
-        self.pubHotwordDetect.publish(String('hotword detected'))
-        # self.startHotwordDetect()
+        return GetStringResponse('')
 
     def onShutdown(self):
         self.hotwordDetect = False

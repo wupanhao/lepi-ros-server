@@ -13,7 +13,7 @@ except Exception as e:
 
 from .button_subscriber import *
 from .button_subscriber2 import *
-from .joystick import *
+from .joystick2 import MyJoy
 import sys
 sys.path.append('.')
 from . import vcgencmd

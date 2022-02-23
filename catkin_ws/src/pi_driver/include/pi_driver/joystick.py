@@ -18,7 +18,7 @@ class MyJoy(object):
     MyJoy 类, joystick 手柄驱动
     Attributes:
     active: bool 活动状态
-    callback: function 回调函数，每当有新按键数据自动调用
+    callback: function 回调函数,每当有新按键数据自动调用
     axes: dict 坐标轴状态
     buttons: dict 按键状态
     infile_path: str 设备文件路径

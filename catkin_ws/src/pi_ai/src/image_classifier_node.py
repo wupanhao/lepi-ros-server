@@ -3,7 +3,7 @@
 import cv2
 from cv_bridge import CvBridge
 import rospy
-from sensor_msgs.msg import Image,CompressedImage
+from sensor_msgs.msg import CompressedImage
 from camera_utils import bgr_from_jpg,jpg_from_bgr
 # from sensor_msgs.srv import SetCameraInfo, SetCameraInfoResponse
 import numpy as np

@@ -10,7 +10,6 @@ from sensor_msgs.msg import Image, CompressedImage, CameraInfo
 from sensor_msgs.srv import SetCameraInfo, SetCameraInfoResponse
 
 # from camera_utils import load_camera_info_3
-from camera_utils import ImageRector
 
 from pi_driver.srv import SetInt32, SetInt32Response
 from pi_driver.srv import GetStrings, GetStringsResponse, SetString, SetStringResponse
@@ -22,7 +21,6 @@ import os
 import cv2
 import numpy as np
 import time
-import threading
 
 
 class CameraNode(object):
@@ -141,10 +139,10 @@ class CameraNode(object):
         if self.pub_image is not None:
             image_msg = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
             self.pub_image.publish(image_msg)
-        # image_msg = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
-        # image_msg.header.stamp = rospy.Time.now()
-        # image_msg.header.frame_id = self.frame_id
-        # self.image_msg = image_msg
+        image_msg = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
+        image_msg.header.stamp = rospy.Time.now()
+        image_msg.header.frame_id = self.frame_id
+        self.image_msg = image_msg
         # self.pub_raw.publish(image_msg)
 
         msg = CompressedImage()
