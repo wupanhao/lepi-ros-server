@@ -8,7 +8,7 @@ import rospy
 import yaml
 from sensor_msgs.msg import Image, CompressedImage, CameraInfo
 from sensor_msgs.srv import SetCameraInfo, SetCameraInfoResponse
-
+from multiprocessing import shared_memory
 # from camera_utils import load_camera_info_3
 
 from pi_driver.srv import SetInt32, SetInt32Response
@@ -16,7 +16,7 @@ from pi_driver.srv import GetStrings, GetStringsResponse, SetString, SetStringRe
 from pi_cam.srv import GetFrame, GetFrameResponse, GetCompressedFrame, GetCompressedFrameResponse
 # from std_msgs.msg import Empty
 
-from camera_utils import UsbCamera
+from camera_utils import UsbCamera,toImageMsg, toImage
 import os
 import cv2
 import numpy as np
@@ -34,21 +34,20 @@ class CameraNode(object):
         # self.size = (480,360)
         self.bridge = CvBridge()
         self.frame_id = rospy.get_namespace().strip('/') + "/camera_optical_frame"
-        self.camera = UsbCamera(rate=self.rate, callback=self.cbImg)
+        self.getShm()
+        self.camera = UsbCamera(
+            rate=self.rate, callback=self.cbImg, shm=self.shm)
         self.cv_image = None
         self.lost_count = 0
 
-        # self.r = rospy.Rate(self.rate)
-        # self.rector = ImageRector(self.size)
-        # self.rector = ImageRector((640,480))
-        # self.cali_file_folder = os.path.dirname(os.path.abspath(__file__)) + "/../camera_info/calibrations/"
         self.cali_file_folder = os.path.expanduser(
             '~')+"/Lepi_Data/ros/camera/calibrations/"
         self.cali_file = "default.yaml"
         # self.camera_info_msg = load_camera_info_3()
         # self.camera_info_msg_rect = load_camera_info_3()
         self.image_msg = None  # Image()
-        self.compressed_msg = None  # CompressedImage()
+        self.compressed_msg = CompressedImage()
+        self.compressed_msg.format = "jpeg"
         self.last_publish = 0
         self.update_frequence = 15
         self.last_update = time.time()
@@ -85,12 +84,19 @@ class CameraNode(object):
         else:
             self.pub_image = None
 
-        # reader2 = threading.Thread(target=self.start_update_loop)
-        # reader.daemon = True
-        # reader2.start()
-
-        self.timer = rospy.Timer(rospy.Duration.from_sec(1.0/self.update_frequence), self.cbPublish)
+        self.timer = rospy.Timer(rospy.Duration.from_sec(
+            1.0/self.update_frequence), self.cbPublish)
         rospy.loginfo("[%s] Initialized......" % (self.node_name))
+
+    def getShm(self):
+        while True:
+            shm_name = rospy.get_param('/cv_image', '')
+            if len(shm_name) == 0:
+                print(self.node_name, 'wait for /cv_image to be set')
+                time.sleep(1)
+            else:
+                self.shm = shared_memory.SharedMemory(shm_name)
+                break
 
     def srvCameraSetEnable(self, params):
         if params.value == 1 and self.camera.active == False:
@@ -113,6 +119,7 @@ class CameraNode(object):
         return SetInt32Response(1, params.value)
 
     def srvCameraGetFrame(self, params):
+        self.image_msg = self.bridge.cv2_to_imgmsg(self.camera.getImage(), "bgr8")
         if self.image_msg is None:
             return GetFrameResponse()
         return GetFrameResponse(self.image_msg)
@@ -124,10 +131,6 @@ class CameraNode(object):
 
     def cbImg(self, cv_image):
         self.cv_image = cv_image
-        # self.last_update = time.time()
-        # image_msg = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
-        # self.pub_image.publish(image_msg)
-        # self.cbPublish()
 
     def cbPublish(self, channel=None):
         if self.camera.active == False or self.cv_image is None:
@@ -139,18 +142,17 @@ class CameraNode(object):
         if self.pub_image is not None:
             image_msg = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
             self.pub_image.publish(image_msg)
-        image_msg = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
-        image_msg.header.stamp = rospy.Time.now()
-        image_msg.header.frame_id = self.frame_id
-        self.image_msg = image_msg
+        # image_msg = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
+        # image_msg.header.stamp = rospy.Time.now()
+        # image_msg.header.frame_id = self.frame_id
+        # self.image_msg = toImageMsg(cv_image)
         # self.pub_raw.publish(image_msg)
 
-        msg = CompressedImage()
+        msg = self.compressed_msg
         msg.header.stamp = rospy.Time.now()
-        msg.format = "jpeg"
         msg.data = np.array(cv2.imencode('.jpg', cv_image)[1]).tostring()
         # Publish new image
-        self.compressed_msg = msg
+
         self.pub_compressed.publish(msg)
 
     def srvGetImageTopics(self, params):
@@ -217,10 +219,12 @@ class CameraNode(object):
         if params.value >= 1 and params.value <= 30:
             self.update_frequence = params.value
             self.timer.shutdown()
-            self.timer = rospy.Timer(rospy.Duration.from_sec(1.0/self.update_frequence), self.cbPublish)
+            self.timer = rospy.Timer(rospy.Duration.from_sec(
+                1.0/self.update_frequence), self.cbPublish)
             return SetInt32Response(1, params.value)
-        else:
-            return SetInt32Response()
+        elif params.value == 0:
+            self.timer.shutdown()
+        return SetInt32Response()
 
     # not accurate
     def start_update_loop(self):

@@ -11,6 +11,7 @@ from pi_cam.msg import ApriltagPose
 from pi_cam.srv import GetApriltagDetections, GetApriltagDetectionsResponse
 # from scipy.spatial.transform import Rotation as R
 import os
+from multiprocessing import shared_memory
 
 from camera_utils import load_camera_info_3, toImageMsg, toImage
 from apriltag_detector import ApriltagDetector
@@ -38,10 +39,30 @@ class ApriltagDetectorNode(object):
         # self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,  queue_size=1)
         self.sub_image = rospy.Subscriber(
             "~image_raw/compressed", CompressedImage, self.cbImg,  queue_size=1)
-        # rospy.loginfo("[%s] wait_for_service : camera_get_frame..." % (self.node_name))
-        # rospy.wait_for_service('~camera_get_frame')
-        # self.get_frame = rospy.ServiceProxy('~camera_get_frame', GetFrame)
+        self.getShm()
+        # time.sleep(3)
+        rospy.loginfo("[%s] wait_for_service : camera_get_frame..." %
+                      (self.node_name))
+        rospy.wait_for_service('~camera_get_frame')
+        self.get_frame = rospy.ServiceProxy('~camera_get_frame', GetFrame)
+
+        start = time.time()
+        for i in range(100):
+            self.cbGetApriltagDetections(None)
+        print(time.time() - start)
         rospy.loginfo("[%s] Initialized." % (self.node_name))
+
+    def getShm(self):
+        while True:
+            shm_name = rospy.get_param('/cv_image', '')
+            if len(shm_name) == 0:
+                print(self.node_name, 'wait for /cv_image to be set')
+                time.sleep(1)
+            else:
+                self.shm = shared_memory.SharedMemory(shm_name)
+                self.rect_image = np.ndarray(
+                    (480, 640, 3), dtype=np.uint8, buffer=self.shm.buf)
+                break
 
     def cbImg(self, image_msg):
         self.image_msg = image_msg
@@ -51,17 +72,18 @@ class ApriltagDetectorNode(object):
         # res = self.get_frame(GetFrameRequest([320,240]))
         # self.image_msg = res.image
         # print(params)
-        image_msg = self.image_msg
-        if image_msg == None:
-            return GetApriltagDetectionsResponse()
-        rect_image = toImage(image_msg)
-        resized_image = cv2.resize(rect_image, (640, 480))
-        # image_gray = cv2.cvtColor(resized_image, cv2.COLOR_BGR2GRAY)
+        # image_msg = self.image_msg
+        # if image_msg == None:
+        #     return GetApriltagDetectionsResponse()
+        # self.rect_image = toImage(image_msg)
+
+        # res = self.get_frame(GetFrameRequest())
+        # self.rect_image = toImage(res.image)
+        rect_image = cv2.resize(self.rect_image, (480, 360))
         self.detector.detect(
-            resized_image, label_tags=self.visualization)
+            rect_image, label_tags=self.visualization)
         if self.visualization:
-            resized_image = cv2.resize(resized_image, (480, 360))
-            self.pubImage(resized_image)
+            self.pubImage(rect_image)
 
         return self.toApriltagDetections()
 
@@ -79,6 +101,7 @@ class ApriltagDetectorNode(object):
         self.pub_detections.publish(msg)
 
     def onShutdown(self):
+        self.shm.close()
         rospy.loginfo("[%s] Shutdown." % (self.node_name))
 
 

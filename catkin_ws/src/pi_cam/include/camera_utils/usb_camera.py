@@ -2,7 +2,9 @@
 import cv2
 import threading
 import time
+import numpy as np
 # from .image_rector import ImageRector
+from multiprocessing import shared_memory
 from .cameramodels import PinholeCameraModel
 
 from camera_utils import load_camera_info_3, cameraList
@@ -11,12 +13,15 @@ from camera_utils import load_camera_info_3, cameraList
 class UsbCamera(object):
     """docstring for UsbCamera"""
 
-    def __init__(self, rate=30, callback=None):
+    def __init__(self, rate=30, callback=None,shm=None):
         super(UsbCamera, self).__init__()
         self.cap = None
         self.rate = rate
         self._reader = None  # threading.Thread(target=self.continuous_capture)
-        self.last_image = None
+        if shm is not None:
+            self.shm = shm
+            self.last_image = np.ndarray(
+                (480, 640, 3), dtype=np.uint8, buffer=self.shm.buf)
         self.callback = callback
         self.rectify = False
         self.flip_code = 2
@@ -36,7 +41,7 @@ class UsbCamera(object):
                 self.active = False
                 time.sleep(0.5)
             self._reader = threading.Thread(target=self.continuous_capture)
-            if hasattr(self._reader,'is_alive'):
+            if hasattr(self._reader, 'is_alive'):
                 self._reader.isAlive = self._reader.is_alive
             if self.cap is not None:
                 self.cap.release()
@@ -49,6 +54,8 @@ class UsbCamera(object):
             if self.cap.isOpened():
                 self.active = True
                 self.cap.set(cv2.CAP_PROP_FPS, 30)
+                self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+                self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
                 print('open camera with index %d successfully' % (camera_id))
                 self._reader.start()
                 while self.last_image is None:
@@ -95,7 +102,10 @@ class UsbCamera(object):
             try:
                 ret, frame = self.cap.read()
                 if ret == True:
-                    self.last_image = frame
+                    if self.shm is not None:
+                        self.last_image[:] = frame[:]
+                    else:
+                        self.last_image = frame
                     if self.callback is not None:
                         self.callback(frame)
                 else:
