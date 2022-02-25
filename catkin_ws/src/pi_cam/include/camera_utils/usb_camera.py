@@ -20,7 +20,7 @@ class UsbCamera(object):
         self._reader = None  # threading.Thread(target=self.continuous_capture)
         if shm is not None:
             self.shm = shm
-            self.last_image = np.ndarray(
+            self.frame_buffer = np.ndarray(
                 (480, 640, 3), dtype=np.uint8, buffer=self.shm.buf)
         self.callback = callback
         self.rectify = False
@@ -102,10 +102,11 @@ class UsbCamera(object):
             try:
                 ret, frame = self.cap.read()
                 if ret == True:
+                    self.last_image = frame
                     if self.shm is not None:
-                        self.last_image[:] = frame[:]
-                    else:
-                        self.last_image = frame
+                        # self.shm.lock()
+                        self.frame_buffer[:] = frame[:]
+                        # self.shm.unlock()
                     if self.callback is not None:
                         self.callback(frame)
                 else:
@@ -117,7 +118,8 @@ class UsbCamera(object):
                 time.sleep(1)
             finally:
                 # time.sleep(1.0/self.rate)
-                time.sleep(0.005)
+                # time.sleep(0.005)
+                pass
         self.close_camera()
 
     def save_a_frame(self, full_path):

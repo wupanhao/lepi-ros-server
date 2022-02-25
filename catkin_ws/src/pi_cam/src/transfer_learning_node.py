@@ -33,7 +33,7 @@ class TransferNode(object):
         self.ic = ImageClassifier()
         # self.ic.load_model('/root/keras/分类测试/model.h5')
         self.image_msg = None  # Image()
-
+        self.getShm()
         self.training_logs_topic = rospy.Publisher(
             "~training_logs", String, queue_size=1)
         # self.pub_detections = rospy.Publisher("~image_transfer", CompressedImage, queue_size=1)
@@ -51,14 +51,29 @@ class TransferNode(object):
         rospy.Service('~get_training_data', GetPredictions,
                       self.srv_get_training_data)
         rospy.Service('~set_size', SetInt32, self.srv_set_size)
-        # self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,  queue_size=1)
-        self.sub_image = rospy.Subscriber(
-            "~image_raw/compressed", CompressedImage, self.cbImg,  queue_size=1)
-        rospy.loginfo("[%s] wait_for_service : camera_get_frame..." %
-                      (self.node_name))
-        rospy.wait_for_service('~camera_get_frame')
-        self.get_frame = rospy.ServiceProxy('~camera_get_frame', GetFrame)
+        # self.sub_image = rospy.Subscriber(
+        #     "~image_raw/compressed", CompressedImage, self.cbImg,  queue_size=1)
+
         rospy.loginfo("[%s] Initialized......" % (self.node_name))
+
+    def getShm(self):
+        from pi_driver import SharedMemory
+        import time
+        import numpy as np
+        while True:
+            try:
+                self.shm = SharedMemory('cv_image')
+                self.image_frame = np.ndarray(
+                    (480, 640, 3), dtype=np.uint8, buffer=self.shm.buf)
+                break
+            except:
+                print(self.node_name, 'wait for SharedMemory cv_image')
+                time.sleep(1)
+
+    def getImage(self):
+        import cv2
+        rect_image = self.image_frame.copy()
+        return cv2.resize(rect_image, (480, 360))
 
     def getBox(self):
         xmin = int((480 - self.IMAGE_W)/2)
@@ -67,51 +82,24 @@ class TransferNode(object):
         ymax = ymin + self.IMAGE_H
         return [xmin, ymin, xmax, ymax]
 
-    def getImage(self, image_msg):
-        if hasattr(image_msg, 'format'):  # CompressedImage
-            try:
-                cv_image = bgr_from_jpg(image_msg.data)
-            except ValueError as e:
-                rospy.loginfo('[%s] cannot decode image: %s' %
-                              (self.node_name, e))
-                return None
-        else:  # Image
-            try:
-                cv_image = self.bridge.imgmsg_to_cv2(
-                    image_msg, desired_encoding="bgr8")
-            except Exception as e:
-                rospy.loginfo('[%s] cannot convert image: %s' %
-                              (self.node_name, e))
-                return None
-        return cv_image
-
     def cbImg(self, image_msg):
         self.image_msg = image_msg
         return
-        cv_image = self.getImage(image_msg)
-        xmin, ymin, xmax, ymax = self.getBox()
-        cv2.rectangle(cv_image, (xmin, ymin), (xmax, ymax), (10, 255, 0), 2)
-        self.pubImage(cv_image)
 
     def srvCameraSaveFrame(self, params):
         if self.ic.ns is None:
-            return SetStringResponse("训练没有定义，创建或者选择一次训练")
+            return SetStringResponse("训练没有定义,创建或者选择一次训练")
         try:
-            # res = self.get_frame(GetFrameRequest())
-            # self.image_msg = res.image
             cat_name = params.data
             directory = os.path.join(self.ic.data_root, self.ic.ns, cat_name)
             file_name = '%d.jpg' % (len(os.listdir(directory))+1)
             full_path = os.path.join(directory, file_name)
-            if self.image_msg is not None:
-                cv_image = self.getImage(self.image_msg)
-                xmin, ymin, xmax, ymax = self.getBox()
-                cv_image = cv_image[ymin:ymax, xmin:xmax]
-                cv2.imwrite(full_path, cv_image)
-                # print(cv_image)
-                return SetStringResponse("保存至%s成功" % (full_path))
-            else:
-                return SetStringResponse("图像信息为空")
+            cv_image = self.getImage()
+            xmin, ymin, xmax, ymax = self.getBox()
+            cv_image = cv_image[ymin:ymax, xmin:xmax]
+            cv2.imwrite(full_path, cv_image)
+            # print(cv_image)
+            return SetStringResponse("保存至%s成功" % (full_path))
         except Exception as e:
             raise e
             return SetStringResponse("保存出错")
@@ -162,12 +150,12 @@ class TransferNode(object):
             self.ic.ns = params.data
             if not os.path.exists(data_dir):
                 os.makedirs(data_dir)
-                return SetStringResponse("已创建训练，继续添加分类和数据以训练模型")
+                return SetStringResponse("已创建训练,继续添加分类和数据以训练模型")
             if os.path.exists(model_path) and os.path.exists(label_path):
                 self.ic.load_label_name()
                 self.ic.load_model()
-                return SetStringResponse("已加载训练，并加载已训练的模型")
-            return SetStringResponse("已加载训练，添加分类和数据训练模型吧")
+                return SetStringResponse("已加载训练,并加载已训练的模型")
+            return SetStringResponse("已加载训练,添加分类和数据训练模型吧")
         except Exception as e:
             print(e)
             return SetStringResponse("设置失败")
@@ -203,17 +191,15 @@ class TransferNode(object):
             self.epochs = epochs
             self.ic.ns = self.ic.ns
             self.ic.train(data_dir, epochs, self.pub_training_logs)
-            return SetStringResponse('训练完成，可以进行测试了')
+            return SetStringResponse('训练完成,可以进行测试了')
         except Exception as e:
             print(e)
             raise e
             return SetStringResponse('训练失败')
 
     def srv_predict(self, params):
-        if self.ic.model is None or self.image_msg is None:
-            return GetPredictionsResponse()
         try:
-            cv_image = self.getImage(self.image_msg)
+            cv_image = self.getImage()
             xmin, ymin, xmax, ymax = self.getBox()
             cv_image = cv_image[ymin:ymax, xmin:xmax]
             res = self.ic.predict(cv_img=cv_image)
@@ -252,6 +238,7 @@ class TransferNode(object):
         self.pub_detections.publish(msg)
 
     def onShutdown(self):
+        self.shm.close()
         rospy.loginfo("[%s] Shutdown." % (self.node_name))
 
 

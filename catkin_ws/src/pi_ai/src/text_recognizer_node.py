@@ -15,6 +15,7 @@ class TextRecognizerNode(object):
         self.roi = [(120, 120), (360, 240)]
         self.visualization = True
         self.image_msg = None
+        self.getShm()
         # 支持 `ch`, `en`, `fr`, `german`, `korean`, `japan`
         # --use_angle_cls true设置使用方向分类器识别180度旋转文字
         self.ocr = PaddleOCR(use_angle_cls=False, lang='ch')
@@ -24,9 +25,28 @@ class TextRecognizerNode(object):
         rospy.Service('~set_roi', SetRoi, self.cbSetRoi)
 
         # self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,  queue_size=1)
-        self.sub_image = rospy.Subscriber(
-            "~image_raw/compressed", CompressedImage, self.cbImg,  queue_size=1)
+        # self.sub_image = rospy.Subscriber(
+        #     "~image_raw/compressed", CompressedImage, self.cbImg,  queue_size=1)
         rospy.loginfo("[%s] Initialized." % (self.node_name))
+
+    def getShm(self):
+        from pi_driver import SharedMemory
+        import time
+        import numpy as np
+        while True:
+            try:
+                self.shm = SharedMemory('cv_image')
+                self.image_frame = np.ndarray(
+                    (480, 640, 3), dtype=np.uint8, buffer=self.shm.buf)
+                break
+            except:
+                print(self.node_name, 'wait for SharedMemory cv_image')
+                time.sleep(1)
+
+    def getImage(self):
+        import cv2
+        rect_image = self.image_frame.copy()
+        return cv2.resize(rect_image, (480, 360))
 
     def cbImg(self, image_msg):
         self.image_msg = image_msg
@@ -48,7 +68,7 @@ class TextRecognizerNode(object):
         return SetRoiResponse('参数无效,设置失败')
 
     def cbTextDetection(self, params):
-        image = toImage(self.image_msg)
+        image = self.getImage()
         img = image[self.roi[0][1]:self.roi[1]
                     [1], self.roi[0][0]:self.roi[1][0]]
         text = ''
@@ -63,6 +83,7 @@ class TextRecognizerNode(object):
         self.pub_detections.publish(msg)
 
     def onShutdown(self):
+        self.shm.close()
         rospy.loginfo("[%s] Shutdown." % (self.node_name))
 
 

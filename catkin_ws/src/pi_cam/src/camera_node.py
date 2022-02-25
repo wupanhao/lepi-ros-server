@@ -14,6 +14,7 @@ from multiprocessing import shared_memory
 from pi_driver.srv import SetInt32, SetInt32Response
 from pi_driver.srv import GetStrings, GetStringsResponse, SetString, SetStringResponse
 from pi_cam.srv import GetFrame, GetFrameResponse, GetCompressedFrame, GetCompressedFrameResponse
+from pi_driver import SharedMemory
 # from std_msgs.msg import Empty
 
 from camera_utils import UsbCamera,toImageMsg, toImage
@@ -90,13 +91,12 @@ class CameraNode(object):
 
     def getShm(self):
         while True:
-            shm_name = rospy.get_param('/cv_image', '')
-            if len(shm_name) == 0:
-                print(self.node_name, 'wait for /cv_image to be set')
-                time.sleep(1)
-            else:
-                self.shm = shared_memory.SharedMemory(shm_name)
+            try:
+                self.shm = SharedMemory('cv_image')
                 break
+            except:
+                print(self.node_name, 'wait for SharedMemory cv_image')
+                time.sleep(1)
 
     def srvCameraSetEnable(self, params):
         if params.value == 1 and self.camera.active == False:

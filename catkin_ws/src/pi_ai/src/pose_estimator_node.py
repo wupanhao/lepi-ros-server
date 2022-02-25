@@ -15,21 +15,41 @@ class PoseEstimatorNode(object):
         self.visualization = True
         self.image_msg = None
         self.detector = PoseEstimator()
+        self.getShm()
         self.pub_detections = rospy.Publisher(
             "~image_pose", CompressedImage, queue_size=1)
 
         rospy.Service('~detect_pose', GetString, self.cbHandDetect)
 
         # self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,  queue_size=1)
-        self.sub_image = rospy.Subscriber(
-            "~image_raw/compressed", CompressedImage, self.cbImg,  queue_size=1)
+        # self.sub_image = rospy.Subscriber(
+        #     "~image_raw/compressed", CompressedImage, self.cbImg,  queue_size=1)
         rospy.loginfo("[%s] Initialized." % (self.node_name))
+
+    def getShm(self):
+        from pi_driver import SharedMemory
+        import time
+        import numpy as np
+        while True:
+            try:
+                self.shm = SharedMemory('cv_image')
+                self.image_frame = np.ndarray(
+                    (480, 640, 3), dtype=np.uint8, buffer=self.shm.buf)
+                break
+            except:
+                print(self.node_name, 'wait for SharedMemory cv_image')
+                time.sleep(1)
+
+    def getImage(self):
+        import cv2
+        rect_image = self.image_frame.copy()
+        return cv2.resize(rect_image, (480, 360))
 
     def cbImg(self, image_msg):
         self.image_msg = image_msg
 
     def cbHandDetect(self, param):
-        cv_image = toImage(self.image_msg)
+        cv_image = self.getImage()
         result, image = self.detector.detect(cv_image)
         self.pubImage(image)
         return GetStringResponse(json.dumps(result))
@@ -39,6 +59,7 @@ class PoseEstimatorNode(object):
         self.pub_detections.publish(msg)
 
     def onShutdown(self):
+        self.shm.close()
         rospy.loginfo("[%s] Shutdown." % (self.node_name))
 
 

@@ -1,21 +1,15 @@
 #!/usr/bin/python
 #!coding:utf-8
 # import the necessary packages
-import time
-import cv2
-from cv_bridge import CvBridge
 import rospy
 from sensor_msgs.msg import Image, CompressedImage, CameraInfo
 # from sensor_msgs.srv import SetCameraInfo, SetCameraInfoResponse
 from pi_cam.msg import FaceDetection
 from pi_cam.srv import GetFaceDetections, GetFaceDetectionsResponse
 from pi_driver.srv import GetStrings, GetStringsResponse, SetString, SetStringResponse
-import os
 
 from camera_utils import toImage, toImageMsg
 from face_recognizer import FaceRecognizer
-
-from pi_cam.srv import GetFrame, GetFrameRequest
 
 # (0,10) => (-320,230)
 # (320,240) => (0,0)
@@ -30,10 +24,10 @@ class FaceRecognizerNode(object):
         self.node_name = rospy.get_name()
         rospy.loginfo("[%s] Initializing......" % (self.node_name))
 
-        self.bridge = CvBridge()
         self.visualization = True
 
         self.image_msg = None
+        self.getShm()
         self.pub_detections = rospy.Publisher(
             "~image_face", CompressedImage, queue_size=1)
         self.recognizer = FaceRecognizer(scale=4)
@@ -46,42 +40,44 @@ class FaceRecognizerNode(object):
         rospy.Service('~add_face_label', SetString, self.cbAddFaceLabel)
         rospy.Service('~remove_face_label', SetString, self.cbRemoveFaceLabel)
         # self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg , queue_size=1)
-        self.sub_image = rospy.Subscriber(
-            "~image_raw/compressed", CompressedImage, self.cbImg,  queue_size=1)
+        # self.sub_image = rospy.Subscriber(
+        #     "~image_raw/compressed", CompressedImage, self.cbImg,  queue_size=1)
 
-        # rospy.loginfo("[%s] wait_for_service : camera_get_frame..." % (self.node_name))
-        # rospy.wait_for_service('~camera_get_frame')
-        # self.get_frame = rospy.ServiceProxy('~camera_get_frame', GetFrame)
         rospy.loginfo("[%s] Initialized." % (self.node_name))
+
+    def getShm(self):
+        from pi_driver import SharedMemory
+        import time
+        import numpy as np
+        while True:
+            try:
+                self.shm = SharedMemory('cv_image')
+                self.image_frame = np.ndarray(
+                    (480, 640, 3), dtype=np.uint8, buffer=self.shm.buf)
+                break
+            except:
+                print(self.node_name, 'wait for SharedMemory cv_image')
+                time.sleep(1)
+
+    def getImage(self):
+        import cv2
+        rect_image = self.image_frame.copy()
+        return cv2.resize(rect_image, (480, 360))
 
     def cbImg(self, image_msg):
         self.image_msg = image_msg
 
     def cbDetectFaceLocations(self, params):
-        # print(params)
-        # res = self.get_frame(GetFrameRequest())
-        # self.image_msg = res.image
-        image_msg = self.image_msg
-        if image_msg == None:
-            return GetFaceDetectionsResponse()
-        rect_image = toImage(image_msg)
+        rect_image = self.getImage()
         faces = self.recognizer.detect(rect_image)
         if self.visualization:
-            # self.pub_detections.publish(self.bridge.cv2_to_imgmsg(faces,"bgr8"))
             self.pubImage(faces)
         return self.toFaceDetectionMsg(self.recognizer.face_locations)
 
     def cbDetectFaceLabels(self, params):
-        # print(params)
-        # res = self.get_frame(GetFrameRequest())
-        # self.image_msg = res.image
-        image_msg = self.image_msg
-        if image_msg == None:
-            return GetFaceDetectionsResponse()
-        rect_image = toImage(image_msg)
+        rect_image = self.getImage()
         faces = self.recognizer.recognize(rect_image)
         if self.visualization:
-            # self.pub_detections.publish(self.bridge.cv2_to_imgmsg(faces,"bgr8"))
             self.pubImage(faces)
         return self.toFaceDetectionMsg(self.recognizer.face_locations, self.recognizer.face_names)
 
@@ -130,6 +126,7 @@ class FaceRecognizerNode(object):
         self.pub_detections.publish(msg)
 
     def onShutdown(self):
+        self.shm.close()
         rospy.loginfo("[%s] Shutdown." % (self.node_name))
 
 

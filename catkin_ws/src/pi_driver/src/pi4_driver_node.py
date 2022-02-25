@@ -6,15 +6,14 @@
 
 # import rospkg
 import time
+from venv import create
 import rospy
 import json
 import os
 import threading
 import RPi.GPIO as GPIO
-from multiprocessing.managers import SharedMemoryManager
-from multiprocessing import shared_memory
 
-from pi_driver import I2cDriver, SServo, EEPROM, D51Driver, ButtonListener
+from pi_driver import I2cDriver, SServo, EEPROM, D51Driver, ButtonListener, SharedMemory
 from pi_driver.msg import ButtonEvent, Sensor3Axes, MotorInfo, SensorStatusChange, SensorValueChange, U8Int32, ServoInfo,\
     NineAxisValue, NineAxisValueChange
 from pi_driver.srv import SetInt32, GetInt32, SetInt32Response, GetInt32Response,\
@@ -58,14 +57,11 @@ class PiDriverNode:
         GPIO.setmode(GPIO.BCM)  # 定义树莓派gpio引脚以BCM方式编号
         GPIO.setup(self.fan_pin, GPIO.OUT)  # 使能gpio口为输出
         # self.pwm = GPIO.PWM(pwm_pin,25000)   #定义pwm输出频率
-        self.smm = SharedMemoryManager()
-        self.smm.start()
-        shm = self.smm.SharedMemory(640*480*3)
-        shm_name = shm.name
-        self.shm = shared_memory.SharedMemory(shm_name)
-        rospy.set_param('/cv_image',shm_name)
-        rospy.loginfo("[%s] set shm /cv_image to %s" %
-                      (self.node_name, shm_name))
+        try:
+            self.shm = SharedMemory(name="cv_image", size=640*480*3, create=True)
+        except Exception as e:
+            print(e)
+            self.shm = SharedMemory(name="cv_image")
         self.pub_button_event = rospy.Publisher(
             "~button_event", ButtonEvent, queue_size=1)
         self.pub_sensor_status_change = rospy.Publisher(
@@ -122,7 +118,8 @@ class PiDriverNode:
         rospy.Service('~system_get_vout2', SensorGet3Axes,
                       self.srvSystemGetVout2)
         rospy.Service('~system_set_led', SetInt32, self.srvSystemSetLed)
-        rospy.Service('~system_set_fan_temp', SetInt32, self.srvSystemSetFanTemp)
+        rospy.Service('~system_set_fan_temp', SetInt32,
+                      self.srvSystemSetFanTemp)
         # rospy.Service('~input_string', SetString, self.srvInputString)
         # rospy.Service('~input_char', SetInt32, self.srvInputChar)
         # rospy.Service('~mouse_click', SetString, self.cbMouseClick)
@@ -480,8 +477,8 @@ class PiDriverNode:
     def onShutdown(self):
         self.is_shutdown = True
         self.d51_driver.active = False
-        self.smm.shutdown()
-        rospy.set_param('/cv_image', '')
+        self.shm.close()
+        self.shm.unlink()
         rospy.loginfo("[%s] shutdown......" % (self.node_name))
 
     def srvSetUpdateFrequence(self, params):
@@ -535,10 +532,12 @@ class PiDriverNode:
             self.pub_nine_axis_value_change.publish(msg)
             time.sleep(1.0/self.nine_axis_update_frequence)
 
-    def srvSystemSetFanTemp(self,params):
+    def srvSystemSetFanTemp(self, params):
         self.low_temp = params.port
         self.high_temp = params.value
         return SetInt32Response(params.port, params.value)
+
+
 if __name__ == '__main__':
     rospy.init_node('pi_driver_node', anonymous=False)
     node = PiDriverNode()

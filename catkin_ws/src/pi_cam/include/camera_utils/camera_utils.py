@@ -1,4 +1,5 @@
 #!coding:utf-8
+# import fcntl
 from subprocess import PIPE, Popen
 import yaml
 import cv2
@@ -103,7 +104,8 @@ def putText3(frame, text, pos, color, font=defaultFont):
 
 
 bridge = CvBridge()
-
+msg = CompressedImage()
+msg.format = "jpeg"
 
 def toImage(image_msg):
     if hasattr(image_msg, 'format'):  # CompressedImage
@@ -122,12 +124,9 @@ def toImage(image_msg):
 
 
 def toImageMsg(image):
-    msg = CompressedImage()
     msg.header.stamp = rospy.Time.now()
-    msg.format = "jpeg"
     msg.data = jpg_from_bgr(image)
     return msg
-
 
 def cameraList(cam="Camera"):
     cmd = ["/usr/bin/v4l2-ctl", "--list-devices"]
@@ -161,6 +160,8 @@ def testPutText():
 
     # Clean up
     cv2.destroyAllWindows()
+
+
 
 
 if __name__ == '__main__':

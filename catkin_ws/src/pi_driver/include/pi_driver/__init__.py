@@ -14,6 +14,7 @@ except Exception as e:
 from .button_subscriber import *
 from .button_subscriber2 import *
 from .joystick2 import MyJoy
+from .shared_memory import SharedMemory
 import sys
 sys.path.append('.')
 from . import vcgencmd
