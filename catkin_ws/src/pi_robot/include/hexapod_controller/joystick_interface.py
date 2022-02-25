@@ -97,13 +97,13 @@ class JoystickInterface:
     def get_joystick(self):
         buttons = self.joystick.buttons
         axes = self.joystick.axes
-        left_y = -axes[1]/32767.0
-        right_y = -axes[4]/32767.0
-        right_x = axes[3]/32767.0
-        left_x = axes[0]/32767.0
+        left_y = -axes[1]/100.0
+        right_y = -axes[4]/100.0
+        right_x = axes[3]/100.0
+        left_x = axes[0]/100.0
 
-        L2 = axes[2]/32767.0
-        R2 = axes[5]/32767.0
+        L2 = axes[2]/100.0
+        R2 = axes[5]/100.0
 
         R1 = buttons[5]
         L1 = buttons[4]
@@ -113,10 +113,10 @@ class JoystickInterface:
         circle = buttons[1]
         triangle = buttons[3]
 
-        dpadx = axes[6]/32767.0
-        dpady = -axes[7]/32767.0
+        dpadx = axes[6]/100.0
+        dpady = -axes[7]/100.0
         if len(buttons) >= 17:
-            dpadx = buttons[16]-buttons[15]
+            dpadx = buttons[15]-buttons[16]
             dpady = buttons[13]-buttons[14]
 
         msg = {

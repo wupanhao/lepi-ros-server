@@ -1,67 +1,124 @@
 #!coding:utf-8
-import struct
+import evdev
+from evdev import InputDevice, categorize, ecodes
+import threading
+import math
 import time
 
-BUTTON = 129
-AXIS = 130
+KeyCodeMap = {
+    ecodes.ABS_X: 0,
+    ecodes.ABS_Y: 1,
+    ecodes.ABS_Z: 2,
+    ecodes.ABS_RX: 3,
+    ecodes.ABS_RY: 4,
+    ecodes.ABS_RZ: 5,
+    ecodes.BTN_SOUTH: 0,
+    ecodes.BTN_EAST: 1,
+    ecodes.BTN_NORTH: 2,
+    ecodes.BTN_WEST: 3,
+    ecodes.BTN_TL: 4,
+    ecodes.BTN_TR: 5,
+    ecodes.BTN_TL2: 6,
+    ecodes.BTN_TR2: 7,
+    ecodes.BTN_SELECT: 8,
+    ecodes.BTN_START: 9,
+    ecodes.BTN_MODE: 10,
+    ecodes.BTN_THUMBL: 11,
+    ecodes.BTN_THUMBR: 12,
+    ecodes.BTN_DPAD_UP: 13,
+    ecodes.BTN_DPAD_DOWN: 14,
+    ecodes.BTN_DPAD_LEFT: 15,
+    ecodes.BTN_DPAD_RIGHT: 16,
+}
 
-EVENT_BUTTON = 1
-EVENT_AXIS = 2
 
-class MyJoy(object):
-	"""docstring for MyJoy"""
-	def __init__(self,callback=None):
-		super(MyJoy, self).__init__()
-		self.active = True
-		self.callback = callback
-		self.axes = {0:0,1:0,2:0,3:0,4:0,5:0,6:0,7:0}
-		self.buttons = {0:0,1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:0,10:0}
-		self.infile_path = "/dev/input/js0"
-	def start_listen_loop(self):
-		EVENT_SIZE = struct.calcsize("LhBB")
-		file = open(self.infile_path, "rb")
-		event = file.read(EVENT_SIZE)
-		while event:
-			# print(struct.unpack("LhBB", event))
-			(tv_msec,  value, event_type, number) = struct.unpack("LhBB", event)
-			# print(tv_msec,  value, event_type, number)
-			if event_type == EVENT_BUTTON or event_type == BUTTON:
-				self.buttons[number] = value
-			elif event_type == EVENT_AXIS or event_type == AXIS:
-				self.axes[number] = value
-			print(self.getState())
-			if self.callback is not None:
-				self.callback()
-			event = file.read(EVENT_SIZE)
+class MyJoy:
+    def __init__(self, callback=None):
+        self.active = True
+        self.axes = {}
+        for i in range(8):
+            self.axes[i] = 0
+        self.buttons = {}
+        for i in range(17):
+            self.buttons[i] = 0
+        self.callback = callback
+        reader = threading.Thread(target=self.start_open_loop)
+        reader.daemon = True
+        reader.start()
 
-	def start_open_loop(self):
-		while self.active:
-			try:
-				self.start_listen_loop()
-			except Exception as e:
-				print(e)
-				print('Read %s Error, retry after 2 seconds',self.infile_path)
-				time.sleep(2)
-	def getState(self):
-		state = {'Axes':self.axes,'Buttons':self.buttons}
-		return state
+    def start_listen_loop(self):
+        """
+        start_listen_loop 函数, 按键监听循环
+        """
+        self.dev = None
+        for path in evdev.list_devices():
+            device = evdev.InputDevice(path)
+            # device /dev/input/event1, name "Sony PLAYSTATION(R)3 Controller", phys "e4:5f:01:5e:52:10"
+            print(device.path, device.name, device.phys, device.capabilities())
+            # if device.name == 'Sony PLAYSTATION(R)3 Controller':
+            if ecodes.EV_FF in device.capabilities():
+                self.dev = InputDevice(device.path)
+                break
+            else:
+                device.close()
+        print(self.dev)
+        if self.dev is None:
+            print('device not find')
+            return
+        for event in self.dev.read_loop():
+            # 按键
+            if event.type == ecodes.EV_KEY:
+                if event.code in KeyCodeMap:
+                    self.buttons[KeyCodeMap[event.code]] = event.value
+                if event.value != 2 and self.callback is not None:
+                    self.callback(event)
+                elif self.callback is None:
+                    pass
+                    # print(event)
+                    # print(categorize(event))
+            # 摇杆
+            elif event.type == ecodes.EV_ABS:
+                if event.code in KeyCodeMap:
+                    self.axes[KeyCodeMap[event.code]] = math.ceil(
+                        (event.value - 128)/128.0*100)
+                # print(event)
+                # print(categorize(event))
+
+    def start_open_loop(self):
+        """
+        start_open_loop 函数, 设备打开循环
+        """
+        while self.active:
+            try:
+                self.start_listen_loop()
+            except Exception as e:
+                print(e)
+                print('Read %s Error, retry after 2 seconds', self.infile_path)
+            time.sleep(2)
+
+    def getState(self):
+        """
+        getState 函数, 返回手柄状态
+        """
+        state = {'Axes': self.axes, 'Buttons': self.buttons}
+        return state
+
+    def getAxisValue(self, id):
+        time.sleep(0.005)
+        if id in self.axes:
+            return self.axes[id]
+        else:
+            return 0
+
+    def getButtonState(self, id):
+        time.sleep(0.005)
+        if id in self.buttons:
+            return self.buttons[id]
+        else:
+            return 0
+
 
 if __name__ == '__main__':
-	from car import CarDriver3
-	import threading
-	car = CarDriver3()
-	joy = MyJoy(callback=None)
-	reader = threading.Thread(target=joy.start_open_loop)
-	reader.daemon = True
-	reader.start()	
-	def setCarSpeed():
-		if joy.axes.__contains__(1) and joy.axes.__contains__(3):
-			speed = joy.axes[1]/32767.0
-			steer = joy.axes[3]/32767.0
-			car.setWheelsSpeed(speed*100,-steer*90)	
-	# joy = MyJoy(callback=setCarSpeed)
-	while True:
-		setCarSpeed()
-		time.sleep(0.01)
-	joy.active = False
-
+    import time
+    mjoy = MyJoy()
+    time.sleep(1000)

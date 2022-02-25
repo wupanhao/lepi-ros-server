@@ -73,15 +73,16 @@ class MyJoy:
                 if event.value != 2 and self.callback is not None:
                     self.callback(event)
                 elif self.callback is None:
-                    print(event)
-                    print(categorize(event))
+                    pass
+                    # print(event)
+                    # print(categorize(event))
             # 摇杆
             elif event.type == ecodes.EV_ABS:
                 if event.code in KeyCodeMap:
                     self.axes[KeyCodeMap[event.code]] = math.ceil(
                         (event.value - 128)/128.0*100)
-                print(event)
-                print(categorize(event))
+                # print(event)
+                # print(categorize(event))
 
     def start_open_loop(self):
         """
