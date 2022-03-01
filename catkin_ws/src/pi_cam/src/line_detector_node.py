@@ -1,6 +1,8 @@
 #!/usr/bin/python
 #!coding:utf-8
+from pyee import ExecutorEventEmitter
 import rospy
+import time
 import cv2
 import numpy as np
 from sensor_msgs.msg import CompressedImage
@@ -8,13 +10,13 @@ from line_detector import LineDetector
 from pi_cam.srv import GetLineDetection,GetLineDetectionResponse
 from pi_cam.srv import SetColorThreshold,SetColorThresholdResponse,GetColorThreshold,GetColorThresholdResponse
 from pi_cam.msg import LineDetection
-import time
 from pi_driver.srv import GetStrings,GetStringsResponse
-from camera_utils import jpg_from_bgr
+from camera_utils import toImageMsg
 from pi_driver import SharedMemory
 # from std_msgs.msg import UInt8,Int32
-class LineDetectorNode(object):
+class LineDetectorNode(ExecutorEventEmitter):
     def __init__(self):
+        super().__init__()
         self.node_name = rospy.get_name()
         rospy.loginfo("[%s] Initializing......" % (self.node_name))
 
@@ -22,16 +24,10 @@ class LineDetectorNode(object):
         self.detector = LineDetector()
         # 优化结果可视化更节省时间
         self.visualization = True
-        self.base_speed = 50
-
-        self.image_msg = None
-        self.msg = CompressedImage()
-        self.msg.format = "jpeg"
         self.line_msg = GetLineDetectionResponse()
         self.getShm()
+        self.on('pub_image',self.pubImage)
         self.pub_detections = rospy.Publisher("~image_color", CompressedImage, queue_size=1)
-        self.pub_line_detection = rospy.Publisher("~line_detection", LineDetection, queue_size=1)
-
         self.detect_line_srv = rospy.Service('~detect_line', GetLineDetection, self.cbGetLineDetection)
         self.set_color_srv = rospy.Service('~set_color_threshold', SetColorThreshold, self.cbSetColorThreshold)
         self.get_color_srv = rospy.Service('~get_color_threshold', GetColorThreshold, self.cbGetColorThreshold)
@@ -51,12 +47,8 @@ class LineDetectorNode(object):
                 time.sleep(1)
 
     def getImage(self):
-        import cv2
         rect_image = self.image_frame.copy()
         return cv2.resize(rect_image, (480, 360))
-
-    def cbImg(self,image_msg):
-        self.image_msg = image_msg
 
     def detectLine(self,params):
         # start = time.time()
@@ -67,22 +59,18 @@ class LineDetectorNode(object):
             color = params.color
         if color not in self.detector.colors:
             return GetLineDetectionResponse()
-        cv_image = self.getImage()
+        self.cv_image = self.getImage()
         if params.y1 < params.y2 and params.x1 < params.x2:
-            rect_image = cv_image[params.y1:params.y2,params.x1:params.x2]
+            self.params = params
+            rect_image = self.cv_image[params.y1:params.y2,
+                                       params.x1:params.x2]
         detection,image = self.detector.detect_hsv(rect_image,self.detector.colors[color])
         if self.visualization:
-            cv_image[params.y1:params.y2,params.x1:params.x2] = image
-            cv2.rectangle(cv_image, (params.x1,params.y1), (params.x2,params.y2), (0,0,0), 1)
-            self.pubImage(cv_image)
+            self.emit('pub_image')
         # end = time.time()
         # print('time cost in detect line: %.2f ms' %  ((end - start)*1000))
         return GetLineDetectionResponse(detection[0:2],detection[2:4],detection[4])
-    def toLineDetections(self,cnt):
-        if cnt is not None:
-            center,wh,angle = cv2.minAreaRect(cnt)
-            return GetLineDetectionResponse(center,wh,angle)
-        return GetLineDetectionResponse()
+
     def cbGetLineDetection(self,params):
         try:
             line_msg = self.detectLine(params)
@@ -121,10 +109,19 @@ class LineDetectorNode(object):
     def cbGetColorList(self,params):
         return GetStringsResponse(self.detector.colors.keys())
 
-    def pubImage(self,image):
-        self.msg.header.stamp = rospy.Time.now()
-        self.msg.data = jpg_from_bgr(image)
-        self.pub_detections.publish(self.msg)
+    def pubImage(self):
+        params = self.params
+        cv_image = self.cv_image
+        cnt = self.detector.cnt
+        if cnt is not None:
+            image = cv_image[params.y1:params.y2,
+                                 params.x1:params.x2]
+            cv2.drawContours(image, [cnt], -1,
+                                 (0, 255, 255), thickness=2)
+            cv_image[params.y1:params.y2, params.x1:params.x2] = image
+        cv2.rectangle(cv_image, (params.x1, params.y1), (params.x2, params.y2), (0, 0, 0), 1)
+        self.pub_detections.publish(toImageMsg(cv_image))
+
     def onShutdown(self):
         self.shm.close()
         rospy.loginfo("[%s] Shutdown." % (self.node_name))

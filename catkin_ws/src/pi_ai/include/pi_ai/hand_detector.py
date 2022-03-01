@@ -16,12 +16,12 @@ class HandDetector:
         h, w, channel = image.shape
         # To improve performance, optionally mark the image as not writeable to
         # pass by reference.
-        image.flags.writeable = False
+        # image.flags.writeable = False
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         results = self.hands.process(image)
         # Draw the hand annotations on the image.
-        image.flags.writeable = True
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        # image.flags.writeable = True
+        # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         array = []
         if results.multi_hand_landmarks:
             for index, hand_landmarks in enumerate(results.multi_hand_landmarks):
@@ -32,14 +32,18 @@ class HandDetector:
                     "label": results.multi_handedness[index].classification[0].label,
                     "keypoints": points
                 })
+        return array, results
+
+    def draw_results(self,image,results):
+        if results.multi_hand_landmarks:
+            for index, hand_landmarks in enumerate(results.multi_hand_landmarks):
+                # print(hand_landmarks.landmark, len(hand_landmarks.landmark))
                 mp_drawing.draw_landmarks(
                     image,
                     hand_landmarks,
                     mp_hands.HAND_CONNECTIONS,
                     mp_drawing_styles.get_default_hand_landmarks_style(),
                     mp_drawing_styles.get_default_hand_connections_style())
-        return array, image
-
-
+        # return image
 if __name__ == '__main__':
     hand = HandDetector()

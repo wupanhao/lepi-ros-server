@@ -2,7 +2,7 @@
 #!coding:utf-8
 import cv2
 import rospy
-from camera_utils import toImageMsg, toImage
+from camera_utils import toImageMsg
 from pi_driver.srv import GetString, GetStringResponse
 from pi_cam.srv import SetRoi, SetRoiResponse
 

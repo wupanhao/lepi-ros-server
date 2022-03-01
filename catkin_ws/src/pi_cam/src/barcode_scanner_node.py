@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 #!coding:utf-8
 import cv2
+from pyee import ExecutorEventEmitter
 import rospy
 from sensor_msgs.msg import CompressedImage
 from camera_utils import toImageMsg, putText3
@@ -10,20 +11,18 @@ from pi_cam.srv import GetObjectDetections, GetObjectDetectionsResponse
 from pyzbar import pyzbar
 
 
-class BarcodeScannerNode(object):
+class BarcodeScannerNode(ExecutorEventEmitter):
     def __init__(self):
+        super().__init__()
         self.node_name = rospy.get_name()
         rospy.loginfo("[%s] Initializing......" % (self.node_name))
         self.visualization = True
         self.image_msg = None
         self.getShm()
+        self.on('pub_image', self.pubImage)
         self.pub_detections = rospy.Publisher(
             "~image_barcode", CompressedImage, queue_size=1)
-
         rospy.Service('~barcode_scan', GetObjectDetections, self.cbBarcodeScan)
-
-        # self.sub_image = rospy.Subscriber(
-        #     "~image_raw/compressed", CompressedImage, self.cbImg,  queue_size=1)
         rospy.loginfo("[%s] Initialized." % (self.node_name))
 
     def getShm(self):
@@ -41,12 +40,9 @@ class BarcodeScannerNode(object):
                 time.sleep(1)
 
     def getImage(self):
-        import cv2
         rect_image = self.image_frame.copy()
         return cv2.resize(rect_image, (480, 360))
 
-    def cbImg(self, image_msg):
-        self.image_msg = image_msg
 
     def detect(self, frame):
         return pyzbar.decode(frame)
@@ -63,11 +59,12 @@ class BarcodeScannerNode(object):
         return frame
 
     def cbBarcodeScan(self, params):
-        image = self.getImage()
-        barcodes = self.detect(image)
+        self.image = self.getImage()
+        self.barcodes = self.detect(self.image)
         # print(barcodes)
-        self.pubImage(self.drawLabel(image, barcodes))
-        return self.toBarcodeDetection(barcodes)
+        if self.visualization:
+            self.emit('pub_image')
+        return self.toBarcodeDetection(self.barcodes)
 
     def toBarcodeDetection(self, barcodes):
         res = GetObjectDetectionsResponse()
@@ -78,8 +75,10 @@ class BarcodeScannerNode(object):
             res.detections.append(msg)
         return res
 
-    def pubImage(self, image):
-        msg = toImageMsg(image)
+    def pubImage(self):
+        image = self.image
+        barcodes = self.barcodes
+        msg = toImageMsg(self.drawLabel(image, barcodes))
         self.pub_detections.publish(msg)
 
     def onShutdown(self):

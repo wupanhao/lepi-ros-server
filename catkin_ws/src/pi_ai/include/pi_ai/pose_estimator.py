@@ -20,17 +20,20 @@ class PoseEstimator:
         results = self.pose.process(image)
 
         # Draw the pose annotation on the image.
-        image.flags.writeable = True
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        # image.flags.writeable = True
+        # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         array = {
             "keypoints": []
         }
+        if results.pose_landmarks:
+            array["keypoints"] = [[p.x*w, p.y*h, p.z*100, p.visibility*100]
+                                  for p in results.pose_landmarks.landmark]
+        return array, results
+
+    def draw_results(self, image, results):
         if results.pose_landmarks:
             mp_drawing.draw_landmarks(
                 image,
                 results.pose_landmarks,
                 mp_pose.POSE_CONNECTIONS,
                 landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style())
-            array["keypoints"] = [[p.x*w, p.y*h, p.z*100, p.visibility*100]
-                                  for p in results.pose_landmarks.landmark]
-        return array, image

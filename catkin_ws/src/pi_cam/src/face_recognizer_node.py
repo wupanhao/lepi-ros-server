@@ -1,14 +1,16 @@
 #!/usr/bin/python
 #!coding:utf-8
 # import the necessary packages
+import cv2
+from pyee import ExecutorEventEmitter
 import rospy
-from sensor_msgs.msg import Image, CompressedImage, CameraInfo
+from sensor_msgs.msg import CompressedImage
 # from sensor_msgs.srv import SetCameraInfo, SetCameraInfoResponse
 from pi_cam.msg import FaceDetection
 from pi_cam.srv import GetFaceDetections, GetFaceDetectionsResponse
 from pi_driver.srv import GetStrings, GetStringsResponse, SetString, SetStringResponse
 
-from camera_utils import toImage, toImageMsg
+from camera_utils import toImageMsg
 from face_recognizer import FaceRecognizer
 
 # (0,10) => (-320,230)
@@ -19,19 +21,18 @@ def toScratchAxes(cv_x, cv_y):  # 480x360 in Scratch
     return (cv_x-240, cv_y*-1+180)
 
 
-class FaceRecognizerNode(object):
+class FaceRecognizerNode(ExecutorEventEmitter):
     def __init__(self):
+        super().__init__()
         self.node_name = rospy.get_name()
         rospy.loginfo("[%s] Initializing......" % (self.node_name))
-
         self.visualization = True
-
-        self.image_msg = None
+        self.msg = GetFaceDetectionsResponse()
         self.getShm()
+        self.on('pub_image', self.pubImage)
         self.pub_detections = rospy.Publisher(
             "~image_face", CompressedImage, queue_size=1)
         self.recognizer = FaceRecognizer(scale=4)
-
         rospy.Service('~detect_face_locations',
                       GetFaceDetections, self.cbDetectFaceLocations)
         rospy.Service('~detect_face_labels', GetFaceDetections,
@@ -39,10 +40,6 @@ class FaceRecognizerNode(object):
         rospy.Service('~list_face_labels', GetStrings, self.cbListFaceLabels)
         rospy.Service('~add_face_label', SetString, self.cbAddFaceLabel)
         rospy.Service('~remove_face_label', SetString, self.cbRemoveFaceLabel)
-        # self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg , queue_size=1)
-        # self.sub_image = rospy.Subscriber(
-        #     "~image_raw/compressed", CompressedImage, self.cbImg,  queue_size=1)
-
         rospy.loginfo("[%s] Initialized." % (self.node_name))
 
     def getShm(self):
@@ -60,29 +57,27 @@ class FaceRecognizerNode(object):
                 time.sleep(1)
 
     def getImage(self):
-        import cv2
         rect_image = self.image_frame.copy()
         return cv2.resize(rect_image, (480, 360))
 
-    def cbImg(self, image_msg):
-        self.image_msg = image_msg
-
     def cbDetectFaceLocations(self, params):
-        rect_image = self.getImage()
-        faces = self.recognizer.detect(rect_image)
+        self.rect_image = self.getImage()
+        self.recognizer.detect(self.rect_image)
         if self.visualization:
-            self.pubImage(faces)
+            self.emit('pub_image')
+            # self.pubImage(faces)
         return self.toFaceDetectionMsg(self.recognizer.face_locations)
 
     def cbDetectFaceLabels(self, params):
-        rect_image = self.getImage()
-        faces = self.recognizer.recognize(rect_image)
+        self.rect_image = self.getImage()
+        self.recognizer.recognize(self.rect_image)
         if self.visualization:
-            self.pubImage(faces)
+            self.emit('pub_image')
+            # self.pubImage(faces)
         return self.toFaceDetectionMsg(self.recognizer.face_locations, self.recognizer.face_names)
 
     def toFaceDetectionMsg(self, face_locations=[], face_names=[]):
-        msg = GetFaceDetectionsResponse()
+        msg = self.msg
         scale = self.recognizer.scale
         if len(face_names) > 0 and len(face_names) == len(face_locations):
             for (top, right, bottom, left), name in zip(face_locations, face_names):
@@ -103,7 +98,7 @@ class FaceRecognizerNode(object):
         if len(params.data) == 0:
             return SetStringResponse("添加失败,名称长度为0")
         try:
-            cv_image = toImage(self.image_msg)
+            cv_image = self.getImage()
             res = self.recognizer.add_face_label(
                 cv_image, params.data, save=True)
             return SetStringResponse(res)
@@ -121,7 +116,12 @@ class FaceRecognizerNode(object):
             print(e)
             return SetStringResponse("删除失败")
 
-    def pubImage(self, image):
+    def pubImage(self):
+        rect_image = self.rect_image
+        face_locations = self.recognizer.face_locations
+        face_names = self.recognizer.face_names
+        image = self.recognizer.label_faces(
+            rect_image, face_locations, face_names)
         msg = toImageMsg(image)
         self.pub_detections.publish(msg)
 

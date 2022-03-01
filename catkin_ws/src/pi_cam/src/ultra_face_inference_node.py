@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 #!coding:utf-8
 
+import cv2
+from pyee import ExecutorEventEmitter
 import rospy
 from sensor_msgs.msg import CompressedImage
 # from sensor_msgs.srv import SetCameraInfo, SetCameraInfoResponse
@@ -11,15 +13,18 @@ from camera_utils import toImageMsg
 from face_recognizer import UltraFaceInference
 
 
-class UltraFaceInferenceNode(object):
+class UltraFaceInferenceNode(ExecutorEventEmitter):
     def __init__(self):
+        super().__init__()
         self.node_name = rospy.get_name()
         rospy.loginfo("[%s] Initializing......" % (self.node_name))
 
         self.visualization = True
 
-        self.image_msg = None
+        self.msg = GetFaceDetectionsResponse()
+        self.boxes = []
         self.getShm()
+        self.on('pub_image', self.pubImage)
         # self.pub_detections = rospy.Publisher("~image_ultra_face", Image, queue_size=1)
         self.pub_detections = rospy.Publisher(
             "~image_ultra_face", CompressedImage, queue_size=1)
@@ -29,9 +34,6 @@ class UltraFaceInferenceNode(object):
 
         rospy.Service('~detect_face_locations',
                       GetFaceDetections, self.cbDetectFaceLocations)
-        # self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg , queue_size=1)
-        # self.sub_image = rospy.Subscriber(
-        #     "~image_raw/compressed", CompressedImage, self.cbImg,  queue_size=1)
 
         rospy.loginfo("[%s] Initialized." % (self.node_name))
 
@@ -50,30 +52,34 @@ class UltraFaceInferenceNode(object):
                 time.sleep(1)
 
     def getImage(self):
-        import cv2
         rect_image = self.image_frame.copy()
         return cv2.resize(rect_image, (480, 360))
 
-    def cbImg(self, image_msg):
-        self.image_msg = image_msg
-
     def cbDetectFaceLocations(self, params):
         # print(params)
-        rect_image = self.getImage()
-        boxes, labels, probs = self.detector.detect(rect_image)
-        print(boxes, labels, probs)
+        self.rect_image = self.getImage()
+        self.boxes, labels, probs = self.detector.detect(self.rect_image)
+        # print(self.boxes, labels, probs)
         if self.visualization:
-            faces = self.detector.drawBoxes(rect_image, boxes)
-            msg = toImageMsg(faces)
-            self.pub_detections.publish(msg)
+            self.emit('pub_image')
+            # faces = self.detector.drawBoxes(rect_image, boxes)
+            # msg = toImageMsg(faces)
+            # self.pub_detections.publish(msg)
         return self.toFaceDetectionMsg()
 
     def toFaceDetectionMsg(self):
-        msg = GetFaceDetectionsResponse()
+        msg = self.msg
         for face in self.detector.faceDetections:
             msg.detections.append(FaceDetection(
                 "{}".format(round(face[0], 2)), face[1]))
         return msg
+
+    def pubImage(self):
+        rect_image = self.rect_image
+        boxes = self.boxes
+        faces = self.detector.drawBoxes(rect_image, boxes)
+        msg = toImageMsg(faces)
+        self.pub_detections.publish(msg)
 
     def cbSetThreshold(self, params):
         if params.value > 0 and params.value < 100:

@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 #!coding:utf-8
+from pyee import ExecutorEventEmitter
+import cv2
 import json
 import rospy
 from sensor_msgs.msg import CompressedImage
@@ -8,22 +10,21 @@ from pi_driver.srv import GetString, GetStringResponse
 from pi_ai import PoseEstimator
 
 
-class PoseEstimatorNode(object):
+class PoseEstimatorNode(ExecutorEventEmitter):
     def __init__(self):
+        super().__init__()
         self.node_name = rospy.get_name()
         rospy.loginfo("[%s] Initializing......" % (self.node_name))
         self.visualization = True
         self.image_msg = None
         self.detector = PoseEstimator()
         self.getShm()
+        self.on('pub_image', self.pubImage)
+        self.on('error', self.onError)
         self.pub_detections = rospy.Publisher(
             "~image_pose", CompressedImage, queue_size=1)
 
         rospy.Service('~detect_pose', GetString, self.cbHandDetect)
-
-        # self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,  queue_size=1)
-        # self.sub_image = rospy.Subscriber(
-        #     "~image_raw/compressed", CompressedImage, self.cbImg,  queue_size=1)
         rospy.loginfo("[%s] Initialized." % (self.node_name))
 
     def getShm(self):
@@ -41,22 +42,25 @@ class PoseEstimatorNode(object):
                 time.sleep(1)
 
     def getImage(self):
-        import cv2
         rect_image = self.image_frame.copy()
         return cv2.resize(rect_image, (480, 360))
 
-    def cbImg(self, image_msg):
-        self.image_msg = image_msg
-
     def cbHandDetect(self, param):
-        cv_image = self.getImage()
-        result, image = self.detector.detect(cv_image)
-        self.pubImage(image)
-        return GetStringResponse(json.dumps(result))
+        self.cv_image = self.getImage()
+        array, self.results = self.detector.detect(self.cv_image)
+        if self.visualization:
+            self.emit('pub_image')
+        return GetStringResponse(json.dumps(array))
 
-    def pubImage(self, image):
+    def pubImage(self):
+        image = self.cv_image
+        results = self.results
+        self.detector.draw_results(image, results)
         msg = toImageMsg(image)
         self.pub_detections.publish(msg)
+
+    def onError(self, e):
+        print(e)
 
     def onShutdown(self):
         self.shm.close()

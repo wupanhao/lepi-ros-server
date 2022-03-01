@@ -1,19 +1,21 @@
 #!/usr/bin/python
 #!coding:utf-8
+import cv2
 import rospy
 from sensor_msgs.msg import CompressedImage
-# from sensor_msgs.srv import SetCameraInfo, SetCameraInfoResponse
+from pyee import ExecutorEventEmitter
 
 from pi_cam.msg import ApriltagPose
 from pi_cam.srv import GetApriltagDetections, GetApriltagDetectionsResponse
 # from scipy.spatial.transform import Rotation as R
 
-from camera_utils import load_camera_info_3, toImageMsg, toImage
+from camera_utils import load_camera_info_3, toImageMsg
 from apriltag_detector import ApriltagDetector
 
 
-class ApriltagDetectorNode(object):
+class ApriltagDetectorNode(ExecutorEventEmitter):
     def __init__(self):
+        super().__init__()
         self.node_name = rospy.get_name()
         rospy.loginfo("[%s] Initializing......" % (self.node_name))
 
@@ -23,20 +25,14 @@ class ApriltagDetectorNode(object):
 
         self.camera_info_msg = load_camera_info_3()
         self.image_msg = None
+        self.msg = GetApriltagDetectionsResponse()
         self.getShm()
+        self.on('pub_image', self.pubImage)
         self.pub_detections = rospy.Publisher(
             "~image_apriltag", CompressedImage, queue_size=1)
-
         self.tag_srv = rospy.Service(
             '~detect_apriltag', GetApriltagDetections, self.cbGetApriltagDetections)
-        # self.sub_image = rospy.Subscriber("~image_raw", Image, self.cbImg ,  queue_size=1)
-        # self.sub_image = rospy.Subscriber(
-        #     "~image_raw/compressed", CompressedImage, self.cbImg,  queue_size=1)
-
-        # start = time.time()
-        # for i in range(100):
-        #     self.cbGetApriltagDetections(None)
-        # print(time.time() - start)
+        
         rospy.loginfo("[%s] Initialized." % (self.node_name))
 
     def getShm(self):
@@ -54,35 +50,19 @@ class ApriltagDetectorNode(object):
                 time.sleep(1)
 
     def getImage(self):
-        import cv2
         rect_image = self.image_frame.copy()
         return cv2.resize(rect_image, (480, 360))
 
-    def cbImg(self, image_msg):
-        self.image_msg = image_msg
-
     def cbGetApriltagDetections(self, params):
-        # res = self.get_frame(GetFrameRequest())
-        # res = self.get_frame(GetFrameRequest([320,240]))
-        # self.image_msg = res.image
-        # print(params)
-        # image_msg = self.image_msg
-        # if image_msg == None:
-        #     return GetApriltagDetectionsResponse()
-        # self.rect_image = toImage(image_msg)
-
-        # res = self.get_frame(GetFrameRequest())
-        # self.rect_image = toImage(res.image)
-        rect_image = self.getImage()
+        self.rect_image = self.getImage()
         self.detector.detect(
-            rect_image, label_tags=self.visualization)
+            self.rect_image, label_tags=self.visualization)
         if self.visualization:
-            self.pubImage(rect_image)
-
+            self.emit('pub_image')
         return self.toApriltagDetections()
 
     def toApriltagDetections(self):
-        msg = GetApriltagDetectionsResponse()
+        msg = self.msg
         items = self.detector.detections
         for item in items:
             detection = ApriltagPose(
@@ -90,8 +70,10 @@ class ApriltagDetectorNode(object):
             msg.detections.append(detection)
         return msg
 
-    def pubImage(self, image):
-        msg = toImageMsg(image)
+    def pubImage(self):
+        rect_image = self.rect_image
+        self.detector.label_tags(rect_image)
+        msg = toImageMsg(rect_image)
         self.pub_detections.publish(msg)
 
     def onShutdown(self):

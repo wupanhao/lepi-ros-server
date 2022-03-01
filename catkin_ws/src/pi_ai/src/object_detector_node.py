@@ -1,8 +1,10 @@
 #!/usr/bin/python3
 #!coding:utf-8
+from pyee import ExecutorEventEmitter
+import cv2
 import rospy
 from sensor_msgs.msg import CompressedImage
-from camera_utils import bgr_from_jpg, jpg_from_bgr
+from camera_utils import toImageMsg
 # from sensor_msgs.srv import SetCameraInfo, SetCameraInfoResponse
 from pi_cam.msg import ObjectDetection
 from pi_cam.srv import GetObjectDetections, GetObjectDetectionsResponse
@@ -10,18 +12,17 @@ from pi_driver.srv import SetInt32, SetInt32Response
 
 from pi_ai import ObjectDetector
 
-class ObjectDetectorNode(object):
+class ObjectDetectorNode(ExecutorEventEmitter):
     def __init__(self):
+        super().__init__()
         self.node_name = rospy.get_name()
         rospy.loginfo("[%s] Initializing......" % (self.node_name))
 
         self.visualization = True
-        self.image_msg = None
         self.getShm()
+        self.on('pub_image',self.pubImage)
         self.pub_detections = rospy.Publisher(
             "~image_object", CompressedImage, queue_size=1)
-        # self.sub_image = rospy.Subscriber("~image_raw/compressed", CompressedImage, self.cbImg ,  queue_size=1)
-
         rospy.Service('~detect_object', GetObjectDetections,
                       self.cbGetObjectDetections)
         rospy.Service('~set_threshold', SetInt32, self.cbSetThreshold)
@@ -31,9 +32,6 @@ class ObjectDetectorNode(object):
         except Exception as e:
             print(e)
             self.detector.load_model(use_TPU=False)
-        # rospy.loginfo("[%s] wait_for_service : camera_get_frame..." % (self.node_name))
-        # rospy.wait_for_service('~camera_get_frame')
-        # self.get_frame = rospy.ServiceProxy('~camera_get_frame', GetFrame)
         rospy.loginfo("[%s] Initialized." % (self.node_name))
 
     def getShm(self):
@@ -51,17 +49,16 @@ class ObjectDetectorNode(object):
                 time.sleep(1)
 
     def getImage(self):
-        import cv2
         rect_image = self.image_frame.copy()
         return cv2.resize(rect_image, (480, 360))
 
     def cbGetObjectDetections(self, params):
-        image = self.getImage()
-        boxes, classes, scores = self.detector.detect(image)
+        self.image = self.getImage()
+        self.boxes, self.classes, self.scores = self.detector.detect(
+            self.image)
         if self.visualization:
-            image = self.detector.draw_labels(image, boxes, classes, scores)
-        self.pubImage(image)
-        return self.toObjectDetections(boxes, classes, scores)
+            self.emit('pub_image')
+        return self.toObjectDetections(self.boxes, self.classes, self.scores)
 
     def toObjectDetections(self, boxes, classes, scores):
         rsp = GetObjectDetectionsResponse()
@@ -76,15 +73,13 @@ class ObjectDetectorNode(object):
         self.detector.set_threshold(params.value)
         return SetInt32Response(params.port, params.value)
 
-    def cbImg(self, image_msg):
-        self.image_msg = image_msg
-
-    def pubImage(self, image):
-        msg = CompressedImage()
-        msg.header.stamp = rospy.Time.now()
-        msg.format = "jpeg"
-        msg.data = jpg_from_bgr(image)
+    def pubImage(self):
+        image = self.image
+        boxes, classes, scores = (self.boxes, self.classes, self.scores)
+        image = self.detector.draw_labels(image, boxes, classes, scores)
+        msg = toImageMsg(image)
         self.pub_detections.publish(msg)
+
 
     def onShutdown(self):
         self.shm.close()

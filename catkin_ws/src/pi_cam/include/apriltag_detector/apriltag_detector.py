@@ -1,6 +1,5 @@
 #!coding:utf-8
 from scipy.spatial.transform import Rotation as R
-import rospkg
 # from apriltags3 import Detector
 from dt_apriltags import Detector
 from camera_utils import load_camera_info_3, cameraList
@@ -81,8 +80,8 @@ class ApriltagDetector:
             image_gray = cv_image
         self.tags = self.detector.detect(
             image_gray, True, self.camera_params, tag_size)  # tag size in meter
-        if label_tags:
-            self.label_tags(cv_image, self.tags)
+        # if label_tags:
+        #     self.label_tags(cv_image, self.tags)
         self.image = cv_image
         self.detections = self.toApriltagDetections()
         if len(self.detections) > 0:

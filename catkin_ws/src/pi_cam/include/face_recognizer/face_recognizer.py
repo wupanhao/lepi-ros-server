@@ -51,8 +51,9 @@ class FaceRecognizer(object):
         # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
         rgb_small_frame = cv2.cvtColor(small_frame,cv2.COLOR_BGR2RGB)
         self.face_locations = face_recognition.face_locations(rgb_small_frame)
+        self.face_names = []
         self.face_data = self.getFaceData(0)
-        return self.rect_faces(frame, self.face_locations)
+        # return self.rect_faces(frame, self.face_locations)
 
     def recognize(self, frame, scale=None):
         """
@@ -69,7 +70,7 @@ class FaceRecognizer(object):
         small_frame = cv2.resize(frame, (0, 0), fx=1.0/scale, fy=1.0/scale)
         rgb_small_frame = small_frame[:, :, ::-1]
         face_locations = face_recognition.face_locations(rgb_small_frame)
-        start = time.time()
+        # start = time.time()
         face_encodings = face_recognition.face_encodings(
             rgb_small_frame, face_locations)
         face_names = []
@@ -89,13 +90,13 @@ class FaceRecognizer(object):
                 if face_distances[best_match_index] < self.threshold:
                     name = known_face_names[best_match_index]
             face_names.append(name)
-        end = time.time()
-        print("recognized %d faces in %.2f ms" %
-              (len(face_locations), (end - start)*1000))
+        # end = time.time()
+        # print("recognized %d faces in %.2f ms" %
+        #       (len(face_locations), (end - start)*1000))
         self.face_locations = face_locations
         self.face_names = face_names
         self.face_data = self.getFaceData(0)
-        return self.label_faces(frame, self.face_locations, self.face_names)
+        # return self.label_faces(frame, self.face_locations, self.face_names)
         # return face_locations, face_names
 
     def getFaceData(self, index):
@@ -155,6 +156,10 @@ class FaceRecognizer(object):
         if scale is None:
             scale = self.scale
         frame = self.rect_faces(frame, face_locations, scale)
+
+        if len(face_names) == 0:
+            return frame
+
         # Display the results
         for (top, right, bottom, left), name in zip(face_locations, face_names):
             # Scale back up face locations since the frame we detected in was scaled to 1/4 size
