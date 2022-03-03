@@ -4,7 +4,6 @@ import threading
 import time
 import numpy as np
 # from .image_rector import ImageRector
-from multiprocessing import shared_memory
 from .cameramodels import PinholeCameraModel
 
 from camera_utils import load_camera_info_3, cameraList
@@ -18,6 +17,7 @@ class UsbCamera(object):
         self.cap = None
         self.rate = rate
         self._reader = None  # threading.Thread(target=self.continuous_capture)
+        self.last_image = None
         if shm is not None:
             self.shm = shm
             self.frame_buffer = np.ndarray(
@@ -48,9 +48,9 @@ class UsbCamera(object):
                 self.cap = None
                 # cv2.CAP_OPENCV_MJPEG
             if camera_id >= 0 and camera_id < len(cams):
-                self.cap = cv2.VideoCapture(cams[camera_id])
+                self.cap = cv2.VideoCapture(int(cams[camera_id].replace('/dev/video', '')))
             else:
-                self.cap = cv2.VideoCapture(cams[0])
+                self.cap = cv2.VideoCapture(int(cams[0].replace('/dev/video', '')))
             if self.cap.isOpened():
                 self.active = True
                 self.cap.set(cv2.CAP_PROP_FPS, 30)

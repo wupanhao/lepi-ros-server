@@ -28,7 +28,7 @@ def to_value(data):
     elif l == 2:
         return data[0] | (data[1] << 8)
     elif l >= 4 and l % 4 == 0:
-        n = l/4
+        n = l//4
         arr = []
         for i in range(n):
             arr.append(data[i*4:i*4+4])
@@ -102,8 +102,6 @@ class D51Driver(object):
         self.motor = {}
         self.sensor = {}
         self.debug_mode = debug_mode
-        if onSensorChange is not None:
-            threading._start_new_thread(self.start_listen_loop2, ())
         self.system = System()
         self._system_get_version()
         self._system_get_power()
@@ -132,6 +130,8 @@ class D51Driver(object):
             self._sensor_get_type(i+1)
             self._sensor_get_mode(i+1)
             self._sensor_get_value(i+1)
+        if onSensorChange is not None:
+            threading._start_new_thread(self.start_listen_loop2, ())
 
     def send_str(self, cmd):
         self.port.write(cmd.encode('utf-8'))
@@ -204,7 +204,7 @@ class D51Driver(object):
                 # elif header[0] not in data:
                 #     print('bad data', data)
             except Exception as e:
-                print(e)
+                raise(e)
                 time.sleep(0.5)
 
     def on_data(self, data):
@@ -231,7 +231,7 @@ class D51Driver(object):
 
     def on_frame(self, attr_id, value):
         self.frame_count = self.frame_count + 1
-        # print(attr_id, length, value)
+        print(attr_id, value)
         if attr_id < 0x10:
             self.on_system(attr_id, value)
         if attr_id >= 0x10 and attr_id < 0x60:
@@ -280,8 +280,9 @@ class D51Driver(object):
         sensor_id = (attr_id >> 4)-5
         sensor_id = remap_sensor_id(sensor_id)
         attr = attr_id & 0x0F
-        value = to_int32(data[-4:])
+        print(sensor_id,attr,data)
         if attr == 0:
+            value = to_int32(data[-4:])
             if self.sensor[sensor_id].type != value:
                 self.sensor[sensor_id].type = value
                 if self.onSensorChange is not None:
@@ -289,6 +290,7 @@ class D51Driver(object):
                         sensor_id, value, int(value != 0)*2 - 1)
             print(self.sensor[sensor_id])
         elif attr == 1:
+            value = to_int32(data[-4:])
             self.sensor[sensor_id].mode = value
             print(self.sensor[sensor_id])
         elif attr == 2:
