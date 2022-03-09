@@ -89,7 +89,7 @@ class SServo(object):
             response = self.port.readline()
         array = []
         for i in response:
-            array.append(ord(i))
+            array.append(i)
         return array
 
     def ping(self, id):
@@ -140,6 +140,7 @@ class SServo(object):
             ms = 0
         if(ms > 0x03ff):
             ms = 0x03ff
+        position = int(position)
         data = [header[0], header[1], id, 0x09, 0x03, 0x2A, (position >> 8) & 0xFF, position & 0xFF, (
             ms >> 8) & 0xFF, ms & 0xFF, (speed >> 8) & 0xFF, speed & 0xFF, 0]
         data[-1] = chk_sum(data)
