@@ -78,6 +78,7 @@ class FaceRecognizerNode(ExecutorEventEmitter):
 
     def toFaceDetectionMsg(self, face_locations=[], face_names=[]):
         msg = self.msg
+        msg.detections = []
         scale = self.recognizer.scale
         if len(face_names) > 0 and len(face_names) == len(face_locations):
             for (top, right, bottom, left), name in zip(face_locations, face_names):

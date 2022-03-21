@@ -63,6 +63,7 @@ class ApriltagDetectorNode(ExecutorEventEmitter):
 
     def toApriltagDetections(self):
         msg = self.msg
+        msg.detections = []
         items = self.detector.detections
         for item in items:
             detection = ApriltagPose(
