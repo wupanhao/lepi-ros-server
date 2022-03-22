@@ -119,7 +119,7 @@ class SServo(object):
         # print('transfer:' ,''.join(format(x, '02x') for x in data))
         # print(data)
         self.send_hex(data)
-        res = self.read_hex()
+        res = self.read_hex(8)
         if(len(res) == 8):
             return (res[-3] << 8) + res[-2]
         else:
@@ -232,7 +232,7 @@ class SServo(object):
         data[-1] = chk_sum(data)
         print('transfer:', ''.join(format(x, '02x') for x in data))
         self.send_hex(data)
-        res = self.read_hex()
+        res = self.read_hex(7)
         if(len(res) == 7):
             return res[-2]
         else:
@@ -245,7 +245,7 @@ class SServo(object):
         data[-1] = chk_sum(data)
         # print('transfer:' ,''.join(format(x, '02x') for x in data))
         self.send_hex(data)
-        res = self.read_hex()
+        res = self.read_hex(8)
         if(len(res) == 8):
             return (res[-3] << 8) + res[-2]
         else:
@@ -283,6 +283,7 @@ class SServo(object):
         return servos
 
     def set_offset(self, id, value):
+        value = int(value)
         if value < 0:
             value = abs(value) | 0x0800
         # print(self.read_u8(1, EEPROM.LOCK))

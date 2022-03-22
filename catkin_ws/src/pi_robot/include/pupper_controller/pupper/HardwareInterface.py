@@ -176,7 +176,7 @@ class HardwareInterface:
                     self.servo_params.neutral_angle_degrees[axis_index][leg_index]
                 angles.append(int(angle))
                 # print(angle)
-        servos = [Servo(ids[i], int(angles[i]/200.0*1023+1023/2), speed=self.speed)
+        servos = [Servo(ids[i], int(angles[i]/300.0*1023+1023/2), speed=self.speed)
                   for i in range(12)]
         self.pi.set_positions_sync(servos)
         return ids, angles
@@ -190,7 +190,7 @@ class HardwareInterface:
                 ids.append(id)
                 angles[id-1] = angles[id-1] - \
                     self.servo_params.neutral_angle_degrees[axis_index][leg_index]
-        servos = [Servo(ids[i], int(angles[i]/200.0*1023+1023/2), speed=2000)
+        servos = [Servo(ids[i], int(angles[i]/300.0*1023+1023/2), speed=2000)
                   for i in range(12)]
         self.pi.set_positions_sync(servos)
 
