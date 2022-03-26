@@ -12,7 +12,7 @@ from camera_utils import load_camera_info_3, cameraList
 class UsbCamera(object):
     """docstring for UsbCamera"""
 
-    def __init__(self, rate=30, callback=None,shm=None):
+    def __init__(self, rate=30, callback=None, shm=None):
         super(UsbCamera, self).__init__()
         self.cap = None
         self.rate = rate
@@ -48,9 +48,11 @@ class UsbCamera(object):
                 self.cap = None
                 # cv2.CAP_OPENCV_MJPEG
             if camera_id >= 0 and camera_id < len(cams):
-                self.cap = cv2.VideoCapture(int(cams[camera_id].replace('/dev/video', '')))
+                self.cap = cv2.VideoCapture(
+                    int(cams[camera_id].replace('/dev/video', '')))
             else:
-                self.cap = cv2.VideoCapture(int(cams[0].replace('/dev/video', '')))
+                self.cap = cv2.VideoCapture(
+                    int(cams[0].replace('/dev/video', '')))
             if self.cap.isOpened():
                 self.active = True
                 self.cap.set(cv2.CAP_PROP_FPS, 30)
@@ -105,6 +107,8 @@ class UsbCamera(object):
                     self.last_image = frame
                     if self.shm is not None:
                         # self.shm.lock()
+                        if abs(self.flip_code) <= 1:
+                            frame = cv2.flip(frame, self.flip_code)
                         self.frame_buffer[:] = frame[:]
                         # self.shm.unlock()
                     if self.callback is not None:
@@ -146,8 +150,7 @@ class UsbCamera(object):
             # cv_image = self.rector.rect(cv_image)
         if self.camera_info_msg.width == 640:
             cv_image = cv2.resize(cv_image, (480, 360))
-        if abs(self.flip_code) <= 1:
-            cv_image = cv2.flip(cv_image, self.flip_code)
+
         return cv_image
 
     def setFlip(self, flip_code=2):

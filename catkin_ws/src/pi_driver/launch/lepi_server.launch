@@ -42,6 +42,7 @@
   <include file="$(find pi_ai)/launch/smart_audio_node.launch" if="$(arg smart_audio_node)"/>
   <include file="$(find pi_ai)/launch/hand_detector_node.launch" if="$(arg hand_detector_node)"/>
   <include file="$(find pi_ai)/launch/pose_estimator_node.launch" if="$(arg pose_estimator_node)"/>
+  <include file="$(find pi_ai)/launch/movenet_pose_node.launch" if="$(arg movenet_pose_node)"/>
 
 
   <include file="$(find pi_robot)/launch/hexapod_driver_node.launch" if="$(arg hexapod_driver_node)"/>

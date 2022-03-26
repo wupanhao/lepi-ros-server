@@ -8,15 +8,17 @@ from pi_driver.srv import GetString, GetStringResponse
 
 root_dir = os.path.expanduser(
     '~')+'/Lepi_Data/ros/smart_audio_node'
+tts_dir = os.path.expanduser(
+    '~')+'/Lepi_Data/Music'
 
 
 class SmartAudioNode(object):
     def __init__(self):
         self.node_name = rospy.get_name()
         rospy.loginfo("[%s] Initializing......" % (self.node_name))
-        self.asr_model = hub.Module(
-            name='u2_conformer_aishell',
-            version='1.0.0')
+        # self.asr_model = hub.Module(
+        #    name='u2_conformer_aishell',
+        #    version='1.0.0')
         self.tts_model = hub.Module(
             name='fastspeech2_baker',
             version='1.0.0')
@@ -32,6 +34,9 @@ class SmartAudioNode(object):
             self.tts_model.generate([data])
             cmd = 'aplay %s' % os.path.join(root_dir, '1.wav')
             os.system(cmd)
+            cmd = 'cp %s %s' % (os.path.join(root_dir, '1.wav'),
+                                os.path.join(tts_dir, data+'.wav'))
+            os.system(cmd)
         except Exception as e:
             print(e)
         return GetStringResponse(data)
@@ -46,7 +51,7 @@ class SmartAudioNode(object):
                 length = 5
             file = os.path.join(root_dir, 'record.wav')
             os.system(
-                'arecord -r 16000 -f S16_LE  -d %d %s' % (length,file))
+                'arecord -r 16000 -f S16_LE  -d %d %s' % (length, file))
             text = self.asr_model.speech_recognize(file)
             print(text)
             return GetStringResponse(text)

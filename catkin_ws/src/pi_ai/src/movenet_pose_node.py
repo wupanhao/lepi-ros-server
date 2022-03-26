@@ -2,22 +2,31 @@
 #!coding:utf-8
 from pyee import ExecutorEventEmitter
 import cv2
+import numpy as np
 import json
+import time
 import rospy
 from sensor_msgs.msg import CompressedImage
-from camera_utils import toImageMsg, toImage
+from camera_utils import toImageMsg
 from pi_driver.srv import GetString, GetStringResponse
-from pi_ai import PoseEstimator
+from pi_ai import MoveNetPose
 
 
-class PoseEstimatorNode(ExecutorEventEmitter):
+class MoveNetPoseNode(ExecutorEventEmitter):
     def __init__(self):
         super().__init__()
         self.node_name = rospy.get_name()
         rospy.loginfo("[%s] Initializing......" % (self.node_name))
         self.visualization = True
         self.image_msg = None
-        self.detector = PoseEstimator()
+        self.detector = MoveNetPose()
+        self.results = []
+        self.score = 0
+        try:
+            self.detector.load_model(use_TPU=True)
+        except Exception as e:
+            print(e)
+            self.detector.load_model(use_TPU=False)
         self.getShm()
         self.on('pub_image', self.pubImage)
         self.on('error', self.onError)
@@ -29,8 +38,6 @@ class PoseEstimatorNode(ExecutorEventEmitter):
 
     def getShm(self):
         from pi_driver import SharedMemory
-        import time
-        import numpy as np
         while True:
             try:
                 self.shm = SharedMemory('cv_image')
@@ -47,15 +54,25 @@ class PoseEstimatorNode(ExecutorEventEmitter):
 
     def cbPoseDetect(self, param):
         self.cv_image = self.getImage()
-        array, self.results = self.detector.detect(self.cv_image)
+        size = self.cv_image.shape
+        start = time.time()
+        self.results, self.score = self.detector.detect(self.cv_image)
         if self.visualization:
             self.emit('pub_image')
-        return GetStringResponse(json.dumps(array))
+        results = json.loads(json.dumps(self.results))
+        print(1000*(time.time()-start))
+        for i in range(len(results)):
+            x, y, score = results[i]
+            results[i][0] = int(y*size[1])
+            results[i][1] = int(x*size[0])
+            results[i][2] = int(score*100)
+        return GetStringResponse(json.dumps(results))
 
     def pubImage(self):
         image = self.cv_image
-        results = self.results
-        self.detector.draw_results(image, results)
+        if self.score > 0.5:
+            results = self.results
+            self.detector.draw_pose(image, results)
         msg = toImageMsg(image)
         self.pub_detections.publish(msg)
 
@@ -68,7 +85,7 @@ class PoseEstimatorNode(ExecutorEventEmitter):
 
 
 if __name__ == '__main__':
-    rospy.init_node('pose_estimator_node', anonymous=False)
-    node = PoseEstimatorNode()
+    rospy.init_node('movenet_pose_node', anonymous=False)
+    node = MoveNetPoseNode()
     rospy.on_shutdown(node.onShutdown)
     rospy.spin()
