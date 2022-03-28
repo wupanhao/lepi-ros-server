@@ -18,6 +18,7 @@
   <arg name="smart_audio_node" default="False" />
   <arg name="hand_detector_node" default="False" />
   <arg name="pose_estimator_node" default="False" />
+  <arg name="movenet_pose_node" default="False" />
 
 
   <arg name="hexapod_driver_node" default="False" />
