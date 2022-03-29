@@ -24,7 +24,7 @@
   <arg name="hexapod_driver_node" default="False" />
   <arg name="pupper_driver_node" default="False" />
 
-  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
+  <include file="$(find pi_driver)/launch/rosbridge_websocket.launch" />
   <!-- <include file="$(find pi_cam)/launch/web_video.launch" /> -->
   <include file="$(find pi_driver)/launch/pi_driver_node.launch" />
   <include file="$(find pi_driver)/launch/joystick_node.launch" if="$(arg joystick_node)"/>
