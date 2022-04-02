@@ -27,6 +27,8 @@
   <include file="$(find pi_driver)/launch/rosbridge_websocket.launch" />
   <!-- <include file="$(find pi_cam)/launch/web_video.launch" /> -->
   <include file="$(find pi_driver)/launch/pi_driver_node.launch" />
+  <include file="$(find pi_driver)/launch/bluetooth_adv_node.launch" />
+
   <include file="$(find pi_driver)/launch/joystick_node.launch" if="$(arg joystick_node)"/>
 
   <include file="$(find pi_cam)/launch/camera_node.launch" if="$(arg camera_node)"/>

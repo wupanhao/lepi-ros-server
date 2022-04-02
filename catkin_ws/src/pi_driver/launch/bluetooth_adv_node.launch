@@ -1,0 +1,7 @@
+<launch>
+    <arg name="node_name" default="bluetooth_adv_node"/>
+    <group ns="/ubiquityrobot">
+        <node name="$(arg node_name)" pkg="pi_driver" type="$(arg node_name).py" output="screen">
+        </node>
+    </group>
+</launch>
